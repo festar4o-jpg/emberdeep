@@ -17,7 +17,7 @@ const SKILLS={
         let hand='mh';if(s.oh){p.hand=p.hand==='mh'?'oh':'mh';hand=p.hand;}
         const h=hand==='oh'?s.oh:s.mh,w=h?WEAPONS[h.wt]||FIST:FIST,big=w.hands===2;
         let n=0;for(const e of G.enemies){if(e.dead)continue;const d=dist(e,p);if(d<w.reach+e.r&&angDiff(Math.atan2(e.y-p.y,e.x-p.x),p.face)<w.arc){hitEnemy(e,1+0.12*(r-1),{kb:big?95:60,hand,weapon:true});n++;}}
-        gainRes(Math.min(n,3)*7);if(big&&n)G.shake=Math.max(G.shake,4);if(hasPw('shockwave'))shockwave(p.face,1+0.12*(r-1));if(hasPw('cinderCleave'))cinderPatch(p.face,w.reach);
+        gainRes(Math.min(n,3)*7);if(big&&n)G.shake=Math.max(G.shake,4);if(hasPw('shockwave')&&n)shockwave(p.face,1+0.12*(r-1));if(hasPw('cinderCleave'))cinderPatch(p.face,w.reach); // Tremorblade's shockwave only when Cleave hits something
         G.fx.push({type:'arc',x:p.x,y:p.y,a:p.face,r:w.reach-8,half:w.arc,lw:w.anim==='thrust'?7:big?16:w.anim==='stab'?5:10,dir:hand==='oh'?1:-1,t:0,max:big?0.3:w.anim==='stab'?0.12:0.18,col:big?'#ffd090':'#ffe0b0'});
         startAtk(w.anim,hand,0);}},
     {name:'Leap Slam',icon:'💥',cd:5,cost:25,

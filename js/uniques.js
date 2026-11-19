@@ -12,7 +12,7 @@ const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14,WILD_MULT=0.20;
 // Ignite (Pyre): a burning enemy takes this much weapon damage per second for IGNITE_T seconds.
 const IGNITE_MULT=0.30,IGNITE_T=3;
 const UPOW={
-  shockwave:{cls:'warden',t:'Cleave fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes')},
+  shockwave:{cls:'warden',t:'When Cleave hits an enemy, it fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes (no hit, no shockwave)')},
   pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in',d:()=>'Pulls from almost 3× Whirlwind\'s reach, 4 times per second (heavy monsters half as far, bosses a quarter)'},
   bloodleap:{cls:'warden',t:'Leap Slam has no cooldown but costs 8% of your Life instead of Fury',d:()=>`Costs ${pwLife(0.08)} Life per leap now · `+pwDet(1.8+0.22*(pwRank(1)-1),'and stuns')},
   counter:{cls:'warden',t:'Blocking an attack releases a shockwave around you',d:()=>pwDet(0.9,'to enemies around you')},
