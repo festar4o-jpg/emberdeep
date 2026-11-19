@@ -29,7 +29,7 @@ function render(){
   const P=G.portal;if(onScreen(P.x,P.y,80)){ctx.save();ctx.translate(P.x,P.y);
     const g=ctx.createRadialGradient(0,0,4,0,0,44);g.addColorStop(0,P.active?'#e9d0ff':'#777');g.addColorStop(0.5,P.active?'#8a3dff99':'#44444499');g.addColorStop(1,'#0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,44,0,TAU);ctx.fill();
     ctx.strokeStyle=P.active?'#c79bff':'#666';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,30-k*7,G.time*(2+k)+k,G.time*(2+k)+k+3.5);ctx.stroke();}ctx.restore();}
-  if(!G.inTown)drawFeatures(onScreen);
+  if(!G.inTown)drawFeatures(onScreen);else drawTownLive(onScreen);
   if(G.inTown&&G.merchant&&onScreen(G.merchant.x,G.merchant.y,120))drawMerchant();
   if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
@@ -60,9 +60,9 @@ function render(){
     ctx.textAlign='left';ctx.strokeText(txt,x0,l.y-20);ctx.fillStyle=l.item.rarity?col:'#b4b4b4';ctx.fillText(l.item.name,x0,l.y-20);
     if(tag){ctx.fillStyle=tag.col;ctx.fillText(' '+tag.t,x0+ctx.measureText(l.item.name).width,l.y-20);}ctx.textAlign='center';}
   // entities sorted by y
-  const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));ents.push(p);ents.sort((a,b)=>a.y-b.y);
+  const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
-  for(const e of ents){if(e===p)drawPlayer();else drawEnemy(e);}
+  for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else drawEnemy(e);}
   // projectiles
   for(const q of G.proj){ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,TAU);ctx.fill();ctx.globalAlpha=0.35;ctx.beginPath();ctx.arc(q.x-q.vx*0.03,q.y-q.vy*0.03,q.r*0.8,0,TAU);ctx.fill();ctx.globalAlpha=1;}
   // fx
@@ -72,12 +72,14 @@ function render(){
     else if(f.type==='ring'){ctx.strokeStyle=f.col;ctx.globalAlpha=1-t;ctx.lineWidth=5;ctx.beginPath();ctx.arc(f.x,f.y,f.r0+(f.r1-f.r0)*t,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
     else if(f.type==='bolt'){ctx.strokeStyle='#bfe4ff';ctx.lineWidth=3;ctx.globalAlpha=1-t;ctx.beginPath();for(let k=0;k<f.pts.length;k++){const a=f.pts[k];if(k===0){ctx.moveTo(a.x,a.y);continue;}const b=f.pts[k-1];for(let m=1;m<=4;m++){const u=m/4;ctx.lineTo(b.x+(a.x-b.x)*u+(m<4?rand(-10,10):0),b.y+(a.y-b.y)*u+(m<4?rand(-10,10):0));}}ctx.stroke();ctx.globalAlpha=1;}}
   for(const q of G.parts){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.col;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s);}ctx.globalAlpha=1;
+  if(G.inTown)drawTownAmb();
   for(const t of G.texts){ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold 18px':'bold 13px')+' sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);}ctx.globalAlpha=1;
   // darkness
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const px=(p.x-G.cam.x)*Z+CW/2,py=(p.y-G.cam.y)*Z+CH/2;
-  const Lt=G.inTown?{r0:150,r1:480,tint:'rgba(255,200,140,0.04)',dark:'rgba(0,0,0,0.55)'}:ACTS[actIdx(G.depth)].light;
+  const Lt=G.inTown?townOf(G.depth).light:ACTS[actIdx(G.depth)].light;
   const g=ctx.createRadialGradient(px,py,Lt.r0*Z,px,py,Lt.r1*Z);g.addColorStop(0,Lt.tint);g.addColorStop(1,Lt.dark);ctx.fillStyle=g;ctx.fillRect(0,0,CW,CH);
+  if(G.inTown)drawTownGlow();
   if(p.hurt>0){ctx.fillStyle=`rgba(160,0,0,${p.hurt})`;ctx.fillRect(0,0,CW,CH);}
   drawLootTip();
 }
@@ -349,7 +351,7 @@ function drawEliteLabel(e){const A=e.affs||[],y=e.y-e.r-14,ny=A.length?y-12:y;
   ctx.textAlign='center';}
 const mm=$('minimap'),mctx=mm.getContext('2d');
 function drawMinimap(){
-  const s=mm.width/MW;mctx.clearRect(0,0,mm.width,mm.height);const base=G.inTown?'#8a755a':ACTS[actIdx(G.depth)].mm,TC=[base,'#7fbf3a','#e8642a',base];
+  const s=mm.width/MW;mctx.clearRect(0,0,mm.width,mm.height);const base=G.inTown?townOf(G.depth).mm:ACTS[actIdx(G.depth)].mm,TC=[base,'#7fbf3a','#e8642a',base];
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i;if(G.explored[k]&&G.grid[k]===0){mctx.fillStyle=TC[G.terrain[k]]||base;mctx.fillRect(i*s,j*s,s+0.5,s+0.5);}}
   const P=G.portal;const pti=Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE);if(G.explored[pti]){mctx.fillStyle=P.active?'#b27bff':'#777';mctx.beginPath();mctx.arc(P.x/TILE*s,P.y/TILE*s,6,0,TAU);mctx.fill();}
   if(G.inTown&&G.smith){mctx.fillStyle='#e8703a';mctx.beginPath();mctx.arc(G.smith.x/TILE*s,G.smith.y/TILE*s,4.5,0,TAU);mctx.fill();}

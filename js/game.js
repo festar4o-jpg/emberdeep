@@ -132,7 +132,7 @@ function startDepth(d){
   if(newAct)showActTitle(d);else toast(d>25?`Endless ${d-25} · ${ACTS[actIdx(d)].name}`:`${ACTS[actIdx(d)].name} ${stageOf(d)}/5`,d%5===0?'A powerful foe awaits…':'');
 }
 function resetArea(){
-  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;
+  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;
   const p=G.p;p.dead=false;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
@@ -144,7 +144,7 @@ function startTown(next){
   G.shop=rollShop(next);
   $('descBtn').textContent=`⬇ Enter Depth ${next}`;
   saveChar();setPause();
-  toast('Town','The merchant has fresh wares');
+  const T=townOf(next);toast(T.name,T.sub);
 }
 
 // ---------- update ----------
@@ -255,6 +255,7 @@ function update(dt){
   for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<f.max);
   for(const q of G.parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=0.92;q.vy*=0.92;q.life-=dt;}G.parts=G.parts.filter(q=>q.life>0);
   for(const t of G.texts){t.t+=dt;t.y-=40*dt;}G.texts=G.texts.filter(t=>t.t<0.9);
+  if(G.inTown)townTick(dt);
   // explore
   G.exploreT-=dt;if(G.exploreT<=0){G.exploreT=0.15;const tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE);for(let j=-8;j<=8;j++)for(let i=-8;i<=8;i++){if(i*i+j*j>64)continue;const x=tx+i,y=ty+j;if(x>=0&&y>=0&&x<MW&&y<MH)G.explored[y*MW+x]=1;}}
   // portal

@@ -128,20 +128,7 @@ function genLevel(depth){
   G.flow=new Int16Array(MW*MH);G.flowTile=-1;
   renderMap();
 }
-function genTown(){
-  const g=newGrid(1);
-  const R={x:22,y:24,w:20,h:12};R.cx=R.x+10;R.cy=R.y+6;
-  for(let j=R.y;j<R.y+R.h;j++)for(let i=R.x;i<R.x+R.w;i++)g[j*MW+i]=0;
-  G.rooms=[R];G.enemies=[];G.boss=null;
-  G.p.x=(R.x+2.5)*TILE;G.p.y=(R.cy+0.5)*TILE;
-  G.portal={x:(R.x+R.w-2.5)*TILE,y:(R.cy+0.5)*TILE,active:true};
-  G.merchant={x:R.cx*TILE,y:(R.y+3.5)*TILE};
-  G.stash={x:(R.x+4)*TILE,y:(R.y+3.5)*TILE};
-  G.smith={x:R.cx*TILE,y:(R.y+R.h-2.5)*TILE};
-  G.explored=new Uint8Array(MW*MH).fill(1);
-  G.flow=new Int16Array(MW*MH);G.flowTile=-1;
-  renderMap();
-}
+// genTown() lives in js/towns.js (one town per act).
 
 // ---------- map rendering: pre-drawn once per level into one canvas (cheap per frame) ----------
 const THEMES={};
@@ -158,7 +145,6 @@ const THEMES={};
       if(r<0.018){x.strokeStyle='rgba(215,205,180,.55)';x.lineWidth=2;x.beginPath();x.moveTo(px+10,py+12);x.lineTo(px+28,py+26);x.moveTo(px+28,py+12);x.lineTo(px+10,py+26);x.stroke();dot(x,px+20,py+10,3.5,'rgba(215,205,180,.6)');}
       else if(r<0.03){glow(x,px+20,py+20,24,'rgba(255,180,80,.28)');x.fillStyle='#d8cfb0';x.fillRect(px+18,py+18,4,9);dot(x,px+20,py+16,2,'#ffd36b');}
       else if(n.up&&n.left&&r<0.3){x.strokeStyle='rgba(220,220,220,.18)';x.lineWidth=1;x.beginPath();for(let k=0;k<4;k++){x.moveTo(px,py);x.lineTo(px+22*Math.cos(k*0.45),py+22*Math.sin(k*0.45));}for(const rr of [8,15])x.arc(px,py,rr,0,Math.PI/2);x.stroke();}}});
-  THEMES.town=stone(35);
   THEMES.crypt=Object.assign(stone(220),{
     rooms(x,rooms){for(const r of rooms){if(r.w<9||Math.random()<0.5)continue;const px=(r.x+1)*TILE+6,py=(r.y+r.h-2)*TILE-6; // sarcophagus
       x.fillStyle='#2a2420';x.fillRect(px,py,TILE*2-12,TILE-8);x.strokeStyle='#4a4038';x.lineWidth=2;x.strokeRect(px+3,py+3,TILE*2-18,TILE-14);x.fillStyle='rgba(0,0,0,.35)';x.fillRect(px,py+TILE-8,TILE*2-12,5);}}});
@@ -214,7 +200,7 @@ const THEMES={};
 }
 function renderMap(){
   const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');
-  const gen=G.inTown?'town':ACTS[actIdx(G.depth)].gen,TH=THEMES[gen],g=G.grid,T=G.terrain;
+  const gen=G.inTown?'town'+actIdx(G.depth):ACTS[actIdx(G.depth)].gen,TH=THEMES[gen],g=G.grid,T=G.terrain;
   const at=(i,j)=>i<0||j<0||i>=MW||j>=MH?1:g[j*MW+i];
   const adjFloor=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(at(i+a,j+b)===0)return true;return false;};
   x.fillStyle=TH.void;x.fillRect(0,0,cv.width,cv.height);
@@ -224,7 +210,7 @@ function renderMap(){
     else if(v===2&&TH.voidT)TH.voidT(x,px,py,i,j,at);}
   // pass 2: walls (may overhang floor for organic shapes) and decorations
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i,v=g[k],px=i*TILE,py=j*TILE;
-    if(v===1)TH.wall(x,px,py,at(i,j+1)===0,adjFloor(i,j));
+    if(v===1)TH.wall(x,px,py,at(i,j+1)===0,adjFloor(i,j),i,j);
     else if(v===0&&T[k]===0&&TH.deco)TH.deco(x,px,py,{up:at(i,j-1)===1,left:at(i-1,j)===1});}
   if(TH.rooms&&G.rooms)TH.rooms(x,G.rooms);
   G.mapCv=cv;

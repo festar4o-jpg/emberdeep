@@ -31,7 +31,7 @@ function updateHud(){
   $('xpb').firstElementChild.style.width=(c.lvl>=50?100:c.xp/xpNeed(c.lvl)*100)+'%';
   const left=G.enemies.filter(e=>!e.dead).length;
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.inTown?`Town · next: ${where}`:`${where}${D%5===0?' · Boss':''} · ${left} foes`;
+  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where}${D%5===0?' · Boss':''} · ${left} foes`;
   const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);

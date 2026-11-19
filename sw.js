@@ -10,8 +10,8 @@
 // server again and goes back online if it answers.
 // Saves live in localStorage, which a service worker never reads, writes or clears.
 // FILES must list every file the page loads; VERSION must equal GAME_VERSION in js/core.js (tests/game-check.js checks both).
-const VERSION='1.0.14',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
-const FILES=[ "./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "js/core.js", "js/items.js", "js/uniques.js", "js/maps.js", "js/skills.js", "js/monsters.js", "js/game.js", "js/render.js", "js/ui.js", "js/stash.js", "js/sockets.js", "js/charms.js", "js/smith.js", "js/encounters.js", "js/backup.js", "js/main.js"];
+const VERSION='1.0.15',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
+const FILES=[ "./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "js/core.js", "js/items.js", "js/uniques.js", "js/maps.js", "js/towns.js", "js/skills.js", "js/monsters.js", "js/game.js", "js/render.js", "js/ui.js", "js/stash.js", "js/sockets.js", "js/charms.js", "js/smith.js", "js/encounters.js", "js/backup.js", "js/main.js"];
 // One cache entry per file, whatever ?query it was opened with (play.sh opens ./?v=<time>).
 const key=u=>{const x=new URL(u,self.location.href);x.search='';x.hash='';return x.href;};
 let offline=false;const waiting=new Set();
