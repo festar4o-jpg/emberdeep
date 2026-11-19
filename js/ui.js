@@ -189,10 +189,10 @@ function openItem(it,equipped,price){
     $('iBuy').onclick=()=>buyItem(it,price);$('iClose').onclick=closeItem;return;}
   const cost=upgradeCost(it);
   const eqOk=sl=>(is2h(it)||slotOpen(c.equip,sl))&&clashFree(c,it,sl);
-  // already wearing this power: name the worn item, and say how to choose which one to keep
+  // already wearing the same unique / Runebind: name it, and say how to choose which one to keep
   const clash=!equipped&&fits.length?pwClash(c,it):null;
   if(clash){const o=c.equip[clash],swap=fits.includes(clash);
-    h+=`<div class="ipow" style="color:#e07a5a">⚠ You already wear ${esc(o.name)} (${SLOT_NAME[clash]}) with the same power. Only one can be worn: ${swap?`equip this one in ${SLOT_NAME[clash]} to keep it instead, or close to keep ${esc(o.name)}`:`take off ${esc(o.name)} first to wear this one`}.</div>`;}
+    h+=`<div class="ipow" style="color:#e07a5a">⚠ You already wear ${esc(o.name)} (${SLOT_NAME[clash]}). Only one of each ${it.uq?'unique':'Runebind'} can be worn: ${swap?`equip this one in ${SLOT_NAME[clash]} to keep it instead, or close to keep ${esc(o.name)}`:`take off ${esc(o.name)} first to wear this one`}.</div>`;}
   const equipBtns=!fits.length?'':multi?fits.map(sl=>`<div class="btn sm${eqOk(sl)?'':' dis'}" data-eq="${sl}">Equip ${SLOT_NAME[sl]}</div>`).join(''):`<div class="btn sm${eqOk(fits[0])?'':' dis'}" data-eq="${fits[0]}">Equip</div>`;
   h+=`<div class="row">${equipped?'<div class="btn sm" id="iUnequip">Unequip</div>':equipBtns}
     <div class="btn sm${(it.upg||0)>=10||c.gold<cost?' dis':''}" id="iUpg">Upgrade +${(it.upg||0)+1} (${cost}🪙)</div>
