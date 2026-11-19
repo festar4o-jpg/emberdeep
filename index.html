@@ -44,6 +44,7 @@
   <div id="shopBtn" class="pe btn hidden">🪙 Trade</div>
   <div id="stashBtn" class="pe btn hidden">📦 Stash</div>
   <div id="smithBtn" class="pe btn hidden">🔨 Smith</div>
+  <div id="wayBtn" class="pe btn hidden">🌀 Waystone</div>
   <div id="useBtn" class="pe btn hidden"></div>
 </div>
 <div id="toast"></div>
@@ -164,6 +165,16 @@
   <div class="btn wide" id="skClose">Close</div>
 </div></div>
 
+<div id="wayOv" class="overlay hidden"><div class="panel">
+  <h2>Waystone</h2>
+  <p class="sub" style="margin-bottom:8px">Travel to any town or depth you have reached. Monsters are back every time you arrive.</p>
+  <div class="filt"><b style="color:var(--gold)">Boss depths 💀</b> <span class="fdim">what comes back</span>
+    <div class="tabs" id="wayModes"></div>
+    <div class="fdim">Boss only: straight to the boss, nothing else. No boss: the packs only, the portal is open. Each act boss can drop its own trophy unique and has a good chance at a set piece (see 📖 Bosses).</div></div>
+  <div id="wayList"></div>
+  <div class="btn wide" id="wayClose">Close</div>
+</div></div>
+
 <div id="menuOv" class="overlay hidden"><div class="panel">
   <h2>Paused</h2>
   <div class="filt">
@@ -186,9 +197,10 @@
     • Gear: Main Hand, Off Hand (shields give armor and block), Helm, Body, Gloves, Belt, Boots, Amulet and two Rings.<br>
     • Warden: one-hand sword/axe/mace/dagger with a shield or a second one-hander (dual wield), or a two-hander that takes both hands. Axes bleed, maces stun, daggers are fast and crit.<br>
     • Arcanist: wand or scepter with an orb or tome, or a two-handed staff that boosts spell damage.<br>
-    • Each portal takes you to town first. Walk to the merchant and Trade, then take the portal onward.<br>
+    • Each portal takes you to town first. Walk to the merchant and Trade, then take the portal onward. Every act has its own town.<br>
+    • 🌀 The Waystone in town takes you to any town or depth you have reached, with fresh monsters. On boss depths pick Everything, Boss only or No boss: farm a boss for its trophy unique and set pieces. 🏠 Return to Town (this menu) brings you back from anywhere.<br>
     • Walk over loot to pick it up. Open 🎒 to equip gear — a green ▲ means it's an upgrade.<br>
-    • Each level gives a skill point. Spend it in ✨.<br>
+    • Each level gives a skill point (spend it in ✨), +5% damage and more Life. Max level is 50; after that XP fills Paragon levels (✦, blue XP bar): +1% damage and +5 Life each, no cap.<br>
     • Five acts of five depths: Sunken Crypts, Ashen Wastes, Rotwood Marsh, Frozen Citadel, The Ember Core. Depth 5 of each act is a boss, each tougher and richer than the last. Beat the Cinder King to unlock the Endless Depths. Marsh poison slows you; Ember Core lava burns.<br>
     • Each act has its own monsters. Elite packs glow with a colored ring: Vampiric (heals on hit), Shielded (takes less damage), Hasted, Plagued and Burning (leave poison or fire on death), Frostbound (slows you).<br>
     • Find the purple portal and press Descend.<br>
@@ -196,6 +208,7 @@
     • Keyboard: WASD to move, J/1–5 skills, Space/Shift dodge, Q potion, I bag, K skills, E trade/descend.
   </div>
   <div class="btn wide" id="fsBtn">⛶ Fullscreen</div>
+  <div class="btn wide" id="townBtn">🏠 Return to Town</div>
   <div class="btn wide" id="resumeBtn">Resume</div>
   <div class="btn wide" id="quitBtn">Save & Exit</div>
   <div class="fdim ver" id="verTxt"></div>
@@ -231,6 +244,7 @@
 <script src="js/charms.js"></script>
 <script src="js/smith.js"></script>
 <script src="js/encounters.js"></script>
+<script src="js/waystone.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/main.js"></script>
 </body>

@@ -100,14 +100,14 @@ const GEN={
     for(let k=0;k<11;k++){const x=rand(4,MW-5),y=rand(4,MH-5);if(g[Math.round(y)*MW+Math.round(x)]!==0)continue;blob(x,y,rand(1,2.2),q=>{if(g[q]===0)T[q]=T_LAVA;});}
     return pickRegions(12,10);}
 };
-function genLevel(depth){
+function genLevel(depth,mode){
   const A=ACTS[actIdx(depth)];let rooms=null;
   for(let t=0;t<5&&!(rooms&&rooms.length>=6);t++)rooms=GEN[A.gen](depth);
   if(!rooms||rooms.length<3){rooms=GEN.crypt(depth);} // safety net: never ship an unplayable map
   const g=G.grid;G.rooms=rooms;
   const start=rooms[0];let exit=rooms[1],ed=0;
   for(const r of rooms){const d=Math.hypot(r.cx-start.cx,r.cy-start.cy);if(d>ed){ed=d;exit=r;}}
-  const isBoss=depth%5===0;
+  const isBoss=depth%5===0&&mode!=='noboss',bossOnly=isBoss&&mode==='boss';
   G.portal={x:(exit.cx+0.5)*TILE,y:(exit.cy+0.5)*TILE,active:!isBoss};
   G.enemies=[];G.boss=null;let packId=0;
   const safe=(x,y,r)=>!blockedAt(x,y,r)&&G.terrain[tileIdx(x,y)]===0;
@@ -115,6 +115,7 @@ function genLevel(depth){
   for(const r of rooms){
     if(r===start)continue;
     if(isBoss&&r===exit){let bx=(r.cx+0.5)*TILE,by=(r.cy-1)*TILE;if(blockedAt(bx,by,40))by=(r.cy+0.5)*TILE;const b=makeEnemy('boss',bx,by,depth,false,++packId);G.enemies.push(b);G.boss=b;continue;}
+    if(bossOnly)continue;
     const packs=randi(1,2);
     for(let k=0;k<packs;k++){const id=++packId;const eliteP=Math.random()<Math.min(depth>25?0.45:0.3,0.1+depth*0.006),affs=eliteP?rollAffixes(depth):null;
       const c=spot(r);rollPack(depth,eliteP).forEach((type,m)=>{const T=ETYPES[type];
@@ -122,7 +123,7 @@ function genLevel(depth){
         if(!safe(x,y,T.r)){x=c.x;y=c.y;}
         G.enemies.push(makeEnemy(type,x,y,depth,eliteP&&m<4,id,affs));});}
   }
-  placeEncounters(depth,rooms,start,exit,isBoss,spot);
+  if(!bossOnly)placeEncounters(depth,rooms,start,exit,isBoss,spot);
   G.p.x=(start.cx+0.5)*TILE;G.p.y=(start.cy+0.5)*TILE;
   G.explored=new Uint8Array(MW*MH);
   G.flow=new Int16Array(MW*MH);G.flowTile=-1;

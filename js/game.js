@@ -1,7 +1,7 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0)return;
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
@@ -24,6 +24,7 @@ function hitEnemy(e,mult,opts={}){
   // flail / thornstaff: weapon hits splash onto enemies around the target
   if(opts.weapon&&st.splash>0){let any=false;for(const o of G.enemies){if(o===e||o.dead||o.hidden||o.spawnT>0)continue;if(Math.hypot(o.x-e.x,o.y-e.y)<SPLASH_R+o.r){hitEnemy(o,mult*st.splash/100,{hand:opts.hand,splashed:true});any=true;}}
     if(any)G.fx.push({type:'ring',x:e.x,y:e.y,r0:6,r1:SPLASH_R,t:0,max:0.2,col:'#e8d0a0'});}
+  if(hasPw('ashChain')&&!opts.splashed&&!opts.dot&&!opts.chained&&Math.random()<ASH_CH)ashChain(e);
   if(e.hp<=0){killEnemy(e);if(st.explode>0&&!G.blasting)demonBlast(e);}
 }
 const SPLASH_R=70;
@@ -42,6 +43,7 @@ function killEnemy(e){
     const c=makeEnemy(e.type,x,y,G.depth,e.elite,e.pack,e.affs);c.chest=e.chest;c.gen=(e.gen||0)+1;c.r=Math.max(9,e.r*0.72);c.hp=c.maxHp=e.maxHp*0.45;c.dmg=e.dmg*0.7;c.xp=e.xp*0.35;c.spd=e.spd*1.1;
     c.aggro=true;c.spawnT=0.25;c.noLoot=true;c.name=e.name;G.enemies.push(c);burst(x,y,8,'#dff4ff',140);}
   gainXp(Math.round(e.xp*(e.summoned?0.3:1)));
+  if(!e.summoned)trophyKill(e);
   if(e.noLoot||e.summoned)return;
   if(e.type==='thief'){thiefLoot(e);return;}
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
@@ -54,7 +56,7 @@ function killEnemy(e){
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
     if(G.depth===25&&!c.won){c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory();},1800);}
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
-    else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);saveChar();}
+    else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.elite){const n=(Math.random()<Math.min(1,0.4*lootMul)?2:1)+(e.affs.length>=3&&Math.random()<0.5?1:0);for(let k=0;k<n;k++)dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
   else if(Math.random()<T.drop*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
 }
@@ -77,7 +79,7 @@ function dmgPlayer(raw,src){
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
-  if(hasPw('frostward'))autoNova();if(hasPw('lastBreath'))lastBreath();
+  if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
   checkDeath(p);return true;
 }
 function checkDeath(p){if(p.hp<=0&&!p.dead){p.hp=0;p.dead=true;setTimeout(()=>{if(G.p!==p||!p.dead)return;G.paused=true;$('deathOv').classList.remove('hidden');},600);}}
@@ -93,11 +95,17 @@ function eShoot(e,ang){const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let
 function explodeAt(x,y,rad,mult){aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
 
 function gainXp(v){
-  const c=G.char;if(c.lvl>=50)return;c.xp+=Math.round(shrineXp(v));
-  while(c.lvl<50&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
+  const c=G.char;if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
+  while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
     const newSk=SKILL_REQ.indexOf(c.lvl);toast('Level '+c.lvl+'!',newSk>0?'New skill available — tap ✨':'+1 skill point');
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
+// After level 50 every bit of XP fills Paragon levels instead (leftover XP at 50 carries over).
+function gainParagon(v){const c=G.char;c.para=c.para||0;c.pxp=(c.pxp||0)+v+(c.xp||0);c.xp=0;let up=false;
+  while(c.pxp>=paraNeed(c.para)){c.pxp-=paraNeed(c.para);c.para++;up=true;}
+  if(up){refreshStats();toast('Paragon '+c.para+'!',`+${PARA_DMG}% damage, +${PARA_LIFE} Life (total +${c.para*PARA_DMG}% / +${c.para*PARA_LIFE})`);
+    G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#7fe4f4'});burst(G.p.x,G.p.y,30,'#7fe4f4',200);saveChar();}}
+const lvlLabel=c=>c.para?`${c.lvl} ✦${c.para}`:String(c.lvl);
 function refreshStats(){G.stats=calcStats(G.char);if(G.p){G.p.hp=Math.min(G.p.hp,G.stats.life);G.p.res=Math.min(G.p.res,G.stats.res);}}
 
 // ---------- fx helpers ----------
@@ -121,20 +129,21 @@ function startGame(c){
   ['titleOv','createOv'].forEach(i=>$(i).classList.add('hidden'));$('hud').classList.remove('hidden');
   startDepth(c.depth);
 }
-function startDepth(d){
+// mode (boss depths, from the Waystone): 'all' (default), 'boss' = the boss alone, 'noboss' = the packs only.
+function startDepth(d,mode){
   const c=G.char;G.depth=d;c.depth=d;c.maxDepth=Math.max(c.maxDepth,d);
-  resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;
+  resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
-  genLevel(d);G.cam.x=p.x;G.cam.y=p.y;
+  genLevel(d,G.levelMode);G.cam.x=p.x;G.cam.y=p.y;
   $('descBtn').textContent='⬇ Descend';
   const newAct=stageOf(d)===1&&(c.actSeen||0)<d;if(newAct)c.actSeen=d;
   saveChar();setPause();
-  if(newAct)showActTitle(d);else toast(d>25?`Endless ${d-25} · ${ACTS[actIdx(d)].name}`:`${ACTS[actIdx(d)].name} ${stageOf(d)}/5`,d%5===0?'A powerful foe awaits…':'');
+  if(newAct)showActTitle(d);else toast(d>25?`Endless ${d-25} · ${ACTS[actIdx(d)].name}`:`${ACTS[actIdx(d)].name} ${stageOf(d)}/5`,d%5===0?(G.levelMode==='noboss'?'The boss is away; its halls are not empty':G.levelMode==='boss'?'The boss awaits, alone':'A powerful foe awaits…'):'');
 }
 function resetArea(){
   G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;
   const p=G.p;p.dead=false;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
-  $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
+  $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
 function startTown(next){
@@ -239,7 +248,7 @@ function update(dt){
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
-  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:'#ff7a2a',s:3});}
+  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}
   G.hazards=G.hazards.filter(h=>h.t>0);
   for(const dl of G.delayed){dl.t-=dt;if(dl.t<=0&&!dl.done){dl.done=true;dl.fn();}}
   G.delayed=G.delayed.filter(dl=>!dl.done);
@@ -267,6 +276,8 @@ function update(dt){
   $('stashBtn').classList.toggle('hidden',!nearStash);
   const nearSmith=G.inTown&&G.smith&&!p.dead&&Math.hypot(p.x-G.smith.x,p.y-G.smith.y)<85;
   $('smithBtn').classList.toggle('hidden',!nearSmith);
+  const nearWay=G.inTown&&G.waystone&&!p.dead&&!nearPortal&&Math.hypot(p.x-G.waystone.x,p.y-G.waystone.y)<70;
+  $('wayBtn').classList.toggle('hidden',!nearWay);
   // camera
   G.cam.x+=(p.x-G.cam.x)*Math.min(1,dt*8);G.cam.y+=(p.y-G.cam.y)*Math.min(1,dt*8);
   G.shake=Math.max(0,G.shake-dt*40);

@@ -11,6 +11,8 @@ const pwDet=(m,what)=>`${Math.round(m*100)}% weapon damage (≈${pwHit(m)})${wha
 const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14,WILD_MULT=0.20;
 // Ignite (Pyre): a burning enemy takes this much weapon damage per second for IGNITE_T seconds.
 const IGNITE_MULT=0.30,IGNITE_T=3;
+// Boss trophy power numbers.
+const BONE_KILLS=8,BONE_MULT=1.5,ASH_CH=0.35,ASH_MULT=0.4,ROT_MULT=0.3,ROT_MAX=6;
 const UPOW={
   shockwave:{cls:'warden',t:'When Cleave hits an enemy, it fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes (no hit, no shockwave)')},
   pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in',d:()=>'Pulls from almost 3× Whirlwind\'s reach, 4 times per second (heavy monsters half as far, bosses a quarter)'},
@@ -42,7 +44,13 @@ const UPOW={
   cometDash:{t:'Your dodge ends in a fiery impact',d:()=>pwDet(1.2,'to enemies where you land')},
   // set power (Bulwark of the Hollow King; its own shield means it can't meet The Last Door)
   kingsWrath:{cls:'warden',t:'Blocking an attack gives you 30% more damage for 3s',d:()=>`${Math.round(G.stats.block)}% block chance · +30% damage for 3s after each block`},
-  coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')}
+  coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')},
+  // boss trophy powers (each only on its act boss's own unique: see BOSS_UQ)
+  boneNova:{t:`Every ${BONE_KILLS} kills, a Bone Nova bursts from you`,d:()=>pwDet(BONE_MULT,`to every enemy around you · ${G.p&&G.p.boneN||0}/${BONE_KILLS} kills`)},
+  ashChain:{t:`${Math.round(ASH_CH*100)}% of your hits lash a second enemy nearby with a chain of ash`,d:()=>pwDet(ASH_MULT,'to the second enemy')},
+  rotBurst:{t:'Enemies you kill burst into a rot cloud that eats at other enemies',d:()=>pwDet(2*ROT_MULT,'per second for 3s in the cloud')+` · up to ${ROT_MAX} clouds`},
+  rimeSkin:{t:'An enemy that hits you is frozen solid (each enemy every 4s at most)',d:()=>'Frozen for 1.5s (bosses 0.5s): frozen enemies can\'t move or attack'},
+  kingsPyre:{t:'Each kill stokes the Pyre: +3% damage per stack, up to 10 stacks; they fade 4s after your last kill',d:()=>`Up to +30% damage · now ${G.p&&G.p.pyreT>0?G.p.pyreN||0:0} stacks (+${3*(G.p&&G.p.pyreT>0?G.p.pyreN||0:0)}%)`}
 };
 // Combos: a unique and a Runebind (or set) with matching powers do something extra when both are worn.
 const COMBOS=[
@@ -71,8 +79,17 @@ const UNIQUES={
   deepheart:{name:'Heart of the Deep',type:'amulet',cls:null,act:2,pw:['lastBreath']},
   ashwalker:{name:'Ashwalker Treads',type:'boots',cls:null,act:3,pw:['fireTrail']},
   alchemist:{name:'Coil of the Alchemist',type:'belt',cls:null,act:4,pw:['potionReset']},
-  ouroboros:{name:'Ouroboros Loop',type:'ring',cls:null,act:5,pw:['ouroboros']}
+  ouroboros:{name:'Ouroboros Loop',type:'ring',cls:null,act:5,pw:['ouroboros']},
+  // boss trophies: boss = act index; only that act's boss drops them (any cycle), never other monsters or the shop
+  varrokcrown:{name:"Varrok's Hollow Crown",type:'helm',cls:null,act:1,boss:0,pw:['boneNova']},
+  tyrantchain:{name:'Shackles of the Ash Tyrant',type:'gloves',cls:null,act:2,boss:1,pw:['ashChain']},
+  rotbrood:{name:'Brood of the Rot Mother',type:'ring',cls:null,act:3,boss:2,pw:['rotBurst']},
+  frozenshard:{name:'Shard of the Frozen King',type:'amulet',cls:null,act:4,boss:3,pw:['rimeSkin']},
+  cinderbrand:{name:'Brand of the Cinder King',type:'belt',cls:null,act:5,boss:4,pw:['kingsPyre']}
 };
+const BOSS_UQ=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss!=null).sort((a,b)=>UNIQUES[a].boss-UNIQUES[b].boss);
+// Chance per kill of an act boss: its own trophy unique, and a set piece (any set that can drop in that act).
+const TROPHY_CH=0.35,BOSS_SET_CH=0.3;
 // ---------- set items (rarity 5, green) ----------
 // A set has 2–6 pieces in any slots. Each piece is a named item with its own fixed stat list (values rolled, like a
 // unique's affixes). Wearing n different pieces of a set turns on, in green:
@@ -142,6 +159,23 @@ const SET_ITEMS={
 // zone 5: in a dungeon depth of act 5 (any cycle), not in town (so no shop) and not anywhere else.
 const inSetZone=S=>!S.zone||(!G.inTown&&G.depth>0&&actIdx(G.depth)+1===S.zone);
 const setItemsFor=(type,cls,act)=>Object.keys(SET_ITEMS).filter(k=>{const I=SET_ITEMS[k],S=SETS[I.set];return I.type===type&&S.act<=act&&(!S.cls||S.cls===cls)&&inSetZone(S);});
+// Boss trophies: every act boss can drop its own unique (and only it drops it), and has a good chance at a set piece.
+// Item Drop Chance raises both; the endless depths add 10%.
+function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1+(G.stats.loot||0)/100,plus=G.depth>25?0.1:0;
+  if(U&&Math.random()<Math.min(1,TROPHY_CH*mul+plus)){const it=genItem(G.depth+3,c.cls,0,U.type,3,U.wt,dropAct(G.depth),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
+  if(Math.random()<Math.min(1,BOSS_SET_CH*mul+plus)){const act=dropAct(G.depth),ks=Object.keys(SET_ITEMS).filter(si=>{const S=SETS[SET_ITEMS[si].set];return S.act<=act&&(!S.cls||S.cls===c.cls)&&inSetZone(S);});
+    if(ks.length)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(G.depth+3,c.cls,0,null,0,null,act,pick(ks)));}}
+// Trophy powers that trigger on a kill.
+function trophyKill(e){const p=G.p;if(p.dead)return;
+  if(hasPw('kingsPyre')){p.pyreN=Math.min(10,(p.pyreT>0?p.pyreN||0:0)+1);p.pyreT=4;}
+  if(hasPw('rotBurst')){const own=G.hazards.filter(h=>h.rot);if(own.length>=ROT_MAX)G.hazards.splice(G.hazards.indexOf(own[0]),1);G.hazards.push({x:e.x,y:e.y,r:75,t:3,tick:0.5,mult:ROT_MULT,rot:true,quiet:true});}
+  if(hasPw('boneNova')){p.boneN=(p.boneN||0)+1;if(p.boneN>=BONE_KILLS){p.boneN=0;G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:180,t:0,max:0.4,col:'#e8e0c0'});burst(p.x,p.y,30,'#e8e0c0',260);aoe(p.x,p.y,175,BONE_MULT,{splashed:true});}}}
+// Shackles of the Ash Tyrant: a direct hit may lash the nearest other enemy.
+function ashChain(e){let o=null,bd=170;for(const x of G.enemies){if(x===e||x.dead||x.hidden||x.spawnT>0)continue;const d=Math.hypot(x.x-e.x,x.y-e.y);if(d<bd){bd=d;o=x;}}
+  if(!o)return;G.fx.push({type:'lflash',x:e.x,y:e.y,a:Math.atan2(o.y-e.y,o.x-e.x),len:bd,w:8,t:0,max:0.2,col:'#e0a860'});hitEnemy(o,ASH_MULT,{splashed:true,chained:true});}
+// Shard of the Frozen King: whoever hits you freezes.
+function rimeSkin(src){if(!src||src.dead||G.time-(src.rimeAt??-99)<4)return;src.rimeAt=G.time;src.frozen=Math.max(src.frozen||0,src.type==='boss'?0.5:1.5);
+  floatText(src.x,src.y-src.r-16,'Frozen','#bfe4ff',false);burst(src.x,src.y,10,'#dff4ff',140);}
 // The act 5 boss: 40% chance of one extra Relics of the Ember Core piece.
 function emberCoreDrop(e){if(Math.random()>=0.4)return;const si=pick(SETS.embercore.items);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(G.depth+3,G.char.cls,0,null,0,null,5,si));}
 const setOf=it=>it&&it.rarity===5&&SET_ITEMS[it.si]?SET_ITEMS[it.si].set:null;
@@ -166,7 +200,7 @@ function setView(it,c){const k=setOf(it);if(!k)return null;const S=SETS[k],eq=EQ
     own:(SET_ITEMS[it.si].sb||[]).map(([need,l])=>({need,text:txt(l),on:on&&n>=need})),
     bonus:(S.bonus||[]).map(([need,l])=>({need,text:txt(l),on:n>=need})).concat(S.full&&S.full.length?[{need:S.items.length,full:true,text:txt(S.full),on:n>=S.items.length}]:[])};}
 // Uniques of this item type that can drop for a character of cls in act/tier `act`.
-const uniquesFor=(type,cls,act)=>Object.keys(UNIQUES).filter(k=>{const U=UNIQUES[k];return U.type===type&&U.act<=act&&(!U.cls||U.cls===cls);});
+const uniquesFor=(type,cls,act)=>Object.keys(UNIQUES).filter(k=>{const U=UNIQUES[k];return U.boss==null&&U.type===type&&U.act<=act&&(!U.cls||U.cls===cls);});
 const itemPowers=it=>!it?[]:it.uq&&UNIQUES[it.uq]?UNIQUES[it.uq].pw:it.rb&&RUNEBINDS[it.rb]&&RUNEBINDS[it.rb].pw||[]; // uniques and Runebinds
 const hasPw=k=>!!(G.stats&&G.stats.pw&&G.stats.pw[k]);
 const pwRank=i=>Math.max(1,rk(i)); // powers that cast a skill use its rank (at least 1, even if unlearned)
@@ -202,7 +236,7 @@ function lastBreath(){const p=G.p,s=G.stats;if(p.lbCd>0||p.hp<=0||p.hp>=s.life*0
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:180,t:0,max:0.45,col:'#ff9a3a'});}
 // Per-frame powers: cooldown timers, burning aura, fire trail, falling meteors.
 function powerTick(dt){const p=G.p;if(p.dead)return;
-  for(const k of ['counterCd','novaCd','lbCd','rageT','wrathT','beatT'])if(p[k]>0)p[k]-=dt;
+  for(const k of ['counterCd','novaCd','lbCd','rageT','wrathT','beatT','pyreT'])if(p[k]>0)p[k]-=dt;
   if(G.inTown)return;
   if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,AURA_MULT,{splashed:true,quiet:true,dot:true,ignite:combo('Bonfire')});}}
   if(hasPw('fireTrail')){const L=p.trail||(p.trail={x:p.x,y:p.y});if(Math.hypot(p.x-L.x,p.y-L.y)>26){L.x=p.x;L.y=p.y;

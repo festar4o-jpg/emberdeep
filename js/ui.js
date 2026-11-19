@@ -20,7 +20,7 @@ function buildSkillBar(){
 function canLearnAny(){const c=G.char;if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
 function updateHud(){
   const p=G.p,s=G.stats,c=G.char,C=CLASSES[c.cls];
-  $('nmTxt').textContent=`${c.name} · Lv ${c.lvl} ${C.name}`;
+  $('nmTxt').textContent=`${c.name} · Lv ${lvlLabel(c)} ${C.name}`;
   // life / resource bars fill from the left; life pulses below 30%
   const hpF=clamp(p.hp/s.life,0,1);
   $('hpb').firstElementChild.style.width=hpF*100+'%';$('hpb').lastElementChild.textContent=`${Math.ceil(Math.max(0,p.hp))} / ${Math.round(s.life)}`;
@@ -28,10 +28,10 @@ function updateHud(){
   $('mpb').firstElementChild.style.width=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.textContent=`${Math.floor(p.res)} / ${Math.round(s.res)}`;
   $('hpb').title=`Life ${Math.ceil(p.hp)} / ${Math.round(s.life)}`;$('mpb').title=`${C.res} ${Math.floor(p.res)} / ${Math.round(s.res)}`;
   $('dodgeBtn').querySelector('.cd').style.setProperty('--p',p.dodgeCd>0?p.dodgeCd/DODGE_CD:0);
-  $('xpb').firstElementChild.style.width=(c.lvl>=50?100:c.xp/xpNeed(c.lvl)*100)+'%';
+  $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
   const left=G.enemies.filter(e=>!e.dead).length;
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where}${D%5===0?' · Boss':''} · ${left} foes`;
+  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`;
   const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);
@@ -75,8 +75,8 @@ addEventListener('keydown',ev=>{if(document.activeElement&&document.activeElemen
   keys[ev.code]=true;
   if(!G.char||!G.p)return;
   if(ev.code==='KeyQ')usePotion();if(ev.code==='Space'||ev.code==='ShiftLeft'||ev.code==='ShiftRight'){ev.preventDefault();tryDodge();}if(ev.code==='KeyI')toggleInv();if(ev.code==='KeyK')toggleSkills();
-  if(ev.code==='KeyE'){if(G.nearFeat)useFeature();else if(!$('shopBtn').classList.contains('hidden'))openShop();else if(!$('stashBtn').classList.contains('hidden'))openStash();else if(!$('smithBtn').classList.contains('hidden'))openSmith();else if(!$('descBtn').classList.contains('hidden'))descend();}
-  if(ev.code==='Escape'){if(!$('bookOv').classList.contains('hidden'))closeBook();else if(!$('smithAsk').classList.contains('hidden'))cancelBulk();else if(!$('pouchOv').classList.contains('hidden'))closePouch();else if(!$('itemOv').classList.contains('hidden'))closeItem();else if(!$('shopOv').classList.contains('hidden'))closeShop();else if(!$('stashOv').classList.contains('hidden'))closeStash();else if(!$('smithOv').classList.contains('hidden'))closeSmith();else if(!$('invOv').classList.contains('hidden'))toggleInv();else if(!$('skOv').classList.contains('hidden'))toggleSkills();else toggleMenu();}});
+  if(ev.code==='KeyE'){if(G.nearFeat)useFeature();else if(!$('shopBtn').classList.contains('hidden'))openShop();else if(!$('stashBtn').classList.contains('hidden'))openStash();else if(!$('smithBtn').classList.contains('hidden'))openSmith();else if(!$('wayBtn').classList.contains('hidden'))openWay();else if(!$('descBtn').classList.contains('hidden'))descend();}
+  if(ev.code==='Escape'){if(!$('bookOv').classList.contains('hidden'))closeBook();else if(!$('smithAsk').classList.contains('hidden'))cancelBulk();else if(!$('pouchOv').classList.contains('hidden'))closePouch();else if(!$('itemOv').classList.contains('hidden'))closeItem();else if(!$('shopOv').classList.contains('hidden'))closeShop();else if(!$('stashOv').classList.contains('hidden'))closeStash();else if(!$('smithOv').classList.contains('hidden'))closeSmith();else if(!$('wayOv').classList.contains('hidden'))closeWay();else if(!$('invOv').classList.contains('hidden'))toggleInv();else if(!$('skOv').classList.contains('hidden'))toggleSkills();else toggleMenu();}});
 addEventListener('keyup',ev=>{keys[ev.code]=false;});
 // Losing focus (alt-tab, notification, app switch) swallows keyup/mouseup — release all inputs.
 function releaseInputs(){for(const k in keys)keys[k]=false;held.fill(false);skillEls.forEach(el=>el.classList.remove('pressed'));mouseJoy=false;joyEnd();}
@@ -92,20 +92,20 @@ tap('resumeBtn',toggleMenu);
 tap('quitBtn',()=>{saveChar();G.paused=true;G.char=null;G.p=null;G.mapCv=null;$('menuOv').classList.add('hidden');$('hud').classList.add('hidden');showTitle();});
 tap('actOv',hideActTitle);
 function showVictory(){const c=G.char;
-  $('winStats').innerHTML=[['Hero',`${esc(c.name)}, Level ${c.lvl} ${CLASSES[c.cls].name}`],['Monsters slain',c.kills||0],['Deaths',c.deaths||0],['Gold',c.gold]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
+  $('winStats').innerHTML=[['Hero',`${esc(c.name)}, Level ${lvlLabel(c)} ${CLASSES[c.cls].name}`],['Monsters slain',c.kills||0],['Deaths',c.deaths||0],['Gold',c.gold]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
 tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);startDepth(G.depth);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});
-function anyPanel(){return ['invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
+function anyPanel(){return ['invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','wayOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
 function setPause(){const panel=anyPanel();G.paused=panel||!G.char;for(let i=0;i<5;i++)held[i]=false;if(panel)G.texts=[];}
 let actTimer=0;
 function showActTitle(d){const A=ACTS[actIdx(d)],cy=cycleOf(d);
   $('actN').textContent=d>25?'THE ENDLESS DEPTHS':'ACT '+roman(actIdx(d)+1);$('actT').textContent=A.name;$('actS').textContent=d>25?`Endless ${d-25}: the deep grows stronger`:A.sub;
   const o=$('actOv');o.style.setProperty('--act',A.col);o.classList.remove('hidden');releaseInputs();setPause();clearTimeout(actTimer);actTimer=setTimeout(hideActTitle,3800);}
 function hideActTitle(){clearTimeout(actTimer);const o=$('actOv');if(o.classList.contains('hidden'))return;o.classList.add('hidden');setPause();}
-function toggleMenu(){if(!G.char)return;$('menuOv').classList.toggle('hidden');if(!$('menuOv').classList.contains('hidden')){renderFilter();renderSettings();}setPause();}
+function toggleMenu(){if(!G.char)return;$('menuOv').classList.toggle('hidden');if(!$('menuOv').classList.contains('hidden')){renderFilter();renderSettings();$('townBtn').classList.toggle('hidden',!!G.inTown);}setPause();}
 // Loot filter controls in the menu (see lootHidden).
 const FILTER_OPTS=[[0,'Off'],['auto','Auto'],[2,'II'],[3,'III'],[4,'IV'],[5,'V']];
 function setFilter(ch){const c=G.char;c.filter=Object.assign({min:0,rares:true},c.filter,ch);saveChar();renderFilter();}
@@ -298,7 +298,7 @@ function renderSettings(){
   $('setLefty').classList.toggle('on',SETTINGS.lefty);$('setLefty').onclick=()=>setSetting('lefty',!SETTINGS.lefty);}
 function showTitle(){
   $('titleOv').classList.remove('hidden');
-  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${c.lvl} ${CLASSES[c.cls].name} · ${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
+  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
   $('slots').querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>startGame(SAVES[+b.dataset.play]));
   $('slots').querySelectorAll('[data-del]').forEach(b=>{let armed=false;b.onclick=()=>{if(!armed){armed=true;b.textContent='Delete?';setTimeout(()=>{armed=false;b.textContent='✕';},2500);return;}SAVES.splice(+b.dataset.del,1);storeSaves();showTitle();};});
   $('newBtn').classList.toggle('dis',SAVES.length>=6);

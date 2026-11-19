@@ -34,7 +34,7 @@ function render(){
   if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
   // hazards & telegraphs
-  for(const h of G.hazards){const g=ctx.createRadialGradient(h.x,h.y,5,h.x,h.y,h.r);g.addColorStop(0,'#ff6a1a66');g.addColorStop(1,'#ff3a0a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();}
+  for(const h of G.hazards){const g=ctx.createRadialGradient(h.x,h.y,5,h.x,h.y,h.r);g.addColorStop(0,h.rot?'#8fd04066':'#ff6a1a66');g.addColorStop(1,h.rot?'#6ab02000':'#ff3a0a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();}
   for(const f of G.fx)if(f.type==='tline'){const t=f.t/f.max;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.strokeStyle=f.col;ctx.globalAlpha=0.7;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);ctx.globalAlpha=0.2;ctx.fillStyle=f.col;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.restore();ctx.globalAlpha=1;}
   for(const f of G.fx)if(f.type==='tele'){const t=f.t/f.max;ctx.strokeStyle=f.col;ctx.globalAlpha=0.8;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();ctx.fillStyle=f.col;ctx.globalAlpha=0.18;ctx.beginPath();ctx.arc(f.x,f.y,f.r*t,0,TAU);ctx.fill();ctx.globalAlpha=1;}
   for(const h of G.ehaz){if(!onScreen(h.x,h.y,h.r))continue;const a=Math.min(1,h.t/h.max*2)*(0.8+0.2*Math.sin(G.time*5+h.x)),poi=h.kind==='poison';
@@ -356,6 +356,7 @@ function drawMinimap(){
   const P=G.portal;const pti=Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE);if(G.explored[pti]){mctx.fillStyle=P.active?'#b27bff':'#777';mctx.beginPath();mctx.arc(P.x/TILE*s,P.y/TILE*s,6,0,TAU);mctx.fill();}
   if(G.inTown&&G.smith){mctx.fillStyle='#e8703a';mctx.beginPath();mctx.arc(G.smith.x/TILE*s,G.smith.y/TILE*s,4.5,0,TAU);mctx.fill();}
   if(G.inTown&&G.stash){mctx.fillStyle='#b07a3a';mctx.fillRect(G.stash.x/TILE*s-4,G.stash.y/TILE*s-4,8,8);}
+  if(G.inTown&&G.waystone){mctx.fillStyle='#4ad8e8';mctx.beginPath();mctx.arc(G.waystone.x/TILE*s,G.waystone.y/TILE*s,4.5,0,TAU);mctx.fill();}
   if(G.inTown&&G.merchant){mctx.fillStyle='#f2d04a';mctx.beginPath();mctx.arc(G.merchant.x/TILE*s,G.merchant.y/TILE*s,5,0,TAU);mctx.fill();}
   mctx.fillStyle='#e33';for(const e of G.enemies){if(e.dead||e.hidden)continue;if(G.explored[Math.floor(e.y/TILE)*MW+Math.floor(e.x/TILE)]&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<400)mctx.fillRect(e.x/TILE*s-2,e.y/TILE*s-2,4,4);}
   if(!G.inTown)minimapFeatures(s);

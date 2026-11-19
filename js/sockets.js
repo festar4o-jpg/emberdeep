@@ -158,9 +158,10 @@ function closeBook(){$('bookOv').classList.add('hidden');setPause();}
 let bookTab='rb';
 function setBookTab(t){bookTab=t;renderBook();}
 function renderBook(){
-  $('bookTabs').innerHTML=[['rb','Runebinds'],['sets','Sets']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
+  $('bookTabs').innerHTML=[['rb','Runebinds'],['sets','Sets'],['boss','Bosses']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
   $('bookTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>setBookTab(el.dataset.t));
   if(bookTab==='sets')return renderSetBook();
+  if(bookTab==='boss')return renderBossBook();
   const known=Object.keys(RUNEBINDS).filter(recipeKnown).length,made=Object.keys(BOOK.made).length;
   $('bookSub').textContent=`${known}/10 recipes known · ${made} forged. A recipe's runes appear as you find them. Socket them in this order into a white item with exactly that many sockets.`;
   $('bookList').innerHTML=Object.entries(RUNEBINDS).map(([k,R])=>{const kn=recipeKnown(k);
@@ -180,6 +181,16 @@ function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS)
       <div class="fdim">${who} · ${S.items.length} pieces · ${where}</div>
       <div class="rrow">${S.items.map(si=>BOOK.sets[si]?`<span class="rchip on">${esc(SET_ITEMS[si].name)}</span>`:`<span class="rchip q">? ${TYPES[SET_ITEMS[si].type].name}</span>`).join('')}</div>
       ${kn?(S.bonus||[]).map(([n,l])=>`<div>(${n}) ${txt(l)}</div>`).join('')+(S.full&&S.full.length?`<div style="color:#3fe05a">Full set: ${txt(S.full)}</div>`:''):''}</div></div>`;}).join('');}
+// Bosses tab: what each act boss drops that nothing else does (farm them through the Waystone).
+function renderBossBook(){const c=G.char;
+  $('bookSub').textContent=`Every act boss can drop its own trophy unique (${Math.round(TROPHY_CH*100)}%) and a set piece (${Math.round(BOSS_SET_CH*100)}%), on top of its usual loot. Item Drop Chance raises both; the Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
+  $('bookList').innerHTML=BOSS_UQ.map((k,a)=>{const U=UNIQUES[k],A=ACTS[a],reached=c&&(c.maxDepth||1)>=a*5+5;
+    const sets=Object.keys(SETS).filter(s=>SETS[s].act<=a+1&&(!SETS[s].cls||!c||SETS[s].cls===c.cls)).map(s=>SETS[s].name);
+    return `<div class="slot rb${reached?'':' unk'}"><div class="info"><b style="color:${A.col}">${esc(A.boss)}</b> <span class="fdim">Act ${a+1} · depth ${a+1}-5${reached?'':' · not reached yet'}</span>
+      <div style="color:${RCOL[3]}">${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>
+      ${U.pw.map(p=>`<div class="fdim">✦ ${esc(UPOW[p].t)}</div>`).join('')}
+      ${a===4?`<div class="fdim">Also: 40% extra Relics of the Ember Core piece</div>`:''}
+      <div class="fdim">Set pieces from: ${sets.map(esc).join(', ')||'none'}</div></div></div>`;}).join('');}
 tap('pouchBtn',()=>openPouch(null));
 tap('pouchClose',closePouch);
 tap('bookBtn',openBook);

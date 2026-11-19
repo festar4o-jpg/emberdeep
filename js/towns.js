@@ -43,6 +43,7 @@ function genTown(){
   G.merchant={x:R.cx*TILE,y:(R.y+3.5)*TILE};
   G.stash={x:(R.x+4)*TILE,y:(R.y+3.5)*TILE};
   G.smith={x:(R.cx+0.5)*TILE,y:(R.y+R.h-2.5)*TILE};
+  G.waystone={x:(R.x+R.w-5)*TILE,y:(R.y+R.h-3)*TILE};
   const doors=[];
   // houses: a row above the plaza (fronts facing it) and a row below (roofs and backs)
   for(const [j,front] of [[R.y-4,true],[R.y+R.h,false]]){let i=R.x-1+randi(0,1);
@@ -51,9 +52,10 @@ function genTown(){
       i+=w+randi(1,2);}}
   // gate posts where the road meets the outskirts
   lights.push({x:(R.x-5)*TILE,y:(R.cy-1.2)*TILE-30,r:70},{x:(R.x-5)*TILE,y:(R.cy+2.2)*TILE-30,r:70});
+  lights.push({x:G.waystone.x,y:G.waystone.y-20,r:90,way:1});
   lights.push({x:R.cx*TILE,y:R.cy*TILE,r:T.amb==='snow'||T.amb==='embers'?170:110,big:1});
   // props inside the plaza: around the edges, never near the stalls, the paths or the portal, and never cutting the plaza in two
-  const keep=[[R.x+0.5,R.cy+0.5,2.6],[R.x+R.w-2.5,R.cy+0.5,3],[R.cx,R.y+3,4],[R.x+4,R.y+3.5,2.4],[R.cx+0.5,R.y+R.h-2.5,3],[R.cx,R.cy,3.2],...doors];
+  const keep=[[R.x+0.5,R.cy+0.5,2.6],[R.x+R.w-2.5,R.cy+0.5,3],[R.cx,R.y+3,4],[R.x+4,R.y+3.5,2.4],[R.cx+0.5,R.y+R.h-2.5,3],[R.cx,R.cy,3.2],[R.x+R.w-5,R.y+R.h-3,2.4],...doors];
   const free=(i,j)=>g[k(i,j)]===0&&!keep.some(([x,y,r])=>Math.hypot(i+0.5-x,j+0.5-y)<r);
   const floorN=()=>{let n=0;for(const v of g)if(v===0)n++;return n;};
   const reach=()=>{const s=k(R.x+1,R.cy),seen=new Uint8Array(MW*MH),q=[s];seen[s]=1;let n=1;
@@ -113,11 +115,21 @@ function drawTownLive(onScreen){const W=G.town;if(!W)return;const T=W.T,t=G.time
     else if(a==='flies'){const g=ctx.createRadialGradient(cx,cy-30,2,cx,cy-30,26);g.addColorStop(0,`rgba(200,255,150,${0.75+0.2*Math.sin(t*3)})`);g.addColorStop(1,'rgba(120,255,120,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy-30,26,0,TAU);ctx.fill();}
     else if(a==='snow')flame(cx,cy-6,30,t,'255,170,80');
     else{ctx.fillStyle='#ffb040';for(let n=0;n<6;n++){const u=(t*0.8+n/6)%1;ctx.globalAlpha=(1-u)*0.8;ctx.beginPath();ctx.arc(cx+Math.sin(n*2.1+t)*16,cy-u*40,2+2*(1-u),0,TAU);ctx.fill();}ctx.globalAlpha=1;}}
-  for(const L of W.lights){if(L.win||L.big||L.shroom||!onScreen(L.x,L.y,40))continue;flame(L.x,L.y,9,t+L.x,T.flame);}
+  if(G.waystone&&onScreen(G.waystone.x,G.waystone.y,80))drawWaystone();
+  for(const L of W.lights){if(L.win||L.big||L.shroom||L.way||!onScreen(L.x,L.y,40))continue;flame(L.x,L.y,9,t+L.x,T.flame);}
 }
 function flame(x,y,s,t,rgb){const f=0.8+0.2*Math.sin(t*11)*Math.sin(t*7.3);
   for(const [k,c] of [[1,`rgba(${rgb},.85)`],[0.55,'rgba(255,240,190,.95)']]){const h=s*1.5*k*f,w=s*0.55*k;ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-w,y);
     ctx.quadraticCurveTo(x-w*0.9,y-h*0.5,x+Math.sin(t*6)*w*0.3,y-h);ctx.quadraticCurveTo(x+w*0.9,y-h*0.5,x+w,y);ctx.closePath();ctx.fill();}}
+// The Waystone: a rune-carved stone with a turning ring of light (same in every town).
+function drawWaystone(){const {x,y}=G.waystone,t=G.time;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(x,y+12,26,8,0,0,TAU);ctx.fill();
+  ctx.strokeStyle='rgba(90,220,255,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+8,30,10,0,0,TAU);ctx.stroke();
+  for(let k=0;k<6;k++){const a=t*1.2+k/6*TAU;ctx.fillStyle=`rgba(150,240,255,${0.5+0.5*Math.sin(t*3+k)})`;ctx.fillRect(x+Math.cos(a)*30-2,y+8+Math.sin(a)*10-2,4,4);}
+  ctx.fillStyle='#4a5058';ctx.strokeStyle='#111418';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x-14,y+10);ctx.lineTo(x-11,y-30);ctx.lineTo(x,y-42);ctx.lineTo(x+11,y-30);ctx.lineTo(x+14,y+10);ctx.closePath();ctx.fill();ctx.stroke();
+  const g=0.6+0.4*Math.sin(t*2.2);ctx.strokeStyle=`rgba(110,230,255,${g})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y-32);ctx.lineTo(x-5,y-20);ctx.lineTo(x+5,y-12);ctx.lineTo(x,y);ctx.moveTo(x-6,y-26);ctx.lineTo(x+6,y-26);ctx.stroke();
+  ctx.fillStyle=`rgba(180,250,255,${g})`;ctx.beginPath();ctx.arc(x,y-48-Math.sin(t*2)*3,4,0,TAU);ctx.fill();
+  ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Waystone',x,y-60);ctx.fillStyle='#7fe4f4';ctx.fillText('Waystone',x,y-60);}
 // A townsperson: round body, head and an act-specific hat; bobs while walking; a speech bubble when talking.
 function drawFolk(f){const T=G.town.T,bob=f.wait>0||f.sayT>0?0:Math.abs(Math.sin(f.step))*2;
   ctx.save();ctx.translate(f.x,f.y-bob);
@@ -148,7 +160,7 @@ function drawTownAmb(){const W=G.town;if(!W)return;const A=W.T.amb;
 // Town lights shine through the dark (screen space, added on top of the darkness).
 function drawTownGlow(){const W=G.town;if(!W)return;const T=W.T;ctx.globalCompositeOperation='lighter';
   for(const L of W.lights){const sx=(L.x-G.cam.x)*Z+CW/2,sy=(L.y-G.cam.y)*Z+CH/2,r=L.r*Z;if(sx<-r||sy<-r||sx>CW+r||sy>CH+r)continue;
-    const f=L.win?0.85+0.15*Math.sin(G.time*1.3+L.x):0.8+0.2*Math.sin(G.time*9+L.x)*Math.sin(G.time*5.7+L.y),rgb=L.shroom?'120,255,190':T.flame;
+    const f=L.win?0.85+0.15*Math.sin(G.time*1.3+L.x):0.8+0.2*Math.sin(G.time*9+L.x)*Math.sin(G.time*5.7+L.y),rgb=L.shroom?'120,255,190':L.way?'90,220,255':T.flame;
     const g=ctx.createRadialGradient(sx,sy,1,sx,sy,r);g.addColorStop(0,`rgba(${rgb},${(L.win?0.22:0.3)*f})`);g.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,r,0,TAU);ctx.fill();}
   ctx.globalCompositeOperation='source-over';}
 

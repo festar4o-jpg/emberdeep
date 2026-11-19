@@ -226,13 +226,16 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
 }
 function rollAff(k,ilvl,rm=1){const a=AFF[k];const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
 // tier: base tier 1..5 for tiered types (default: the tier of the item level's act). forceSet: make this set piece.
-function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet){
+// forceUq: make this unique (boss trophies, which never come from the normal unique pool).
+function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,forceUq){
   if(forceSet){forceType=SET_ITEMS[forceSet].type;forceWt=SET_ITEMS[forceSet].wt;}
+  if(forceUq){forceType=UNIQUES[forceUq].type;forceWt=UNIQUES[forceUq].wt;}
   const slot=forceType||pickType(cls); // item.slot holds the item TYPE (weapon, shield, body, ring…)
   const rr=rollRarity(boost);let rarity=forceSet?5:rr===5?(minRarity>=3?3:5):Math.max(minRarity,rr); // a guaranteed unique stays a unique
   // uniques are fixed named items (see uniques.js); with none for this type, class and act the item becomes a rare
   const uact=clamp(Math.round(tier||tierOfLvl(ilvl)),1,5);let U=null;
-  if(rarity===3){const ks=uniquesFor(slot,cls,uact).filter(k=>!forceWt||UNIQUES[k].wt===forceWt);if(ks.length){U=pick(ks);forceWt=UNIQUES[U].wt||forceWt;}else rarity=2;}
+  if(forceUq){rarity=3;U=forceUq;}
+  else if(rarity===3){const ks=uniquesFor(slot,cls,uact).filter(k=>!forceWt||UNIQUES[k].wt===forceWt);if(ks.length){U=pick(ks);forceWt=UNIQUES[U].wt||forceWt;}else rarity=2;}
   // set pieces: one that can drop for this type, class and act (and zone), or a rare when there is none
   let SI=forceSet||null;if(rarity===5&&!SI){const ks=setItemsFor(slot,cls,uact).filter(k=>!forceWt||SET_ITEMS[k].wt===forceWt);if(ks.length){SI=pick(ks);forceWt=SET_ITEMS[SI].wt||forceWt;}else rarity=2;}
   const FX=U?UNIQUES[U]:SI?SET_ITEMS[SI]:null; // fixed kind (body/focus) for named items
@@ -354,6 +357,7 @@ function calcStats(c,swap,at){
   if(!s.mh&&s.oh){s.mh=s.oh;s.oh=null;} // off-hand weapon with empty main hand acts as the main weapon
   if(s.mh&&s.oh){s.dmin=(s.mh.dmin+s.oh.dmin)/2;s.dmax=(s.mh.dmax+s.oh.dmax)/2;s.wspd=(s.mh.spd+s.oh.spd)/2*1.15;} // dual wield: alternate hands, +15% attack rate
   else if(s.mh){s.dmin=s.mh.dmin;s.dmax=s.mh.dmax;s.wspd=s.mh.spd;}
+  const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
   shrineStats(s);
   return s;
@@ -384,3 +388,6 @@ function compareLoot(c,it){
 const potFloor=()=>3+(G.stats?G.stats.pot:0);
 const potMax=()=>POT_MAX+(G.stats?G.stats.pot:0);
 function xpNeed(l){return Math.round(60*Math.pow(l,1.55));}
+// Paragon levels (after level 50, no cap): each costs a little more than the last and gives +1% damage and +5 Life.
+const MAX_LVL=50,PARA_DMG=1,PARA_LIFE=5;
+const paraNeed=p=>Math.round(xpNeed(MAX_LVL-1)*(1+0.04*p));
