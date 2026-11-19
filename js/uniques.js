@@ -2,31 +2,37 @@
 // Unique items: each one is a named item of a fixed type with 1–2 powers that change how a skill or the character
 // plays (the random affixes still roll on top). act = the first act / base tier it can drop in, so later acts add
 // stronger uniques to the pool. cls = whose skills the powers use (null: anyone). Class uniques only drop for that class.
+// Live numbers for a power's card: "m" times your average hit (weapon damage with your current gear, level and
+// damage bonuses, before crits), e.g. "20% weapon damage (≈34) per second".
+const pwHit=m=>{const s=G.stats;return s?Math.max(1,Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*m)):0;};
+const pwDet=(m,what)=>`${Math.round(m*100)}% weapon damage (≈${pwHit(m)})${what?' '+what:''}`;
+// Fire powers hit every 0.5 s for this much of your weapon damage per hit.
+const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14;
 const UPOW={
-  shockwave:{cls:'warden',t:'Cleave fires a shockwave forward that passes through enemies'},
+  shockwave:{cls:'warden',t:'Cleave fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes')},
   pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in'},
   bloodleap:{cls:'warden',t:'Leap Slam has no cooldown but costs 8% of your Life instead of Fury'},
-  counter:{cls:'warden',t:'Blocking an attack releases a shockwave around you'},
-  quake:{cls:'warden',t:'Leap Slam sets off Earthshatter where you land'},
+  counter:{cls:'warden',t:'Blocking an attack releases a shockwave around you',d:()=>pwDet(0.9,'to enemies around you')},
+  quake:{cls:'warden',t:'Leap Slam sets off Earthshatter where you land',d:()=>pwDet(3.2+0.4*(pwRank(4)-1),'in a wide area, stuns')},
   faultline:{cls:'warden',t:'Earthshatter cooldown is halved'},
   split:{cls:'arcanist',t:'Fireball splits into 3'},
-  frostward:{cls:'arcanist',t:'Frost Nova casts itself when you are hit (every 4s at most)'},
+  frostward:{cls:'arcanist',t:'Frost Nova casts itself when you are hit (every 4s at most)',d:()=>pwDet(0.8+0.1*(pwRank(2)-1),'to enemies around you, freezes')},
   endless:{cls:'arcanist',t:'Chain Lightning never stops bouncing while you have over 50% Mana'},
-  skyfall:{cls:'arcanist',t:'A Meteor falls on a nearby enemy every 8s'},
+  skyfall:{cls:'arcanist',t:'A Meteor falls on a nearby enemy every 8s',d:()=>pwDet(3.8+0.45*(pwRank(4)-1),'on impact')+' · then '+pwDet(2*(0.3+0.04*(pwRank(4)-1)),'per second for 3s')},
   blast:{cls:'arcanist',t:'Arcane Bolt explodes on impact'},
   homing:{cls:'arcanist',t:'Arcane Bolts seek out enemies'},
-  burnAura:{t:'Burning aura: enemies close to you take fire damage'},
-  lastBreath:{t:'Dropping below 30% Life heals you for 30% and blasts enemies away (every 30s at most)'},
-  fireTrail:{t:'You leave a trail of fire that burns enemies'},
+  burnAura:{t:'Burning aura: enemies close to you take fire damage',d:()=>pwDet(2*AURA_MULT,'per second to each enemy close to you')},
+  lastBreath:{t:'Dropping below 30% Life heals you for 30% and blasts enemies away (every 30s at most)',d:()=>pwDet(0.5,'to enemies around you')},
+  fireTrail:{t:'You leave a trail of fire that burns enemies',d:()=>pwDet(2*TRAIL_MULT,'per second to enemies in the fire')},
   potionReset:{t:'Drinking a potion resets all your skill cooldowns'},
   ouroboros:{t:'Skills have a 30% chance not to go on cooldown'},
   // set bonus powers
-  cinderCleave:{cls:'warden',t:'Cleave leaves burning ground'},
-  shatter:{cls:'arcanist',t:'Frozen enemies explode into ice shards when they die'},
+  cinderCleave:{cls:'warden',t:'Cleave leaves burning ground',d:()=>pwDet(2*CINDER_MULT,'per second to enemies on it')},
+  shatter:{cls:'arcanist',t:'Frozen enemies explode into ice shards when they die',d:()=>'8 shards, each '+pwDet(0.6,'')},
   stormweave:{cls:'arcanist',t:'Chain Lightning bounces 4 extra times'},
   oathspin:{cls:'warden',t:'Whirlwind lasts twice as long'},
   veilCrit:{t:'Critical hits heal you for 1% of your Life'},
-  coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies'}
+  coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')}
 };
 const UNIQUES={
   tremorblade:{name:'Tremorblade',type:'weapon',wt:'sword',cls:'warden',act:1,pw:['shockwave']},
@@ -176,10 +182,10 @@ function lastBreath(){const p=G.p,s=G.stats;if(p.lbCd>0||p.hp<=0||p.hp>=s.life*0
 function powerTick(dt){const p=G.p;if(p.dead)return;
   for(const k of ['counterCd','novaCd','lbCd'])if(p[k]>0)p[k]-=dt;
   if(G.inTown)return;
-  if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,0.15,{splashed:true,quiet:true});}}
+  if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,AURA_MULT,{splashed:true,quiet:true,dot:true});}}
   if(hasPw('fireTrail')){const L=p.trail||(p.trail={x:p.x,y:p.y});if(Math.hypot(p.x-L.x,p.y-L.y)>26){L.x=p.x;L.y=p.y;
     const tr=G.hazards.filter(h=>h.trail);if(tr.length>=14)G.hazards.splice(G.hazards.indexOf(tr[0]),1);
-    G.hazards.push({x:p.x,y:p.y,r:36,t:2.5,tick:0.25,mult:0.12,trail:true,quiet:true});}}
+    G.hazards.push({x:p.x,y:p.y,r:36,t:2.5,tick:0.25,mult:TRAIL_MULT,trail:true,quiet:true});}}
   if(hasPw('coreFlare')){p.flareT=(p.flareT==null?5:p.flareT)-dt;if(p.flareT<=0){p.flareT=5;aoe(p.x,p.y,170,1.6,{splashed:true});
     G.fx.push({type:'ring',x:p.x,y:p.y,r0:16,r1:175,t:0,max:0.4,col:'#ff6a1a'});burst(p.x,p.y,36,'#ffb04a',260);G.hazards.push({x:p.x,y:p.y,r:120,t:2,tick:0.25,mult:0.2,quiet:true});}}
   if(hasPw('skyfall')){p.skyT=(p.skyT==null?3:p.skyT)-dt;if(p.skyT<=0){const e=nearest(p.x,p.y,420);if(e){meteorAt(e.x,e.y);p.skyT=8;}else p.skyT=0.5;}}
@@ -188,7 +194,7 @@ const AURA_R=115;
 // Cinderguard Vow: a Cleave leaves a patch of burning ground in front of you (at most 8 patches at once).
 function cinderPatch(ang,reach){const p=G.p,x=p.x+Math.cos(ang)*reach*0.6,y=p.y+Math.sin(ang)*reach*0.6;
   const own=G.hazards.filter(h=>h.cinder);if(own.length>=8)G.hazards.splice(G.hazards.indexOf(own[0]),1);
-  G.hazards.push({x,y,r:48,t:2.5,tick:0.25,mult:0.14,cinder:true,quiet:true});}
+  G.hazards.push({x,y,r:48,t:2.5,tick:0.25,mult:CINDER_MULT,cinder:true,quiet:true});}
 // Frostbound Regalia: a frozen enemy that dies bursts into 8 piercing ice shards.
 function iceShards(e){const n=8;for(let k=0;k<n;k++){const a=k/n*TAU;
   G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:6,col:'#bff0ff',life:0.5,from:'p',mult:0.6,pierce:1,hits:new Set([e])});}

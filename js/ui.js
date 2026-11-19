@@ -154,7 +154,7 @@ function setHtml(it,c){const v=setView(it,c);
     `<div class="iset"><div class="sname">${esc(v.name)} <span class="fdim">(${v.n}/${v.total} worn)</span></div>`+v.pieces.map(p=>`<div class="spc${p.worn?' on':''}">${p.worn?'●':'○'} ${esc(p.name)}</div>`).join('')+
     v.bonus.map(b=>`<div class="sbon${b.on?' on':''}">${b.full?'Full set':`(${b.need})`}: ${esc(b.text)}</div>`).join('')+'</div>';}
 // A unique power line (orange); class powers on another class's character are marked as inactive.
-function powerHtml(k,c){const P=UPOW[k],off=P.cls&&P.cls!==c.cls;return `<div class="ipow${off?' off':''}">✦ ${esc(P.t)}${off?` <small>(${CLASSES[P.cls].name} only)</small>`:''}</div>`;}
+function powerHtml(k,c){const P=UPOW[k],off=P.cls&&P.cls!==c.cls;return `<div class="ipow${off?' off':''}">✦ ${esc(P.t)}${off?` <small>(${CLASSES[P.cls].name} only)</small>`:''}${P.d&&G.stats?`<span class="pdet">${esc(P.d())}</span>`:''}</div>`;}
 function openItem(it,equipped,price){
   if(it.slot==='charm'&&price==null)return openCharm(it,equipped==='charm');
   const c=G.char;

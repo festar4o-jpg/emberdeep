@@ -8,9 +8,10 @@ function hitEnemy(e,mult,opts={}){
   const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));e.hp-=r.d;
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
-  if(st.bleed>0&&Math.random()*100<st.bleed){const dps=r.d*0.8/3;e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
-  if(st.stunCh>0&&!(e.stunCd>0)&&Math.random()*100<st.stunCh){e.stun=Math.max(e.stun,e.type==='boss'?st.stunDur*0.3:st.stunDur);e.stunCd=1.5;floatText(e.x,e.y-e.r-20,'Stun','#ffd54a',false);}
+  if(st.bleed>0&&!opts.dot&&Math.random()*100<st.bleed){const dps=r.d*0.8/3;e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
+  if(st.stunCh>0&&!opts.dot&&!(e.stunCd>0)&&Math.random()*100<st.stunCh){e.stun=Math.max(e.stun,e.type==='boss'?st.stunDur*0.3:st.stunDur);e.stunCd=1.5;floatText(e.x,e.y-e.r-20,'Stun','#ffd54a',false);}
   if(!opts.quiet)floatText(e.x+rand(-8,8),e.y-e.r-6,r.d,r.crit?'#ffd54a':'#fff',r.crit);
+  else if(opts.dot)floatText(e.x+rand(-10,10),e.y-e.r-4,r.d,'#ff9a4a',false); // burning: small orange numbers
   if(G.stats.loh&&!opts.splashed)healPlayer(G.stats.loh,true);
   if(r.crit&&!opts.splashed&&hasPw('veilCrit'))healPlayer(G.stats.life*0.01,true);
   if(opts.stun&&e.type!=='boss')e.stun=Math.max(e.stun,opts.stun);
@@ -231,7 +232,7 @@ function update(dt){
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
-  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:'#ff7a2a',s:3});}
+  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:'#ff7a2a',s:3});}
   G.hazards=G.hazards.filter(h=>h.t>0);
   for(const dl of G.delayed){dl.t-=dt;if(dl.t<=0&&!dl.done){dl.done=true;dl.fn();}}
   G.delayed=G.delayed.filter(dl=>!dl.done);
