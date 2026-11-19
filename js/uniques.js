@@ -5,33 +5,34 @@
 // Live numbers for a power's card: "m" times your average hit (weapon damage with your current gear, level and
 // damage bonuses, before crits), e.g. "20% weapon damage (≈34) per second".
 const pwHit=m=>{const s=G.stats;return s?Math.max(1,Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*m)):0;};
+const pwLife=f=>G.stats?Math.round(G.stats.life*f):0;
 const pwDet=(m,what)=>`${Math.round(m*100)}% weapon damage (≈${pwHit(m)})${what?' '+what:''}`;
 // Fire powers hit every 0.5 s for this much of your weapon damage per hit.
 const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14;
 const UPOW={
   shockwave:{cls:'warden',t:'Cleave fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes')},
-  pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in'},
-  bloodleap:{cls:'warden',t:'Leap Slam has no cooldown but costs 8% of your Life instead of Fury'},
+  pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in',d:()=>'Pulls from almost 3× Whirlwind\'s reach, 4 times per second (heavy monsters half as far, bosses a quarter)'},
+  bloodleap:{cls:'warden',t:'Leap Slam has no cooldown but costs 8% of your Life instead of Fury',d:()=>`Costs ${pwLife(0.08)} Life per leap now · `+pwDet(1.8+0.22*(pwRank(1)-1),'and stuns')},
   counter:{cls:'warden',t:'Blocking an attack releases a shockwave around you',d:()=>pwDet(0.9,'to enemies around you')},
   quake:{cls:'warden',t:'Leap Slam sets off Earthshatter where you land',d:()=>pwDet(3.2+0.4*(pwRank(4)-1),'in a wide area, stuns')},
-  faultline:{cls:'warden',t:'Earthshatter cooldown is halved'},
-  split:{cls:'arcanist',t:'Fireball splits into 3'},
+  faultline:{cls:'warden',t:'Earthshatter cooldown is halved',d:()=>{const c=SKILLS.warden[4].cd*(1-(G.stats.cdr||0)/100);return `Cooldown ${c.toFixed(1)}s → ${(c/2).toFixed(1)}s · `+pwDet(3.2+0.4*(pwRank(4)-1),'per quake');}},
+  split:{cls:'arcanist',t:'Fireball splits into 3',d:()=>'3 fireballs, each '+pwDet(0.75*(1.7+0.22*(pwRank(1)-1)),'in an area')+' (one normal Fireball: '+pwHit(1.7+0.22*(pwRank(1)-1))+')'},
   frostward:{cls:'arcanist',t:'Frost Nova casts itself when you are hit (every 4s at most)',d:()=>pwDet(0.8+0.1*(pwRank(2)-1),'to enemies around you, freezes')},
-  endless:{cls:'arcanist',t:'Chain Lightning never stops bouncing while you have over 50% Mana'},
+  endless:{cls:'arcanist',t:'Chain Lightning never stops bouncing while you have over 50% Mana',d:()=>`Up to 30 jumps instead of ${Math.min(8,3+Math.floor((pwRank(3)-1)/2))}, each `+pwDet(1.25+0.15*(pwRank(3)-1),'')},
   skyfall:{cls:'arcanist',t:'A Meteor falls on a nearby enemy every 8s',d:()=>pwDet(3.8+0.45*(pwRank(4)-1),'on impact')+' · then '+pwDet(2*(0.3+0.04*(pwRank(4)-1)),'per second for 3s')},
-  blast:{cls:'arcanist',t:'Arcane Bolt explodes on impact'},
-  homing:{cls:'arcanist',t:'Arcane Bolts seek out enemies'},
+  blast:{cls:'arcanist',t:'Arcane Bolt explodes on impact',d:()=>'The explosion deals '+pwDet(0.95+0.12*(pwRank(0)-1),'to every enemy around the hit')},
+  homing:{cls:'arcanist',t:'Arcane Bolts seek out enemies',d:()=>'Bolts curve toward the nearest enemy (same damage: '+pwDet(0.95+0.12*(pwRank(0)-1),'')+')'},
   burnAura:{t:'Burning aura: enemies close to you take fire damage',d:()=>pwDet(2*AURA_MULT,'per second to each enemy close to you')},
-  lastBreath:{t:'Dropping below 30% Life heals you for 30% and blasts enemies away (every 30s at most)',d:()=>pwDet(0.5,'to enemies around you')},
+  lastBreath:{t:'Dropping below 30% Life heals you for 30% and blasts enemies away (every 30s at most)',d:()=>`Heals ${pwLife(0.3)} Life · blast `+pwDet(0.5,'to enemies around you')},
   fireTrail:{t:'You leave a trail of fire that burns enemies',d:()=>pwDet(2*TRAIL_MULT,'per second to enemies in the fire')},
-  potionReset:{t:'Drinking a potion resets all your skill cooldowns'},
-  ouroboros:{t:'Skills have a 30% chance not to go on cooldown'},
+  potionReset:{t:'Drinking a potion resets all your skill cooldowns',d:()=>`Each potion also heals ${pwLife(0.45)} Life (45%)`},
+  ouroboros:{t:'Skills have a 30% chance not to go on cooldown',d:()=>'About 3 of every 10 skill casts are ready again at once (not the basic attack)'},
   // set bonus powers
   cinderCleave:{cls:'warden',t:'Cleave leaves burning ground',d:()=>pwDet(2*CINDER_MULT,'per second to enemies on it')},
   shatter:{cls:'arcanist',t:'Frozen enemies explode into ice shards when they die',d:()=>'8 shards, each '+pwDet(0.6,'')},
-  stormweave:{cls:'arcanist',t:'Chain Lightning bounces 4 extra times'},
-  oathspin:{cls:'warden',t:'Whirlwind lasts twice as long'},
-  veilCrit:{t:'Critical hits heal you for 1% of your Life'},
+  stormweave:{cls:'arcanist',t:'Chain Lightning bounces 4 extra times',d:()=>{const n=Math.min(8,3+Math.floor((pwRank(3)-1)/2));return `${n} → ${n+4} enemies, each `+pwDet(1.25+0.15*(pwRank(3)-1),'');}},
+  oathspin:{cls:'warden',t:'Whirlwind lasts twice as long',d:()=>{const t=2+0.1*(pwRank(2)-1);return `${t.toFixed(1)}s → ${(2*t).toFixed(1)}s of spinning, `+pwDet(0.5+0.07*(pwRank(2)-1),'4 times per second');}},
+  veilCrit:{t:'Critical hits heal you for 1% of your Life',d:()=>`${pwLife(0.01)} Life per critical hit (${Math.round(G.stats.crit)}% crit chance)`},
   coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')}
 };
 const UNIQUES={
