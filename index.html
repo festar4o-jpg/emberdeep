@@ -64,6 +64,9 @@
   <p class="sub">Descend. Loot. Grow stronger.</p>
   <div id="slots"></div>
   <div class="btn wide" id="newBtn">+ New Character</div>
+  <div class="row" id="backupRow"><div class="btn sm" id="backupBtn">💾 Backup</div><div class="btn sm" id="restoreBtn">📂 Restore backup</div></div>
+  <div class="fdim ver" id="backupInfo"></div>
+  <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
 </div></div>
 
 <div id="createOv" class="overlay hidden"><div class="panel">
@@ -227,6 +230,7 @@
 <script src="js/charms.js"></script>
 <script src="js/smith.js"></script>
 <script src="js/encounters.js"></script>
+<script src="js/backup.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ function frame(now){
   if(G.char&&G.p){updateHud();G.mmT-=dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}
   requestAnimationFrame(frame);
 }
-migrateSaves();loadStash();loadBook();loadSettings();
+migrateSaves();loadStash();loadBook();loadSettings();setupBackupUi();
 resize();showTitle();requestAnimationFrame(frame);
 $('verTxt').textContent='Emberdeep v'+GAME_VERSION;
 if(installedApp())$('startOv').classList.add('hidden'); // the installed app already opens fullscreen in landscape

@@ -282,7 +282,7 @@ const SETTINGS_KEY='emberdeep_settings',JOY_SIZES={s:44,m:55,l:68};
 let SETTINGS={joy:'m',lefty:false};
 function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true};}catch(e){}applySettings();}
 const SETTINGS_NOW=()=>SETTINGS; // (tests: SETTINGS is a let)
-function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}}
+function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}backupSoon();}
 function setSetting(k,v){SETTINGS[k]=v;storeSettings();releaseInputs();applySettings();renderSettings();}
 // Left-handed mode mirrors the controls: joystick on the right, skill arc and dodge on the left.
 function applySettings(){document.body.classList.toggle('lefty',SETTINGS.lefty);const R=joyR();$('joy').style.setProperty('--jr',R+'px');

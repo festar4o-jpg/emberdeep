@@ -14,11 +14,13 @@ const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;r
 
 // ---------- saves ----------
 // Game version: shown in the pause menu; bump it (and VERSION in sw.js) after every change.
-const GAME_VERSION='1.0.6';
+const GAME_VERSION='1.0.7';
 const SAVE_KEY='emberdeep_v1';
 let SAVES=[];
 try{SAVES=JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){SAVES=[];}
-function storeSaves(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVES));}catch(e){}}
+// backupSoon(): every store*() calls it; js/backup.js sets the hook (the Android app copies saves outside the app)
+let backupHook=null;const backupSoon=()=>{if(backupHook)backupHook();};
+function storeSaves(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVES));}catch(e){}backupSoon();}
 function saveChar(){if(!G.char)return;if(G.p)G.char.potions=G.p.potions;const i=SAVES.findIndex(c=>c.id===G.char.id);if(i>=0)SAVES[i]=G.char;else SAVES.push(G.char);storeSaves();}
 
 // ---------- game state ----------

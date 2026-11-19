@@ -85,7 +85,7 @@ function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(b&
 // Records set pieces in the book the first time any character gets one.
 function noteSetPieces(items){let n=0;for(const it of items)if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(n)storeBook();return n;}
 function noteSetPiece(it){if(noteSetPieces([it]))toast('New set piece!',`${it.name} · ${SETS[setOf(it)].name}`);}
-function storeBook(){try{localStorage.setItem(BOOK_KEY,JSON.stringify(BOOK));}catch(e){}}
+function storeBook(){try{localStorage.setItem(BOOK_KEY,JSON.stringify(BOOK));}catch(e){}backupSoon();}
 const recipeKnown=k=>!!BOOK.made[k]||RUNEBINDS[k].runes.every(r=>BOOK.runes[r]);
 
 // ---------- drops ----------
