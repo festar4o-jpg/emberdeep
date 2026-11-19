@@ -79,7 +79,8 @@ function tryCast(i){
   if(lc?p.hp<=lc+1:p.res<sk.cost)return;
   if(lc){p.hp-=lc;floatText(p.x,p.y-p.r-8,'-'+lc,'#e04060',false);}else p.res-=sk.cost;
   p.cd[i]=skillCd(i);p.cdMax[i]=p.cd[i];
-  if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);}
+  if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);
+    if(combo('Eye of the Storm'))for(let j=1;j<5;j++)if(j!==i&&p.cd[j]>0)p.cd[j]=Math.max(0,p.cd[j]-1);}
   sk.cast(r);
   if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
 }

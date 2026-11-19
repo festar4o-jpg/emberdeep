@@ -1,7 +1,7 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0)return;
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
@@ -14,6 +14,8 @@ function hitEnemy(e,mult,opts={}){
   else if(opts.dot)floatText(e.x+rand(-10,10),e.y-e.r-4,r.d,'#ff9a4a',false); // burning: small orange numbers
   if(G.stats.loh&&!opts.splashed)healPlayer(G.stats.loh,true);
   if(r.crit&&!opts.splashed&&hasPw('veilCrit'))healPlayer(G.stats.life*0.01,true);
+  if(r.crit&&!opts.splashed&&!opts.dot&&hasPw('stormbeat'))stormbeat();
+  if(opts.ignite||(hasPw('ignite')&&!opts.splashed&&!opts.dot))ignite(e);
   if(opts.stun&&e.type!=='boss')e.stun=Math.max(e.stun,opts.stun);
   if(opts.stun&&e.type==='boss')e.stun=Math.max(e.stun,opts.stun*0.3);
   if(opts.freeze)e.frozen=Math.max(e.frozen,e.type==='boss'?opts.freeze*0.35:opts.freeze);
@@ -34,6 +36,7 @@ function killEnemy(e){
   const T0=ETYPES[e.type];
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
+  if(hasPw('bloodrage'))healPlayer(G.stats.life*0.02,true);
   if(e.frozen>0&&hasPw('shatter'))iceShards(e);
   if(T0.split&&(e.gen||0)<2)for(let k=0;k<2;k++){const a=rand(0,TAU);let x=e.x+Math.cos(a)*e.r*0.6,y=e.y+Math.sin(a)*e.r*0.6;if(blockedAt(x,y,10)){x=e.x;y=e.y;}
     const c=makeEnemy(e.type,x,y,G.depth,e.elite,e.pack,e.affs);c.chest=e.chest;c.gen=(e.gen||0)+1;c.r=Math.max(9,e.r*0.72);c.hp=c.maxHp=e.maxHp*0.45;c.dmg=e.dmg*0.7;c.xp=e.xp*0.35;c.spd=e.spd*1.1;
@@ -69,7 +72,7 @@ function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin
   burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
 function dmgPlayer(raw,src){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;
-  if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('counter'))counterBlast();return false;}
+  if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
@@ -159,7 +162,7 @@ function update(dt){
   if(p.dead){}
   else if(p.dodge){const D=p.dodge;D.t+=dt;moveEnt(p,Math.cos(D.a)*DODGE_SPD*dt,Math.sin(D.a)*DODGE_SPD*dt);p.face=D.a;
     if(Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
-    if(D.t>=D.dur)p.dodge=null;}
+    if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
     if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
@@ -185,6 +188,10 @@ function update(dt){
     if(e.bleedT>0){e.bleedT-=dt;const b=e.bleedDps*dt;e.hp-=b;e.bleedAcc=(e.bleedAcc||0)+b;e.bleedTick=(e.bleedTick||0)-dt;
       if(Math.random()<dt*6)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y,vx:rand(-15,15),vy:rand(20,60),life:0.5,max:0.5,col:'#b01818',s:3});
       if(e.bleedTick<=0&&e.bleedAcc>=1){e.bleedTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.bleedAcc),'#e04040',false);e.bleedAcc=0;}
+      if(e.hp<=0){killEnemy(e);continue;}}
+    if(e.burnT>0){e.burnT-=dt;const b=e.burnDps*dt;e.hp-=b;e.burnAcc=(e.burnAcc||0)+b;e.burnTick=(e.burnTick||0)-dt;
+      if(Math.random()<dt*8)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y-rand(0,e.r),vx:rand(-10,10),vy:rand(-70,-30),life:0.45,max:0.45,col:'#ff8a2a',s:3});
+      if(e.burnTick<=0&&e.burnAcc>=1){e.burnTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.burnAcc),'#ff9a4a',false);e.burnAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
     if(e.spawnT>0)e.spawnT-=dt;
     const T=ETYPES[e.type];

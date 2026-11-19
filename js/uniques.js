@@ -8,7 +8,9 @@ const pwHit=m=>{const s=G.stats;return s?Math.max(1,Math.round((s.dmin+s.dmax)/2
 const pwLife=f=>G.stats?Math.round(G.stats.life*f):0;
 const pwDet=(m,what)=>`${Math.round(m*100)}% weapon damage (≈${pwHit(m)})${what?' '+what:''}`;
 // Fire powers hit every 0.5 s for this much of your weapon damage per hit.
-const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14;
+const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14,WILD_MULT=0.20;
+// Ignite (Pyre): a burning enemy takes this much weapon damage per second for IGNITE_T seconds.
+const IGNITE_MULT=0.30,IGNITE_T=3;
 const UPOW={
   shockwave:{cls:'warden',t:'Cleave fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes')},
   pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in',d:()=>'Pulls from almost 3× Whirlwind\'s reach, 4 times per second (heavy monsters half as far, bosses a quarter)'},
@@ -33,8 +35,27 @@ const UPOW={
   stormweave:{cls:'arcanist',t:'Chain Lightning bounces 4 extra times',d:()=>{const n=Math.min(8,3+Math.floor((pwRank(3)-1)/2));return `${n} → ${n+4} enemies, each `+pwDet(1.25+0.15*(pwRank(3)-1),'');}},
   oathspin:{cls:'warden',t:'Whirlwind lasts twice as long',d:()=>{const t=2+0.1*(pwRank(2)-1);return `${t.toFixed(1)}s → ${(2*t).toFixed(1)}s of spinning, `+pwDet(0.5+0.07*(pwRank(2)-1),'4 times per second');}},
   veilCrit:{t:'Critical hits heal you for 1% of your Life',d:()=>`${pwLife(0.01)} Life per critical hit (${Math.round(G.stats.crit)}% crit chance)`},
+  // Runebind powers (each pairs with a unique: see COMBOS)
+  ignite:{t:'Your hits set enemies on fire',d:()=>pwDet(IGNITE_MULT,`per second for ${IGNITE_T}s (a new hit renews the fire)`)},
+  bloodrage:{t:'Below 50% Life you deal 25% more damage, and every kill heals 2% Life',d:()=>`+25% damage below ${pwLife(0.5)} Life · ${pwLife(0.02)} Life per kill`},
+  stormbeat:{t:'Critical hits take 0.25s off all your skill cooldowns',d:()=>`${Math.round(G.stats.crit)}% crit chance · at most 4 times per second`},
+  cometDash:{t:'Your dodge ends in a fiery impact',d:()=>pwDet(1.2,'to enemies where you land')},
+  // set power (Bulwark of the Hollow King; its own shield means it can't meet The Last Door)
+  kingsWrath:{cls:'warden',t:'Blocking an attack gives you 30% more damage for 3s',d:()=>`${Math.round(G.stats.block)}% block chance · +30% damage for 3s after each block`},
   coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')}
 };
+// Combos: a unique and a Runebind (or set) with matching powers do something extra when both are worn.
+const COMBOS=[
+  {a:'burnAura',b:'ignite',name:'Bonfire',t:'Your burning aura also sets enemies on fire',d:()=>'Enemies near you take '+pwDet(2*AURA_MULT+IGNITE_MULT,'per second in total')},
+  {a:'lastBreath',b:'bloodrage',name:'Second Wind',t:'Last Breath recharges in 20s instead of 30s, and Bloodrage stays on for 5s after it'},
+  {a:'ouroboros',b:'stormbeat',name:'Eye of the Storm',t:'When a skill comes back free, your other skills\' cooldowns drop by 1s'},
+  {a:'fireTrail',b:'cometDash',name:'Wildfire',t:'Your dodge impact leaves burning ground for 3s',d:()=>pwDet(2*WILD_MULT,'per second')}
+];
+const combo=n=>{const C=COMBOS.find(x=>x.name===n);return !!C&&hasPw(C.a)&&hasPw(C.b);};
+// Which item gives a power (for "with Pyre" on a card): a unique, a Runebind or a set.
+function pwSource(k){for(const u in UNIQUES)if(UNIQUES[u].pw.includes(k))return UNIQUES[u].name;
+  if(typeof RUNEBINDS!=='undefined')for(const r in RUNEBINDS)if((RUNEBINDS[r].pw||[]).includes(k))return RUNEBINDS[r].name+' (rune word)';
+  for(const s in SETS)if(SETS[s].full.some(f=>f.pw===k))return SETS[s].name+' (full set)';return '?';}
 const UNIQUES={
   tremorblade:{name:'Tremorblade',type:'weapon',wt:'sword',cls:'warden',act:1,pw:['shockwave']},
   maelstrom:{name:'Maelstrom Grips',type:'gloves',cls:'warden',act:2,pw:['pull']},
@@ -68,7 +89,7 @@ const SETS={
   cinderguard:{aura:'255,140,40',name:'Cinderguard Vow',cls:'warden',act:3,items:['cgblade','cgseal','cgplate','cgtreads','cggrips'],
     bonus:[[2,[{k:'dmg',v:15},{k:'loh',v:4}]]],full:[{pw:'cinderCleave'}]},
   hollowking:{aura:'140,255,215',name:'Bulwark of the Hollow King',cls:'warden',act:3,items:['hkcrown','hkpendant','hkaegis'],
-    bonus:[[2,[{k:'block',v:8},{k:'armor',v:40}]]],full:[{pw:'counter'}]},
+    bonus:[[2,[{k:'block',v:8},{k:'armor',v:40}]]],full:[{pw:'kingsWrath'}]},
   frostbound:{aura:'150,225,255',name:'Frostbound Regalia',cls:'arcanist',act:4,items:['fbstaff','fbcirclet','fbrobe','fbslippers'],
     bonus:[[2,[{k:'cdr',v:8},{k:'res',v:25}]]],full:[{pw:'shatter'}]},
   stormweaver:{aura:'110,150,255',name:"Stormweaver's Coil",cls:'arcanist',act:3,items:['swwand','sworb','swtorc'],
@@ -176,14 +197,14 @@ function meteorAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:120,t:0,ma
 function homeIn(q,dt){const e=nearest(q.x,q.y,320);if(!e)return;const sp=Math.hypot(q.vx,q.vy),a=Math.atan2(q.vy,q.vx),want=Math.atan2(e.y-q.y,e.x-q.x);
   let d=want-a;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;const na=a+clamp(d,-7*dt,7*dt);q.vx=Math.cos(na)*sp;q.vy=Math.sin(na)*sp;}
 // Heart of the Deep: emergency heal + knockback, before death is checked.
-function lastBreath(){const p=G.p,s=G.stats;if(p.lbCd>0||p.hp<=0||p.hp>=s.life*0.3)return;p.lbCd=30;
+function lastBreath(){const p=G.p,s=G.stats;if(p.lbCd>0||p.hp<=0||p.hp>=s.life*0.3)return;const sw=combo('Second Wind');p.lbCd=sw?20:30;if(sw)p.rageT=5;
   healPlayer(s.life*0.3);aoe(p.x,p.y,170,0.5,{kb:150,splashed:true});G.shake=10;floatText(p.x,p.y-40,'Last Breath','#ff9a3a',true);
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:180,t:0,max:0.45,col:'#ff9a3a'});}
 // Per-frame powers: cooldown timers, burning aura, fire trail, falling meteors.
 function powerTick(dt){const p=G.p;if(p.dead)return;
-  for(const k of ['counterCd','novaCd','lbCd'])if(p[k]>0)p[k]-=dt;
+  for(const k of ['counterCd','novaCd','lbCd','rageT','wrathT','beatT'])if(p[k]>0)p[k]-=dt;
   if(G.inTown)return;
-  if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,AURA_MULT,{splashed:true,quiet:true,dot:true});}}
+  if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,AURA_MULT,{splashed:true,quiet:true,dot:true,ignite:combo('Bonfire')});}}
   if(hasPw('fireTrail')){const L=p.trail||(p.trail={x:p.x,y:p.y});if(Math.hypot(p.x-L.x,p.y-L.y)>26){L.x=p.x;L.y=p.y;
     const tr=G.hazards.filter(h=>h.trail);if(tr.length>=14)G.hazards.splice(G.hazards.indexOf(tr[0]),1);
     G.hazards.push({x:p.x,y:p.y,r:36,t:2.5,tick:0.25,mult:TRAIL_MULT,trail:true,quiet:true});}}
@@ -192,6 +213,14 @@ function powerTick(dt){const p=G.p;if(p.dead)return;
   if(hasPw('skyfall')){p.skyT=(p.skyT==null?3:p.skyT)-dt;if(p.skyT<=0){const e=nearest(p.x,p.y,420);if(e){meteorAt(e.x,e.y);p.skyT=8;}else p.skyT=0.5;}}
 }
 const AURA_R=115;
+// Pyre: set an enemy on fire (renews; the strongest fire wins).
+function ignite(e){const dps=pwHit(IGNITE_MULT)*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=IGNITE_T;}
+// Cometwake: the end of a dodge (Wildfire with Ashwalker Treads: burning ground there).
+function cometImpact(){const p=G.p;aoe(p.x,p.y,90,1.2,{splashed:true});burst(p.x,p.y,26,'#ff8a2a',240);
+  G.fx.push({type:'ring',x:p.x,y:p.y,r0:8,r1:95,t:0,max:0.3,col:'#ffaa44'});G.shake=Math.max(G.shake,5);
+  if(combo('Wildfire'))G.hazards.push({x:p.x,y:p.y,r:70,t:3,tick:0.25,mult:WILD_MULT,quiet:true});}
+// Tempest: a critical hit takes 0.25 s off every skill cooldown (4 times per second at most).
+function stormbeat(){const p=G.p;if(p.beatT>0)return;p.beatT=0.25;for(let i=1;i<5;i++)if(p.cd[i]>0)p.cd[i]=Math.max(0,p.cd[i]-0.25);}
 // Cinderguard Vow: a Cleave leaves a patch of burning ground in front of you (at most 8 patches at once).
 function cinderPatch(ang,reach){const p=G.p,x=p.x+Math.cos(ang)*reach*0.6,y=p.y+Math.sin(ang)*reach*0.6;
   const own=G.hazards.filter(h=>h.cinder);if(own.length>=8)G.hazards.splice(G.hazards.indexOf(own[0]),1);

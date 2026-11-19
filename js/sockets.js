@@ -54,10 +54,10 @@ const RUNEBINDS={
   clockwork:{name:'Clockwork',type:'helm',runes:['zen','rhu'],bonus:[['cdr',2],['aspd',2]]},
   keenEdge:{name:'Keen Edge',type:'weapon',runes:['kor','vel','kor'],bonus:[['crit',2],['critd',2],['dmg',1.5]]},
   stoneskin:{name:'Stoneskin',type:'body',runes:['ith','sol','ith'],bonus:[['armor',3],['life',2],['regen',1.5]]},
-  bloodpact:{name:'Bloodpact',type:'weapon',runes:['mor','ash','mor'],bonus:[['loh',3],['life',2]],pw:['lastBreath']},
-  pyre:{name:'Pyre',type:'body',runes:['sol','mor','vex','ash'],bonus:[['life',2.5],['regen',2]],pw:['burnAura']},
-  tempest:{name:'Tempest',type:'weapon',runes:['rhu','thal','kor','rhu'],bonus:[['aspd',2.5],['critd',2],['crit',1.5]],pw:['ouroboros']},
-  cometwake:{name:'Cometwake',type:'weapon',runes:['thal','zen','vex','thal'],bonus:[['dmg',2.5],['spell',2.5],['cdr',1.5]],pw:['fireTrail']}
+  bloodpact:{name:'Bloodpact',type:'weapon',runes:['mor','ash','mor'],bonus:[['loh',3],['life',2]],pw:['bloodrage']},
+  pyre:{name:'Pyre',type:'body',runes:['sol','mor','vex','ash'],bonus:[['life',2.5],['regen',2]],pw:['ignite']},
+  tempest:{name:'Tempest',type:'weapon',runes:['rhu','thal','kor','rhu'],bonus:[['aspd',2.5],['critd',2],['crit',1.5]],pw:['stormbeat']},
+  cometwake:{name:'Cometwake',type:'weapon',runes:['thal','zen','vex','thal'],bonus:[['dmg',2.5],['spell',2.5],['cdr',1.5]],pw:['cometDash']}
 };
 const RB_TYPE={weapon:'Weapon',shield:'Shield',boots:'Boots',helm:'Helm',body:'Body Armor'};
 // Forges the item if its runes, in order, match a recipe for its type (white items with every socket filled only).

@@ -97,6 +97,7 @@ h2{color:var(--gold);text-align:center;font-weight:normal;letter-spacing:2px;mar
 .cell.other{opacity:.5;}
 .cell .up{position:absolute;bottom:1px;right:3px;font-size:10px;font-family:sans-serif;color:#fff;}
 .ipow{color:#ff9a3a;font-size:14px;margin-top:3px;}.ipow.off{opacity:.55;}
+.ipow .pcombo{display:block;margin-left:14px;font-size:12px;color:#9c8b72;font-family:sans-serif;}.ipow .pcombo.on{color:#7fe07a;} /* combo: grey until both items are worn */
 .ipow .pdet{display:block;margin-left:14px;font-size:12px;color:#d9b48a;font-family:sans-serif;} /* live numbers for the power */
 .charmgrid{grid-template-columns:repeat(9,1fr);gap:3px;margin-top:4px;}.charmgrid .cell{aspect-ratio:auto;height:38px;}.charmgrid .cell .icn{height:80%;width:auto;}
 .iaff.off{opacity:.55;}
