@@ -305,6 +305,9 @@ function migrateChar(c){
     const sl=want&&fits.includes(want)?want:fits[0];if(sl)eq[sl]=it;else c.bag.push(it);};
   for(const s of EQ_SLOTS)if(old[s])place(old[s],s);           // already-new keys (idempotent)
   for(const k of ['weapon','armor','ring'])if(old[k])place(old[k]); // v1 keys
+  // a second item with a power already worn (saved before the one-of-each rule) goes to the bag
+  const seen=new Set();for(const s of EQ_SLOTS){const it=eq[s];if(!it)continue;const pw=itemPowers(it);
+    if(pw.some(k=>seen.has(k))){eq[s]=null;c.bag.push(it);}else pw.forEach(k=>seen.add(k));}
   if(c.won==null)c.won=(c.maxDepth||1)>25; // anyone already past depth 25 has beaten the Cinder King
   if(c.actSeen==null){const d=c.depth||1;c.actSeen=stageOf(d)===1?d-1:d-stageOf(d)+1;} // depth N is already Act ceil(N/5); only show titles for acts not yet entered
   migrateCharms(c);matsOf(c); // crafting materials
@@ -320,7 +323,13 @@ function migrateSaves(){
 
 // ---------- stats ----------
 // Where an item would go if equipped: its only slot, an empty ring slot, or the ring slot that gains the most.
-function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>is2h(it)||slotOpen(c.equip,s));if(fits.length<=1)return fits[0]||null;
+// One of each power: no two worn items may share a unique or Runebind power (it wouldn't stack anyway).
+// pwClash: the slot of a worn item sharing a power with `it`, ignoring the slots in `skip`; clashFree: `it` may go in `sl`
+// (replacing what is there, and the off hand a two-hander frees). So a second Coal Heart can only replace the first.
+function pwClash(c,it,skip=[]){const pw=itemPowers(it);if(!pw.length)return null;
+  for(const s of EQ_SLOTS){const o=c.equip[s];if(!o||o===it||skip.includes(s))continue;if(itemPowers(o).some(k=>pw.includes(k)))return s;}return null;}
+const clashFree=(c,it,sl)=>!pwClash(c,it,[sl,sl==='mainhand'&&is2h(it)?'offhand':null]);
+function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c.equip,s))&&clashFree(c,it,s));if(fits.length<=1)return fits[0]||null;
   const empty=fits.find(s=>!c.equip[s]);if(empty)return empty;
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){

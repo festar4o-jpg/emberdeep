@@ -107,7 +107,13 @@ function pickStone(l){const c=G.char,s=l.gem;pouchAdd(c,s);l.taken=true;floatTex
 
 // ---------- socketing ----------
 function insertStone(it,s){const c=G.char;if(freeSockets(it)<=0||it.rarity===4||!pouchTake(c,s))return false;
-  (it.socketed||(it.socketed=[])).push({...s});checkRunebind(it);refreshStats();saveChar();return true;}
+  (it.socketed||(it.socketed=[])).push({...s});checkRunebind(it);
+  // a worn item that just became a Runebind with a power another worn item already has comes off (one of each power)
+  const sl=EQ_SLOTS.find(k=>c.equip[k]===it);
+  if(it.rb&&sl&&pwClash(c,it,[sl])){const o=c.equip[pwClash(c,it,[sl])];
+    if(c.bag.length<30){c.equip[sl]=null;c.bag.push(it);toast(it.name+' moved to your bag',`${o.name} already gives that power`);}
+    else toast(it.name+': power not active',`${o.name} already gives it`);}
+  refreshStats();saveChar();return true;}
 const unsocketCost=it=>Math.round(15+it.ilvl*6);
 // In town, for gold: every gem and rune goes back to the pouch (Runebinds are permanent).
 function unsocket(it){const c=G.char;if(!G.inTown||it.rb||!it.socketed||!it.socketed.length)return false;const cost=unsocketCost(it);if(c.gold<cost)return false;
