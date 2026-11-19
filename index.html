@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0907">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Emberdeep</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <!-- landscape HUD: name, life + resource bars and info top left, minimap + menus top right, joystick on the left,
+       skill arc in the bottom right corner with dodge and potion just left of it (all under the right thumb) -->
+  <div id="topleft">
+    <div class="nm" id="nmTxt"></div>
+    <div class="bar" id="hpb"><i></i><span></span></div>
+    <div class="bar" id="mpb"><i></i><span></span></div>
+    <div id="depthTxt"></div>
+    <div id="buffTxt"></div>
+  </div>
+  <div id="xpb"><i></i></div>
+  <div id="topright">
+    <div class="btnrow">
+      <div class="ib pe" id="bagBtn">🎒<b class="dot hidden" id="bagDot"></b></div>
+      <div class="ib pe" id="skBtn">✨<b class="dot hidden" id="skDot"></b></div>
+      <div class="ib pe" id="menuBtn">☰</div>
+    </div>
+    <canvas id="minimap" width="220" height="220"></canvas>
+  </div>
+  <div id="bossbar" class="hidden"><div class="bname" id="bossName"></div><div class="bar"><i></i></div></div>
+  <div id="joy"><div id="knob"></div></div>
+  <div class="sk pe" id="potBtn">🧪<span class="cnt" id="potCnt">3</span><div class="cd"></div></div>
+  <div class="sk pe" id="dodgeBtn">💨<div class="cd"></div></div>
+  <div id="skills"></div>
+  <div id="descBtn" class="pe btn hidden">⬇ Descend</div>
+  <div id="shopBtn" class="pe btn hidden">🪙 Trade</div>
+  <div id="stashBtn" class="pe btn hidden">📦 Stash</div>
+  <div id="smithBtn" class="pe btn hidden">🔨 Smith</div>
+  <div id="useBtn" class="pe btn hidden"></div>
+</div>
+<div id="toast"></div>
+<div id="actOv" class="hidden"><div><div class="actn" id="actN"></div><div class="actt" id="actT"></div><div class="acts" id="actS"></div><div class="acth">Tap to continue</div></div></div>
+
+<!-- first tap: enter fullscreen and lock to landscape (both need a user gesture) -->
+<div id="startOv">
+  <img src="icons/icon-192.png" alt="" class="slogo">
+  <h1>EMBERDEEP</h1>
+  <div class="stap">Tap to start</div>
+  <div class="shint">Best played in landscape, fullscreen</div>
+</div>
+<!-- shown on phones held upright (CSS media query); the game pauses underneath -->
+<div id="rotateOv"><div class="rphone">📱</div><b>Please rotate your phone</b><span>Emberdeep is played in landscape</span></div>
+
+<div id="titleOv" class="overlay"><div class="panel">
+  <h1>EMBERDEEP</h1>
+  <p class="sub">Descend. Loot. Grow stronger.</p>
+  <div id="slots"></div>
+  <div class="btn wide" id="newBtn">+ New Character</div>
+</div></div>
+
+<div id="createOv" class="overlay hidden"><div class="panel">
+  <h2>New Character</h2>
+  <div class="classes" id="classPick"></div>
+  <input id="nameIn" maxlength="14" placeholder="Character name" autocomplete="off">
+  <div class="row"><div class="btn" id="createBack">Back</div><div class="btn" id="createGo">Create</div></div>
+</div></div>
+
+<div id="invOv" class="overlay hidden"><div class="panel two">
+  <h2>Inventory</h2>
+  <div class="cols"><div class="col">
+  <div class="eqgrid" id="eqgrid"></div>
+  <div class="row" style="justify-content:space-between;margin-top:8px"><span>Charms <span class="fdim" id="charmN"></span></span><span class="fdim">work while in this pouch</span></div>
+  <div class="bag charmgrid" id="charmGrid"></div>
+  <div class="stats" id="statsum"></div>
+  </div><div class="col">
+  <div class="row" style="justify-content:space-between;margin-top:0">
+    <span>🪙 <b id="goldv" style="color:var(--gold);font-weight:normal"></b> &nbsp;<span style="color:var(--dim);font-size:13px" id="bagCount"></span></span>
+    <div class="btn sm" id="pouchBtn">💎 Pouch</div><div class="btn sm" id="salvAll">Salvage white & blue</div>
+  </div>
+  <div class="bag" id="bag"></div>
+  </div></div>
+  <div class="btn wide" id="invClose">Close</div>
+</div></div>
+
+<div id="shopOv" class="overlay hidden"><div class="panel">
+  <h2>Merchant</h2>
+  <p class="sub" style="margin-bottom:10px">“Coin for steel, friend. Fresh wares every visit.”</p>
+  <div class="slot"><div class="ic">🧪</div><div class="info"><b>Healing Potion</b><div>Heals 45% Life · <span id="potInfo"></span></div></div><div class="btn sm" id="buyPot"></div></div>
+  <div class="row" style="justify-content:space-between;margin-top:0">
+    <span>🪙 <b id="shopGold" style="color:var(--gold);font-weight:normal"></b></span>
+    <span style="color:var(--dim);font-size:13px" id="shopBag"></span>
+  </div>
+  <div class="bag shopgrid" id="shopGrid"></div>
+  <div class="btn wide" id="shopClose">Close</div>
+</div></div>
+
+<div id="stashOv" class="overlay hidden"><div class="panel two">
+  <h2>Stash</h2>
+  <p class="sub" style="margin-bottom:10px">Shared by all your characters. Tap an item to move it.</p>
+  <div class="cols"><div class="col">
+  <div class="tabs" id="stashTabs"></div>
+  <div class="bag stashgrid" id="stashGrid"></div>
+  </div><div class="col">
+  <div class="row" style="justify-content:space-between;margin-top:12px"><span>🎒 Bag</span><span style="color:var(--dim);font-size:13px" id="stashBagN"></span></div>
+  <div class="bag stashgrid" id="stashBag"></div>
+  </div></div>
+  <div class="btn wide" id="stashClose">Close</div>
+</div></div>
+
+<div id="smithOv" class="overlay hidden"><div class="panel two">
+  <h2>Blacksmith</h2>
+  <p class="sub" style="margin-bottom:8px">“Bring me scrap, dust and essence, and coin. I'll make it worth your while.”</p>
+  <div class="tabs" id="smithTabs" style="margin-bottom:8px"></div>
+  <div class="row" style="margin-top:0" id="smithMats"></div>
+  <div class="row smbulk hidden" id="smithBulk"></div>
+  <div class="cols"><div class="col">
+  <div class="bag stashgrid" id="smithGrid"></div>
+  </div><div class="col">
+  <div class="pinfo" id="smithInfo"></div>
+  </div></div>
+  <div class="btn wide" id="smithClose">Close</div>
+</div></div>
+
+<div id="smithAsk" class="overlay hidden" style="z-index:12"><div class="panel">
+  <div id="smithAskBody"></div>
+  <div class="row"><div class="btn sm red" id="smithAskYes">Salvage</div><div class="btn sm" id="smithAskNo">Cancel</div></div>
+</div></div>
+
+<div id="pouchOv" class="overlay hidden" style="z-index:12"><div class="panel">
+  <h2>Pouch</h2>
+  <p class="sub" id="pouchSub" style="margin-bottom:10px"></p>
+  <div class="bag pgrid" id="pouchGems"></div>
+  <div class="bag pgrid" id="pouchRunes" style="margin-top:10px"></div>
+  <div class="bag pgrid" id="pouchMats" style="margin-top:10px"></div>
+  <div class="pinfo" id="pouchInfo"></div>
+  <div class="row"><div class="btn sm" id="bookBtn">📖 Book</div><div class="btn sm" id="pouchClose">Close</div></div>
+</div></div>
+
+<div id="bookOv" class="overlay hidden" style="z-index:13"><div class="panel">
+  <h2>Book</h2>
+  <div class="tabs" id="bookTabs" style="margin-bottom:8px"></div>
+  <p class="sub" id="bookSub" style="margin-bottom:10px"></p>
+  <div id="bookList"></div>
+  <div class="btn wide" id="bookClose">Close</div>
+</div></div>
+
+<div id="itemOv" class="overlay hidden" style="z-index:11"><div class="panel" id="itemPanel"></div></div>
+
+<div id="skOv" class="overlay hidden"><div class="panel two">
+  <h2>Skills</h2>
+  <div class="sub" id="skPts" style="margin-bottom:10px"></div>
+  <div id="skList" class="cols2"></div>
+  <div class="btn wide" id="skClose">Close</div>
+</div></div>
+
+<div id="menuOv" class="overlay hidden"><div class="panel">
+  <h2>Paused</h2>
+  <div class="filt">
+    <b style="color:var(--gold)">Loot filter</b> <span class="fdim">hide items below</span>
+    <div class="tabs" id="filtTier"></div>
+    <div class="chk" id="filtRare"><span class="box"></span> Always show rares &amp; uniques</div>
+    <div class="chk" id="filtSalv"><span class="box"></span> Auto-salvage white items on pickup <span class="fdim">(not socketed ones)</span></div>
+    <div class="fdim" id="filtInfo"></div>
+  </div>
+  <div class="filt">
+    <b style="color:var(--gold)">Controls</b> <span class="fdim">joystick size</span>
+    <div class="tabs" id="setJoy"></div>
+    <div class="chk" id="setLefty"><span class="box"></span> Left-handed: joystick on the right, skills on the left</div>
+  </div>
+  <div class="help">
+    <b style="color:var(--gold)">How to play</b><br>
+    • Touch anywhere on the left side and drag to move (push lightly to walk). Left-handed? Swap sides under Controls.<br>
+    • Big button: basic attack (hold it). Small buttons: skills. Skills aim at the nearest enemy automatically.<br>
+    • 🧪 heals you. Potions refill to 3 on every new depth; buy extras (up to 10) from the merchant. Belts can add potion charges.<br>
+    • Gear: Main Hand, Off Hand (shields give armor and block), Helm, Body, Gloves, Belt, Boots, Amulet and two Rings.<br>
+    • Warden: one-hand sword/axe/mace/dagger with a shield or a second one-hander (dual wield), or a two-hander that takes both hands. Axes bleed, maces stun, daggers are fast and crit.<br>
+    • Arcanist: wand or scepter with an orb or tome, or a two-handed staff that boosts spell damage.<br>
+    • Each portal takes you to town first. Walk to the merchant and Trade, then take the portal onward.<br>
+    • Walk over loot to pick it up. Open 🎒 to equip gear — a green ▲ means it's an upgrade.<br>
+    • Each level gives a skill point. Spend it in ✨.<br>
+    • Five acts of five depths: Sunken Crypts, Ashen Wastes, Rotwood Marsh, Frozen Citadel, The Ember Core. Depth 5 of each act is a boss, each tougher and richer than the last. Beat the Cinder King to unlock the Endless Depths. Marsh poison slows you; Ember Core lava burns.<br>
+    • Each act has its own monsters. Elite packs glow with a colored ring: Vampiric (heals on hit), Shielded (takes less damage), Hasted, Plagued and Burning (leave poison or fire on death), Frostbound (slows you).<br>
+    • Find the purple portal and press Descend.<br>
+    • 💨 Dodge (right thumb, next to the skills; 🧪 sits right above it) dashes you out of danger, untouchable for a moment.<br>
+    • Keyboard: WASD to move, J/1–5 skills, Space/Shift dodge, Q potion, I bag, K skills, E trade/descend.
+  </div>
+  <div class="btn wide" id="fsBtn">⛶ Fullscreen</div>
+  <div class="btn wide" id="resumeBtn">Resume</div>
+  <div class="btn wide" id="quitBtn">Save & Exit</div>
+  <div class="fdim ver" id="verTxt"></div>
+</div></div>
+
+<div id="winOv" class="overlay hidden" style="z-index:13"><div class="panel" style="text-align:center">
+  <div class="actn">ACT V COMPLETE</div>
+  <h1 style="margin-top:6px">VICTORY</h1>
+  <p class="sub">The Cinder King is ash and the Ember Core falls silent.<br>Yet far below, something older stirs. The Endless Depths await.</p>
+  <div class="stats" id="winStats" style="text-align:left"></div>
+  <div class="btn wide" id="winGo">Descend into the Endless Depths</div>
+  <div class="btn wide" id="winExit">Save &amp; Exit</div>
+</div></div>
+
+<div id="deathOv" class="overlay hidden"><div class="panel" style="text-align:center">
+  <h2 style="color:#d33">You Have Fallen</h2>
+  <p class="sub">You lose 10% of your gold. The depth reshapes itself.</p>
+  <div class="btn wide" id="respawnBtn">Rise Again</div>
+</div></div>
+
+<script src="js/core.js"></script>
+<script src="js/items.js"></script>
+<script src="js/uniques.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/monsters.js"></script>
+<script src="js/game.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/stash.js"></script>
+<script src="js/sockets.js"></script>
+<script src="js/charms.js"></script>
+<script src="js/smith.js"></script>
+<script src="js/encounters.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
