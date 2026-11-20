@@ -9,7 +9,7 @@
 // Character state: c.zone (last zone), c.wps (unlocked waypoints), c.zst[zone] ({boss, key, seals}), c.q[quest].
 const ZONES={
   a1z1:{act:1,depth:1,name:'The Mourning Fields',sub:'Gravewatch buries here the dead it cannot name',layout:'fields',theme:'a1fields',
-    next:'a1z2',side:'a1s2',gate:'boss',boss:'grieve',su:['hollis','bride'],density:1.15},
+    next:'a1z2',side:'a1s2',gate:'boss',boss:'grieve',su:['hollis','bride'],density:0.9,elite:0.1}, /* the first zone: gentler */
   a1z2:{act:1,depth:2,name:'Gallows Gully',sub:'The road out of Gravewatch, and the trees that line it',layout:'canyon',theme:'a1gully',
     next:'a1z3',side:'a1s1',gate:'key',key:'Gully Key',boss:'hangman',su:['brann','jack'],density:1.25},
   a1z3:{act:1,depth:3,name:'The Ossuary Tunnels',sub:'Bones stacked to the ceiling, and some of them move',layout:'caves',theme:'a1ossuary',
@@ -32,7 +32,7 @@ function migrateZones(c){if(!Array.isArray(c.wps))c.wps=[];if(!c.zst||typeof c.z
 // ---------- zone bosses and champions ----------
 // Zone bosses: a base look, life x hp, damage x dmg, and 2 mechanics (ZB_MOVES) on top of a heavy melee swing.
 const ZBOSS={
-  grieve:{name:'Old Grieve, the Gravedigger',r:30,hp:1,dmg:1,spd:72,moves:['coffin','corpses'],quest:'a1q1'},
+  grieve:{name:'Old Grieve, the Gravedigger',r:30,hp:0.6,dmg:0.8,spd:72, /* the first boss you meet: gentler */moves:['coffin','corpses'],quest:'a1q1'},
   hangman:{name:'The Hangman',r:26,hp:1.1,dmg:1.05,spd:80,moves:['hook','noose']},
   weaver:{name:'The Bone Weaver',r:30,hp:1.2,dmg:1.05,spd:68,moves:['spiral','bonecage']},
   abbess:{name:'Abbess Morwen',r:24,hp:0.55,dmg:1.1,spd:64,moves:['pyres','mend'],ranged:1},
@@ -172,7 +172,7 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   const used=new Set([L.start,L.exit]);if(L.side)used.add(L.side);
   // packs: more and denser deeper into the act
   for(const r of L.regions){if(!far(r)||r===L.start)continue;const n=Math.max(1,Math.round((Math.random()<0.5?1:2)*Z.density));
-    for(let k=0;k<n;k++){const id=++packId,elite=Math.random()<0.2,affs=elite?rollAffixes(depth):null,c=spot(r);
+    for(let k=0;k<n;k++){const id=++packId,elite=Math.random()<(Z.elite??0.2),affs=elite?rollAffixes(depth):null,c=spot(r);
       rollPack(depth,elite).forEach((type,m)=>{let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(!safe(x,y,ETYPES[type].r)){x=c.x;y=c.y;}G.enemies.push(makeEnemy(type,x,y,depth,elite&&m<4,id,affs));});}}
   const freeRegs=()=>shuffle(L.regions.filter(r=>!used.has(r)&&far(r)));
   // zone boss: near the exit for a boss gate (it guards the way), otherwise somewhere deep
