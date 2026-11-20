@@ -23,9 +23,9 @@ function updateHud(){
   $('nmTxt').textContent=`${c.name} · Lv ${lvlLabel(c)} ${C.name}`;
   // life / resource bars fill from the left; life pulses below 30%
   const hpF=clamp(p.hp/s.life,0,1);
-  $('hpb').firstElementChild.style.width=hpF*100+'%';$('hpb').lastElementChild.textContent=`${Math.ceil(Math.max(0,p.hp))} / ${Math.round(s.life)}`;
+  $('hpb').firstElementChild.style.height=hpF*100+'%';$('hpb').lastElementChild.textContent=`${Math.ceil(Math.max(0,p.hp))} / ${Math.round(s.life)}`;
   $('hpb').classList.toggle('low',hpF<0.3&&!p.dead);
-  $('mpb').firstElementChild.style.width=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.textContent=`${Math.floor(p.res)} / ${Math.round(s.res)}`;
+  $('mpb').firstElementChild.style.height=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.textContent=`${Math.floor(p.res)} / ${Math.round(s.res)}`;
   $('hpb').title=`Life ${Math.ceil(p.hp)} / ${Math.round(s.life)}`;$('mpb').title=`${C.res} ${Math.floor(p.res)} / ${Math.round(s.res)}`;
   $('dodgeBtn').querySelector('.cd').style.setProperty('--p',p.dodgeCd>0?p.dodgeCd/DODGE_CD:0);
   $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
@@ -285,8 +285,8 @@ document.addEventListener('fullscreenchange',fsLabel);document.addEventListener(
 addEventListener('orientationchange',()=>{releaseInputs();setTimeout(resize,200);});
 // ---------- settings (shared by all characters) ----------
 const SETTINGS_KEY='emberdeep_settings',JOY_SIZES={s:44,m:55,l:68};
-let SETTINGS={joy:'m',lefty:false};
-function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true};}catch(e){}applySettings();}
+let SETTINGS={joy:'m',lefty:false,sound:true};
+function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false};}catch(e){}applySettings();}
 const SETTINGS_NOW=()=>SETTINGS; // (tests: SETTINGS is a let)
 function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}backupSoon();}
 function setSetting(k,v){SETTINGS[k]=v;storeSettings();releaseInputs();applySettings();renderSettings();}
@@ -296,7 +296,8 @@ function applySettings(){document.body.classList.toggle('lefty',SETTINGS.lefty);
 function renderSettings(){
   $('setJoy').innerHTML=[['s','Small'],['m','Medium'],['l','Large']].map(([k,n])=>`<div class="tab${SETTINGS.joy===k?' on':''}" data-j="${k}">${n}</div>`).join('');
   $('setJoy').querySelectorAll('[data-j]').forEach(el=>el.onclick=()=>setSetting('joy',el.dataset.j));
-  $('setLefty').classList.toggle('on',SETTINGS.lefty);$('setLefty').onclick=()=>setSetting('lefty',!SETTINGS.lefty);}
+  $('setLefty').classList.toggle('on',SETTINGS.lefty);$('setLefty').onclick=()=>setSetting('lefty',!SETTINGS.lefty);
+  $('setSound').classList.toggle('on',SETTINGS.sound!==false);$('setSound').onclick=()=>setSetting('sound',SETTINGS.sound===false);}
 function showTitle(){
   $('titleOv').classList.remove('hidden');
   $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';

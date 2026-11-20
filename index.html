@@ -21,8 +21,7 @@
        skill arc in the bottom right corner with dodge and potion just left of it (all under the right thumb) -->
   <div id="topleft">
     <div class="nm" id="nmTxt"></div>
-    <div class="bar" id="hpb"><i></i><span></span></div>
-    <div class="bar" id="mpb"><i></i><span></span></div>
+    <div class="orbs"><div class="orb" id="hpb"><i></i><span></span></div><div class="orb" id="mpb"><i></i><span></span></div></div>
     <div id="depthTxt"></div>
     <div id="buffTxt"></div>
   </div>
@@ -188,6 +187,7 @@
     <b style="color:var(--gold)">Controls</b> <span class="fdim">joystick size</span>
     <div class="tabs" id="setJoy"></div>
     <div class="chk" id="setLefty"><span class="box"></span> Left-handed: joystick on the right, skills on the left</div>
+    <div class="chk" id="setSound"><span class="box"></span> Sound: a chime when a rare, unique, set item or rune drops</div>
   </div>
   <div class="help">
     <b style="color:var(--gold)">How to play</b><br>
@@ -241,6 +241,7 @@
 <script src="js/light.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/sfx.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/stash.js"></script>
 <script src="js/sockets.js"></script>

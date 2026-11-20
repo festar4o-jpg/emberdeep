@@ -143,7 +143,8 @@ function iconImg(k){let im=ICON_IMG[k];if(!im){im=new Image();im.src='data:image
 function slotIcon(sl,cls){const arc=cls==='arcanist';return svgIcon(sl==='mainhand'?(arc?'wand':'sword'):sl==='offhand'?(arc?'orb':'shield'):sl==='body'?'plate':SLOT_TYPE[sl]);}
 const tierLabel=it=>it.tier?'Tier '+TIER_NAME[it.tier-1]:'';
 function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return (w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
-const RCOL=['#c8c8c8','#6f8fff','#f2d04a','#e8882a','#5fd0c0','#3fe05a'];
+// PoE-style rarity colours: normal white, magic blue, rare yellow, unique orange-brown; Runebind teal, set green. Currency (gold, gems, runes) is CURRENCY_COL.
+const RCOL=['#c8c8c8','#8888ff','#ffff77','#c8743a','#5fd0c0','#3fe05a'],CURRENCY_COL='#c8b48a';
 const RNAME=['Common','Magic','Rare','Unique','Runebind','Set']; // Runebinds (4) never drop: they're forged from runes. Set items are 5.
 const SKILL_REQ=[1,2,4,7,10];
 const POT_MAX=10;

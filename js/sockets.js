@@ -98,7 +98,7 @@ const STONE_DROP={normal:[0.04,0.006],elite:[0.2,0.04],boss:[1,0.6]}; // [gem ch
 function dropStones(e,kind){const d=G.depth,[gc,rc]=STONE_DROP[kind];
   const n=kind==='boss'?2:Math.random()<gc?1:0;for(let k=0;k<n;k++)dropStone(e.x+rand(-30,30),e.y+rand(-30,30),rollGem(d));
   if(Math.random()<rc)dropStone(e.x+rand(-20,20),e.y+rand(-20,20),rollRune(d));}
-function dropStone(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}G.loot.push({x,y,gem:s,t:0});}
+function dropStone(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,gem:s,t:0};G.loot.push(l);dropSfx(l);}
 // Walking over a gem or rune: straight into the pouch (no bag space needed).
 function pickStone(l){const c=G.char,s=l.gem;pouchAdd(c,s);l.taken=true;floatText(l.x,l.y-20,stoneName(s),stoneCol(s),false);
   if(s.r&&!BOOK.runes[s.r]){const before=Object.keys(RUNEBINDS).filter(recipeKnown);BOOK.runes[s.r]=true;storeBook();

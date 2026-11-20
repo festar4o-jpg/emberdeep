@@ -214,3 +214,48 @@ body.lefty #skills .sk.big{right:auto;left:0;}
 body.lefty #potBtn,body.lefty #dodgeBtn{right:auto;left:calc(var(--arc) + 18px + env(safe-area-inset-left));}
 @media (orientation:landscape) and (max-height:500px){body.lefty #skills{transform-origin:0 100%;}}
 .ver{text-align:center;margin-top:10px;font-family:sans-serif;font-size:12px;}
+
+/* ===== gothic UI: dark stone panels in iron frames, liquid orbs (graphics stage 4) ===== */
+:root{--iron:#5c5042;--iron2:#8a7a62;--stone:#17120e;--blood:#7a1612;}
+/* life and mana orbs: liquid that fills from the bottom, a lit surface line, a glass highlight, an iron rim */
+.orbs{display:flex;gap:10px;margin:2px 0 6px;}
+.orb,#hpb.orb,#mpb.orb{position:relative;width:58px;height:58px;margin:0;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1c1410,#050302 75%);
+  border:3px solid #2e261e;box-shadow:0 0 0 1px #000,0 0 0 3px var(--iron),0 0 0 4px #1a140f,0 4px 10px #000,inset 0 0 12px #000;}
+.orb>i,#hpb.orb>i,#mpb.orb>i{position:absolute;left:0;right:0;bottom:0;top:auto;width:auto;height:100%;transition:height .15s linear;}
+.orb>i::before{content:'';position:absolute;left:-50%;width:200%;top:-3px;height:7px;border-radius:50%;animation:slosh 2.6s ease-in-out infinite alternate;}
+.orb::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 34% 24%,rgba(255,255,255,.38),rgba(255,255,255,0) 26%),radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%);}
+.orb>span,#hpb.orb>span,#mpb.orb>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;font:bold 10px sans-serif;color:#fff;text-shadow:0 0 3px #000,0 0 2px #000;white-space:nowrap;}
+#hpb>i{background:radial-gradient(ellipse at 50% 0%,#ff6a50,#b01a12 45%,#4a0604 100%);}
+#hpb>i::before{background:radial-gradient(ellipse,rgba(255,170,150,.75),rgba(255,120,100,0) 70%);}
+#mpb>i{background:radial-gradient(ellipse at 50% 0%,#7ab4ff,#1f4fb0 45%,#06143a 100%);}
+#mpb>i::before{background:radial-gradient(ellipse,rgba(180,215,255,.75),rgba(140,190,255,0) 70%);}
+#mpb.fury>i{background:radial-gradient(ellipse at 50% 0%,#ffb050,#b8501a 45%,#3a1404 100%);}
+#mpb.fury>i::before{background:radial-gradient(ellipse,rgba(255,215,160,.75),rgba(255,180,120,0) 70%);}
+#hpb.orb.low{animation:loworb .8s ease-in-out infinite;}
+@keyframes slosh{from{transform:translateX(-12%) rotate(-2deg);}to{transform:translateX(12%) rotate(2deg);}}
+@keyframes loworb{50%{box-shadow:0 0 0 1px #000,0 0 0 3px #b02018,0 0 14px 4px #ff2a1a88,inset 0 0 12px #000;}}
+@media (orientation:landscape) and (max-height:500px){#hpb.orb,#mpb.orb{width:48px;height:48px;}#hpb.orb>span,#mpb.orb>span{font-size:9px;}.orbs{gap:8px;}}
+/* panels: dark stone in a double iron frame with rivets at the corners */
+.panel{background:radial-gradient(circle at 10px 10px,#a08a68 1.5px,#2a2016 2.5px,transparent 3.5px) top left/100% 100% no-repeat,
+  radial-gradient(circle at calc(100% - 10px) 10px,#a08a68 1.5px,#2a2016 2.5px,transparent 3.5px),radial-gradient(circle at 10px calc(100% - 10px),#a08a68 1.5px,#2a2016 2.5px,transparent 3.5px),
+  radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#a08a68 1.5px,#2a2016 2.5px,transparent 3.5px),
+  repeating-linear-gradient(115deg,rgba(255,255,255,.012) 0 2px,rgba(0,0,0,.03) 2px 5px),radial-gradient(ellipse at 50% 0%,#241c15,#120d0a 60%,#0b0806);
+  border:2px solid #2a2118;border-radius:4px;box-shadow:0 0 0 1px #000,0 0 0 3px var(--iron),0 0 0 4px #0a0705,0 10px 40px #000,inset 0 0 0 1px #3a2e22,inset 0 0 40px #000;}
+h2{color:#c8a868;text-shadow:0 0 12px #7a1a0a,0 2px 2px #000;letter-spacing:3px;}
+h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margin:0 10px;vertical-align:middle;background:linear-gradient(90deg,transparent,var(--iron2),transparent);}
+/* buttons: forged iron plates */
+.btn{background:linear-gradient(#3e342a,#241c15 55%,#18120d);border:1px solid #6a5a46;border-radius:3px;color:#e6d4b0;text-shadow:0 1px 1px #000;
+  box-shadow:inset 0 1px 0 rgba(255,235,200,.14),inset 0 -2px 4px rgba(0,0,0,.5),0 1px 3px #000;}
+.btn.red{background:linear-gradient(#5a1a14,#360c08 55%,#200604);border-color:#8a3a2a;}
+.tab{background:linear-gradient(#1e1712,#0e0a07);border-color:#4a3c2e;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,235,200,.06);}
+.tab.on{background:linear-gradient(#3a2c1c,#1e160e);color:#e8c878;border-color:#9a7a48;box-shadow:inset 0 0 8px rgba(200,140,60,.25);}
+.ib{background:radial-gradient(circle at 50% 35%,#2e241b,#100c09);border:1px solid #5a4a38;border-radius:4px;box-shadow:inset 0 0 6px #000,0 0 0 1px #000,0 2px 4px #000;}
+.sk{background:radial-gradient(circle at 50% 35%,#2e241b,#0c0907);border-color:#5e4e3a;box-shadow:inset 0 0 10px #000,0 0 0 1px #000,0 0 0 3px #2a2118,0 3px 6px #000;}
+.cell{background:radial-gradient(circle at 50% 40%,#16110d,#070504);border-color:#2e2620;box-shadow:inset 0 0 8px #000;}
+.card{background:linear-gradient(#0e0a08ee,#070504ee);box-shadow:inset 0 0 12px #000;}
+.slot,.cls,.filt{background:linear-gradient(#18120e,#0b0806);border-color:#3e3226;box-shadow:inset 0 0 10px #000;}
+#minimap{border:2px solid #2a2118;border-radius:50%;box-shadow:0 0 0 1px #000,0 0 0 3px var(--iron),0 3px 8px #000;}
+#xpb{border-color:#2a2118;box-shadow:0 0 0 1px var(--iron);}
+#bossbar .bar{border:1px solid #000;box-shadow:0 0 0 2px var(--iron),0 0 0 3px #000,0 3px 8px #000;}
+.overlay{background:radial-gradient(ellipse at center,rgba(10,6,4,.82),rgba(0,0,0,.94));}

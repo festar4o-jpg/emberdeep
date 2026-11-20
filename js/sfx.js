@@ -1,0 +1,21 @@
+'use strict';
+// Sound cues, synthesised with WebAudio (no sound files): a chime when a rare, unique, set item or a rune drops.
+// Browsers only allow audio after a tap, so the audio context is created on the first touch or key press.
+// Settings → Sound turns them off.
+let AC=null;
+function audio(){if(AC)return AC;const C=typeof window!=='undefined'&&(window.AudioContext||window.webkitAudioContext);if(!C)return null;try{AC=new C();}catch(e){AC=null;}return AC;}
+if(typeof addEventListener==='function')for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>{const a=audio();if(a&&a.state==='suspended')a.resume();},{passive:true});
+// One soft bell partial: a sine at f with a quick attack and a long exponential decay.
+function tone(a,f,t0,dur,vol,type){const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+dur+0.05);}
+// rare: two bright notes · unique: a deep bell with a shimmer · set: a hollow, greener chord · rune: a metallic clink
+const DROP_SFX={
+  rare:a=>{const t=a.currentTime;tone(a,988,t,0.35,0.07,'triangle');tone(a,1480,t+0.09,0.5,0.06,'triangle');},
+  unique:a=>{const t=a.currentTime;for(const [f,v,d] of [[196,0.14,1.8],[294,0.08,1.5],[392,0.06,1.2],[784,0.035,0.9],[1176,0.02,0.7]])tone(a,f,t,d,v);tone(a,1568,t+0.15,0.6,0.02,'triangle');},
+  set:a=>{const t=a.currentTime;for(const [f,v,d] of [[233,0.12,1.5],[349,0.07,1.3],[466,0.05,1.1],[698,0.03,0.8]])tone(a,f,t,d,v);tone(a,932,t+0.12,0.5,0.03,'triangle');},
+  rune:a=>{const t=a.currentTime;tone(a,1320,t,0.25,0.06,'square');tone(a,1980,t+0.02,0.3,0.04);tone(a,660,t,0.4,0.05);}};
+let sfxLast=0;
+function playSfx(k){if(SETTINGS.sound===false||!DROP_SFX[k])return;const a=audio();if(!a||a.state!=='running')return;
+  if(a.currentTime-sfxLast<0.06)return;sfxLast=a.currentTime;try{DROP_SFX[k](a);}catch(e){}}
+// What a drop sounds like: nothing for common/magic items and gold.
+function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}

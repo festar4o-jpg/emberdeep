@@ -62,6 +62,22 @@ function drawAir(){if(G.inTown||!G.p)return;const A=AIR[ACTS[actIdx(G.depth)].ge
   for(const m of airP){m.x=(m.x+(A[2]+Math.sin(G.time*0.7+m.p)*5)*m.s*dt+w)%w;m.y=(m.y+A[3]*m.s*dt+h)%h;
     const r=A[4]*m.s*2.4;ctx.globalAlpha=A[1]*(0.5+0.5*Math.sin(G.time*1.3+m.p));ctx.drawImage(S,x0+m.x-r,y0+m.y-r,r*2,r*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// ---------- loot ----------
+// Light beam over rare and better drops: a soft column, brightest at the floor, fading upward (one sprite per colour).
+const BEAM={};
+function beamSprite(rgb){let c=BEAM[rgb];if(c)return c;const W=32,H=256;c=mkCanvas(W,H);const x=c.getContext('2d');
+  const h=x.createLinearGradient(0,0,W,0);h.addColorStop(0,`rgba(${rgb},0)`);h.addColorStop(0.5,`rgba(${rgb},1)`);h.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=h;x.fillRect(0,0,W,H);
+  x.fillStyle='rgba(255,255,255,.9)';x.fillRect(W/2-1.5,0,3,H); // hot core
+  x.globalCompositeOperation='destination-in';const v=x.createLinearGradient(0,0,0,H);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(0.6,'rgba(0,0,0,.45)');v.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=v;x.fillRect(0,0,W,H);return BEAM[rgb]=c;}
+function drawBeam(l,col,big){const rgb=rgbOf(col),H=big?200:125,W=big?26:18,pu=0.75+0.25*Math.sin(G.time*2.4+l.x);ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=(big?0.7:0.55)*pu;ctx.drawImage(beamSprite(rgb),l.x-W/2,l.y-H,W,H);
+  ctx.globalAlpha=0.6*pu;ctx.save();ctx.translate(l.x,l.y+4);ctx.scale(1,0.4);const R=big?34:24;ctx.drawImage(falloff(rgb),-R,-R,R*2,R*2);ctx.restore();
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
+function lootLabel(x,y,txt,col,edge,tag,tagCol,small){ctx.font=small?'10px sans-serif':'11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+  const w=ctx.measureText(txt).width,tw=tag?ctx.measureText(' '+tag).width:0,W=w+tw+10,H=small?14:16,x0=x-W/2,y0=y-H/2;
+  ctx.fillStyle='rgba(6,4,3,.84)';ctx.fillRect(x0,y0,W,H);ctx.strokeStyle=edge;ctx.lineWidth=1;ctx.strokeRect(x0+0.5,y0+0.5,W-1,H-1);
+  ctx.fillStyle=col;ctx.fillText(txt,x0+5,y+0.5);if(tag){ctx.fillStyle=tagCol;ctx.fillText(' '+tag,x0+5+w,y+0.5);}ctx.textAlign='center';ctx.textBaseline='alphabetic';}
 // ---------- combat feel ----------
 // Cosmetic randomness has its own generator: effects never shift gameplay rolls (or the seeded tests).
 const fxRnd=artRng(77177),fr=(a,b)=>a+fxRnd()*(b-a);

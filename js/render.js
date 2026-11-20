@@ -49,9 +49,10 @@ function render(){
   ctx.textAlign='center';
   for(const l of G.loot){if(!onScreen(l.x,l.y,40)||(l.item&&lootHidden(l.item)))continue;const bob=Math.sin(G.time*4+l.x)*2;
     if(l.gem){drawStoneLoot(l,bob);continue;}
-    if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#f2d04a';ctx.strokeStyle='#7a5a10';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(l.x,l.y+bob,5,0,TAU);ctx.fill();ctx.stroke();continue;}
+    if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}
+      lootLabel(l.x,l.y-14,`${l.gold} Gold`,CURRENCY_COL,'rgba(200,180,138,.55)',null,null,true);continue;}
     const col=RCOL[l.item.rarity];
-    if(l.item.rarity>=2){const g=ctx.createLinearGradient(0,l.y-90,0,l.y);g.addColorStop(0,col+'00');g.addColorStop(1,col+'88');ctx.fillStyle=g;ctx.fillRect(l.x-5,l.y-90,10,90);}
+    if(l.item.rarity>=2)drawBeam(l,col,l.item.rarity!==2); // fx.js: rare = short beam, unique/set/Runebind = tall
     const iy=l.y+bob; // rarity-coloured disc with the item's own inventory icon on top
     softShadow(l.x,l.y+12,15-bob,6,0.8);
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(l.x,iy,15,0,TAU);ctx.fill();
@@ -59,10 +60,8 @@ function render(){
     const im=iconImg(iconKey(l.item));
     if(im.complete&&im.naturalWidth)ctx.drawImage(im,l.x-12,iy-12,24,24);
     else{ctx.save();ctx.translate(l.x,iy);ctx.rotate(Math.PI/4);ctx.fillStyle=col;ctx.fillRect(-6,-6,12,12);ctx.restore();} // until the icon has loaded
-    ctx.font=l.item.rarity?'11px sans-serif':'10px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';
-    const cmp=lootCmp(l),tag=lootTag(l.item,cmp),txt=l.item.name+(tag?' '+tag.t:''),w=ctx.measureText(txt).width,x0=l.x-w/2;
-    ctx.textAlign='left';ctx.strokeText(txt,x0,l.y-20);ctx.fillStyle=l.item.rarity?col:'#b4b4b4';ctx.fillText(l.item.name,x0,l.y-20);
-    if(tag){ctx.fillStyle=tag.col;ctx.fillText(' '+tag.t,x0+ctx.measureText(l.item.name).width,l.y-20);}ctx.textAlign='center';}
+    const cmp=lootCmp(l),tag=lootTag(l.item,cmp); // fx.js: dark box, edged in the rarity colour
+    lootLabel(l.x,l.y-24,l.item.name,col,l.item.rarity?col:'#5a5650',tag&&tag.t,tag&&tag.col,!l.item.rarity);}
   // entities sorted by y
   const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
@@ -101,7 +100,8 @@ function drawStoneLoot(l,bob){const s=l.gem,x=l.x,y=l.y+bob,col=stoneCol(s);
   else if(s.g==='skull'){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y-1,6,0,TAU);ctx.fill();ctx.fillRect(x-3.5,y+3,7,4);ctx.fillStyle='#2a2418';ctx.fillRect(x-3.5,y-2,2.5,2.5);ctx.fillRect(x+1,y-2,2.5,2.5);}
   else{const z=4+s.q*1.2;ctx.fillStyle=col;ctx.strokeStyle='#00000088';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y-z);ctx.lineTo(x+z*0.8,y-z*0.25);ctx.lineTo(x,y+z);ctx.lineTo(x-z*0.8,y-z*0.25);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.globalAlpha=0.5+0.5*Math.sin(G.time*5+x);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-z*0.6,2,2);ctx.globalAlpha=1;}
-  ctx.font='10px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';const n=stoneName(s);ctx.strokeText(n,x,y-14);ctx.fillStyle=col;ctx.fillText(n,x,y-14);}
+  if(s.r)drawBeam(l,CURRENCY_COL,false); // runes are rare enough for a beam
+  lootLabel(x,y-16,stoneName(s),s.r?CURRENCY_COL:col,'rgba(200,180,138,.6)',null,null,true);}
 // Ground loot comparison, cached per item for half a second (bestSlot can run stat calculations).
 function lootCmp(l){if(!(l.cmpT>G.time-0.5)||l.cmpT>G.time){l.cmpT=G.time;l.cmp=G.char?compareLoot(G.char,l.item):null;}return l.cmp;}
 // Label suffix: the tier numeral, with ▲/▼ against the tier you wear in that slot.

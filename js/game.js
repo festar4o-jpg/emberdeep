@@ -61,7 +61,7 @@ function killEnemy(e){
   else if(e.elite){const n=(Math.random()<Math.min(1,0.4*lootMul)?2:1)+(e.affs.length>=3&&Math.random()<0.5?1:0);for(let k=0;k<n;k++)dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
   else if(Math.random()<T.drop*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
 }
-function dropItem(x,y,it){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}G.loot.push({x,y,item:it,t:0});}
+function dropItem(x,y,it){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it))dropSfx(l);} // sfx.js: a chime for rare and better
 function dropGold(x,y,v){G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});}
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.
 // Movement input from the joystick and WASD/arrows, length at most 1.
