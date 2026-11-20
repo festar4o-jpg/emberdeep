@@ -143,6 +143,7 @@ function startDepth(d,mode){
   if(newAct)showActTitle(d);else toast(d>25?`Endless ${d-25} · ${ACTS[actIdx(d)].name}`:`${ACTS[actIdx(d)].name} ${stageOf(d)}/5`,d%5===0?(G.levelMode==='noboss'?'The boss is away; its halls are not empty':G.levelMode==='boss'?'The boss awaits, alone':'A powerful foe awaits…'):'');
 }
 function resetArea(){
+  G.areaT=G.time;G.bossIntro=null; // a new area: no boss banner left over from the last one
   G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;
   const p=G.p;p.dead=false;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
@@ -205,7 +206,7 @@ function update(dt){
       if(e.burnTick<=0&&e.burnAcc>=1){e.burnTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.burnAcc),'#ff9a4a',false);e.burnAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
     if(e.spawnT>0)e.spawnT-=dt;
-    if(e.type==='boss'&&!e.introDone&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<430){e.introDone=true;bossIntro(e);} // sprites.js: the entrance
+    if(e.type==='boss'&&!e.introDone&&G.time-(G.areaT||0)>2.4&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<430){/* after the area title has faded */e.introDone=true;bossIntro(e);} // sprites.js: the entrance
     if(e.introT>0){e.introT-=dt;if(e.introT>1.2&&Math.random()<dt*10)burst(e.x+rand(-e.r,e.r),e.y+e.r*0.6,3,'#8a7a62',90);continue;}
     const T=ETYPES[e.type];
     if(T.regen&&e.hp<e.maxHp&&G.time-(e.lastHit||-9)>2&&!(e.bleedT>0)){ // troll regen; bleeding stops it

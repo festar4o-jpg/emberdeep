@@ -275,7 +275,7 @@ const BOSS_SCALE=1.4;
 // its name is carved across the screen, and it can't act or be hurt until it has fully risen.
 function bossIntro(e){e.introT=2.4;G.bossIntro={e,t:0};G.shake=Math.max(G.shake,10);
   G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r*6,t:0,max:0.9,col:ACTS[e.kind||0].col});burst(e.x,e.y,40,'#8a7a62',260);}
-function drawBossIntro(){const B=G.bossIntro;if(!B)return;B.t=Math.max(B.t,0);const e=B.e,u=(2.4-(e.introT||0))/2.4;if(e.dead||u>=1.05){G.bossIntro=null;return;}
+function drawBossIntro(){const B=G.bossIntro;if(!B)return;B.t=Math.max(B.t,0);const e=B.e,u=(2.4-(e.introT||0))/2.4;if(e.dead||u>=1.05||!G.enemies.includes(e)){G.bossIntro=null;return;}
   const a=u<0.15?u/0.15:u>0.75?Math.max(0,(1.05-u)/0.3):1;
   ctx.fillStyle=`rgba(0,0,0,${0.35*a})`;ctx.fillRect(0,0,CW,CH);
   const y=CH*0.3;ctx.textAlign='center';ctx.globalAlpha=a;

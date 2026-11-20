@@ -6,7 +6,7 @@
 // read warm against cold shadows. Static lights (wall torches, candles, lava, glowing mushrooms) are collected once
 // while the map is painted (G.lights, see addLight in maps.js); moving ones (you, projectiles, spells, loot, fiery
 // monsters, hazards) are gathered per frame. All sprites are built once and reused: a frame is only drawImage calls.
-const LIGHT_RES=0.33,LIGHT_MAX=96,GLOW_MAX=40;
+const LIGHT_RES=0.33,LIGHT_MAX=96,GLOW_MAX=24;
 let LCV=null,LX=null,VIG=null,VIG_K='';
 const LSPR={},RGB_OF={};
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
@@ -67,12 +67,11 @@ function drawLighting(Lt){
   LX.setTransform(1,0,0,1,0,0);LX.globalCompositeOperation='source-over';LX.globalAlpha=1;LX.clearRect(0,0,w,h);LX.fillStyle=Lt.dark;LX.fillRect(0,0,w,h);
   LX.globalCompositeOperation='destination-out';
   for(const l of L){const r=l.r*k;LX.globalAlpha=clamp(l.i,0,1);LX.drawImage(S,(l.x*Z+ox)*LIGHT_RES-r,(l.y*Z+oy)*LIGHT_RES-r,r*2,r*2);}
-  LX.globalCompositeOperation='source-over';LX.globalAlpha=1;
+  LX.globalCompositeOperation='source-over';LX.globalAlpha=1;LX.drawImage(vignette(),0,0,w,h); // the vignette rides along in the light map: one full-screen draw
   ctx.drawImage(LCV,0,0,w,h,0,0,w/LIGHT_RES,h/LIGHT_RES);
   ctx.globalCompositeOperation='lighter';let n=0;
   for(const l of L){if(!(l.g>0)||!l.rgb||n++>=GLOW_MAX)continue;const r=l.r*Z*0.55;ctx.globalAlpha=clamp(l.g,0,1);ctx.drawImage(falloff(l.rgb),l.x*Z+ox-r,l.y*Z+oy-r,r*2,r*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
-  ctx.drawImage(vignette(),0,0,CW,CH);
 }
 // ---------- soft drop shadows ----------
 // One blurred oval, pre-rendered, stretched under every character, monster and item.

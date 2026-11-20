@@ -259,3 +259,5 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 #xpb{border-color:#2a2118;box-shadow:0 0 0 1px var(--iron);}
 #bossbar .bar{border:1px solid #000;box-shadow:0 0 0 2px var(--iron),0 0 0 3px #000,0 3px 8px #000;}
 .overlay{background:radial-gradient(ellipse at center,rgba(10,6,4,.82),rgba(0,0,0,.94));}
+.orb>span,#hpb.orb>span,#mpb.orb>span{flex-direction:column;line-height:1.05;}
+.orb>span small{font-size:8px;font-weight:normal;opacity:.8;border-top:1px solid rgba(255,255,255,.45);padding-top:1px;margin-top:1px;}

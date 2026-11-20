@@ -46,10 +46,14 @@ function fogTex(rgb){if(FOG_TINT[rgb])return FOG_TINT[rgb];if(!FOG_TEX){const S=
   const c=mkCanvas(FOG_TEX.width,FOG_TEX.height),x=c.getContext('2d');x.drawImage(FOG_TEX,0,0);x.globalCompositeOperation='source-in';x.fillStyle=`rgb(${rgb})`;x.fillRect(0,0,c.width,c.height);return FOG_TINT[rgb]=c;}
 // Screen space (ctx transform = DPR): each layer is a handful of stretched tiles.
 function drawFog(){if(G.inTown||!G.p)return;const F=FOG[ACTS[actIdx(G.depth)].gen];if(!F)return;const tex=fogTex(F[0]),t=G.time;
-  const pat=tex.pat||(tex.pat=ctx.createPattern(tex,'repeat')); // a repeating pattern tiles without seams
-  for(const [sc,vx,vy,par,al] of [[5.5,9,3,1,F[1]],[3.4,-14,5,1.25,F[1]*0.7]]){const k=sc*Z,T=128*k,ox=-(((G.cam.x*par+t*vx)*Z)%T+T)%T,oy=-(((G.cam.y*par+t*vy)*Z)%T+T)%T;
-    ctx.save();ctx.globalAlpha=al;ctx.translate(ox,oy);ctx.scale(k,k);ctx.fillStyle=pat;ctx.fillRect(0,0,(CW-ox)/k+1,(CH-oy)/k+1);ctx.restore();}
-  ctx.globalAlpha=1;}
+  // both layers are painted into a small canvas (the light map's resolution: fog is soft anyway), then stretched over the screen once
+  const R=LIGHT_RES,w=Math.ceil(CW*R),h=Math.ceil(CH*R);if(!FOGC){FOGC=mkCanvas(w,h);FOGX=FOGC.getContext('2d');}else if(FOGC.width!==w||FOGC.height!==h){FOGC.width=w;FOGC.height=h;}
+  const X=FOGX,pat=tex.pat||(tex.pat=X.createPattern(tex,'repeat')); // a repeating pattern tiles without seams
+  X.setTransform(1,0,0,1,0,0);X.globalAlpha=1;X.clearRect(0,0,w,h);
+  for(const [sc,vx,vy,par,al] of [[5.5,9,3,1,F[1]],[3.4,-14,5,1.25,F[1]*0.7]]){const k=sc*Z*R,T=128*k,ox=-(((G.cam.x*par+t*vx)*Z*R)%T+T)%T,oy=-(((G.cam.y*par+t*vy)*Z*R)%T+T)%T;
+    X.setTransform(k,0,0,k,ox,oy);X.globalAlpha=al;X.fillStyle=pat;X.fillRect(0,0,(w-ox)/k+1,(h-oy)/k+1);}
+  ctx.drawImage(FOGC,0,0,w,h,0,0,w/R,h/R);}
+let FOGC=null,FOGX=null;
 // ---------- dungeon air ----------
 // A few dozen motes drift through the light: dust in the crypts and wastes, spores in the marsh, snow in the
 // citadel, embers in the core. Screen-space and wrapped, so they cost the same anywhere on the map.

@@ -63,7 +63,7 @@ function render(){
     const cmp=lootCmp(l),tag=lootTag(l.item,cmp); // fx.js: dark box, edged in the rarity colour
     lootLabel(l.x,l.y-24,l.item.name,col,l.item.rarity?col:'#5a5650',tag&&tag.t,tag&&tag.col,!l.item.rarity);}
   // entities sorted by y
-  const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
+  const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));G.crowd=ents.length;/* big crowds skip the per-monster top light (sprites.js litBlit) */ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
   drawCorpses(); // sprites.js: falling bodies
   for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else drawEnemy(e);}
@@ -350,7 +350,7 @@ function drawEnemy(e){
   const S=creatureSprite(e,T); // sprites.js: pre-rendered, only rotated and stamped here
   if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face,P=creaturePose(e),ex=e.x+Math.cos(e.face)*P.dx,ey=e.y+Math.sin(e.face)*P.dx;
     let sc=P.sc;if(e.introT>0){const u=1-e.introT/2.4;sc*=0.55+0.45*Math.min(1,u*1.6);ctx.globalAlpha=Math.min(1,u*2);} // a boss rising for its entrance
-    litBlit(S,ex,ey,ang,T.shape==='wraith'?0.9:null,sc);ctx.globalAlpha=1;
+    if(G.crowd>12&&e.type!=='boss'&&!e.elite)blit(S,ex,ey,ang,T.shape==='wraith'?0.9:null);else litBlit(S,ex,ey,ang,T.shape==='wraith'?0.9:null,sc);ctx.globalAlpha=1;
     if(e.flash>0)blit(whiteOf(S),ex,ey,ang,Math.min(1,e.flash/0.1)*0.85); // a brief white hit flash
     if(e.frozen>0){ctx.fillStyle='rgba(150,210,255,.3)';ctx.strokeStyle='rgba(225,245,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.05,0,TAU);ctx.fill();ctx.stroke();}
     if(e.wind>0&&Math.floor(G.time*20)%2===0){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,70,30,.3)';ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.1,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}

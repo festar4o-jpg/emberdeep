@@ -23,9 +23,9 @@ function updateHud(){
   $('nmTxt').textContent=`${c.name} · Lv ${lvlLabel(c)} ${C.name}`;
   // life / resource bars fill from the left; life pulses below 30%
   const hpF=clamp(p.hp/s.life,0,1);
-  $('hpb').firstElementChild.style.height=hpF*100+'%';$('hpb').lastElementChild.textContent=`${Math.ceil(Math.max(0,p.hp))} / ${Math.round(s.life)}`;
+  $('hpb').firstElementChild.style.height=hpF*100+'%';$('hpb').lastElementChild.innerHTML=`${Math.ceil(Math.max(0,p.hp))}<small>${Math.round(s.life)}</small>`; // current over max: fits the orb
   $('hpb').classList.toggle('low',hpF<0.3&&!p.dead);
-  $('mpb').firstElementChild.style.height=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.textContent=`${Math.floor(p.res)} / ${Math.round(s.res)}`;
+  $('mpb').firstElementChild.style.height=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.innerHTML=`${Math.floor(p.res)}<small>${Math.round(s.res)}</small>`;
   $('hpb').title=`Life ${Math.ceil(p.hp)} / ${Math.round(s.life)}`;$('mpb').title=`${C.res} ${Math.floor(p.res)} / ${Math.round(s.res)}`;
   $('dodgeBtn').querySelector('.cd').style.setProperty('--p',p.dodgeCd>0?p.dodgeCd/DODGE_CD:0);
   $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
