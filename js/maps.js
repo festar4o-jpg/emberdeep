@@ -283,8 +283,35 @@ const THEMES={};
     desert:[['ribs',2,0],['bones',2,0],['pillar',2,0],['ruin',2,0],['tree',2,0],['debris',3,0]],
     marsh:[['tree',4,0],['log',3,0],['puddle',4,0],['bones',1.5,0],['grave',1,1],['debris',1,0]],
     citadel:[['pillar',3,0],['ice',3,0],['cage',1.5,1],['ruin',2,0],['debris',2,0],['bones',1,0]],
-    ember:[['cage',2,1],['pillar',2,0],['debris',3,0],['bones',2,0],['chains',2,0],['ruin',1,0]]};
-  const PROP_COL={crypt:'#5a5650',desert:'#8a7656',marsh:'#4a4a3a',citadel:'#7a8a9a',ember:'#3a2c28'};
+    ember:[['cage',2,1],['pillar',2,0],['debris',3,0],['bones',2,0],['chains',2,0],['ruin',1,0]],
+    a1fields:[['grave',5,0],['tree',3,0],['bones',2,0],['candles',1,0],['debris',1,0]],a1gully:[['tree',3,0],['bones',3,0],['cage',2,1],['debris',3,0],['log',1,0]],
+    a1ossuary:[['bones',6,0],['candles',2,0],['debris',2,0],['grave',1,1],['chains',1,0]],a1moor:[['tree',4,0],['log',3,0],['debris',2,0],['grave',1,0],['ruin',1,0]]};
+  const PROP_COL={a1fields:'#5a5650',a1gully:'#6a5e50',a1ossuary:'#4a4440',a1moor:'#5a5448',crypt:'#5a5650',desert:'#8a7656',marsh:'#4a4a3a',citadel:'#7a8a9a',ember:'#3a2c28'};
+  // ---- Act 1 zone themes (zones.js) ----
+  const treeWall=(x,px,py,adj,h)=>{x.fillStyle=`hsl(${h},18%,4%)`;x.fillRect(px,py,TILE,TILE);if(!adj)return;
+    for(let k=0;k<3;k++){const cx=px+rand(4,36),cy=py+rand(4,36),r=rand(10,16);dot(x,cx+3,cy+4,r,'rgba(0,0,0,.4)');dot(x,cx,cy,r,`hsl(${h+rand(-8,8)},${rand(14,22)}%,${rand(8,13)}%)`);dot(x,cx-r*0.3,cy-r*0.35,r*0.45,`hsla(${h},20%,20%,.5)`);}};
+  const rockWall=(x,px,py,adj,h,s,l)=>{if(!adj){x.fillStyle=`hsl(${h},${s}%,${l*0.4}%)`;x.fillRect(px,py,TILE,TILE);return;}
+    const b=(cx,cy,rx,ry,col)=>{x.fillStyle=col;x.beginPath();for(let k=0;k<9;k++){const a=k/9*TAU,r=rand(0.78,1.08);x.lineTo(cx+Math.cos(a)*rx*r,cy+Math.sin(a)*ry*r);}x.closePath();x.fill();};
+    b(px+20,py+23,25,21,`hsl(${h},${s}%,${l*0.55}%)`);b(px+19,py+18,21,16,`hsl(${h},${s}%,${l}%)`);b(px+17,py+14,14,9,`hsl(${h},${s}%,${l*1.4}%)`);if(Math.random()<0.4)crack(x,px,py,'rgba(0,0,0,.45)');};
+  THEMES.a1fields={void:'#040604',floor(x,px,py){x.fillStyle=`hsl(${92+Math.random()*10},14%,${13+Math.random()*1.5}%)`;x.fillRect(px,py,TILE,TILE);
+      for(let k=0;k<6;k++){x.strokeStyle=`hsla(${80+rand(0,30)},22%,${rand(18,26)}%,.6)`;x.lineWidth=1;const bx=px+rand(2,38),by=py+rand(4,38);x.beginPath();x.moveTo(bx,by);x.lineTo(bx+rand(-2,2),by-rand(3,6));x.stroke();}
+      if(Math.random()<0.2)dot(x,px+rand(6,34),py+rand(6,34),rand(5,10),'rgba(60,45,30,.25)');},
+    wall(x,px,py,below,adj){treeWall(x,px,py,adj,110);},
+    deco(x,px,py){const r=Math.random();if(r<0.025){x.strokeStyle='#8a8478';x.lineWidth=2.4;const cx=px+20,cy=py+24;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx,cy-14);x.moveTo(cx-5,cy-10);x.lineTo(cx+5,cy-10);x.stroke();}}};
+  THEMES.a1gully={void:'#060403',floor(x,px,py){x.fillStyle=`hsl(28,${12+Math.random()*3}%,${14+Math.random()*1.5}%)`;x.fillRect(px,py,TILE,TILE);
+      for(let k=0;k<5;k++)dot(x,px+rand(2,38),py+rand(2,38),rand(0.8,2),Math.random()<0.6?'rgba(0,0,0,.25)':'rgba(200,180,150,.12)');if(Math.random()<0.1)crack(x,px,py,'rgba(0,0,0,.35)');},
+    wall(x,px,py,below,adj){rockWall(x,px,py,adj,26,8,20);},
+    deco(x,px,py){if(Math.random()<0.02){x.strokeStyle='#3a2a1a';x.lineWidth=3;const bx=px+20,by=py+30;x.beginPath();x.moveTo(bx,by);x.lineTo(bx,by-22);x.lineTo(bx+10,by-22);x.stroke();x.strokeStyle='#8a7050';x.lineWidth=1;x.beginPath();x.moveTo(bx+9,by-22);x.lineTo(bx+9,by-12);x.stroke();}}};
+  THEMES.a1ossuary={void:'#030202',floor(x,px,py){x.fillStyle=`hsl(30,${5+Math.random()*3}%,${10+Math.random()*1.5}%)`;x.fillRect(px,py,TILE,TILE);
+      for(let k=0;k<3;k++){if(Math.random()<0.5){x.strokeStyle='rgba(210,200,175,.35)';x.lineWidth=1.6;const bx=px+rand(4,36),by=py+rand(4,36),a=rand(0,3);x.beginPath();x.moveTo(bx,by);x.lineTo(bx+Math.cos(a)*6,by+Math.sin(a)*6);x.stroke();}}},
+    wall(x,px,py,below,adj){rockWall(x,px,py,adj,32,6,13);if(adj&&Math.random()<0.12){dot(x,px+20,py+18,4.5,'#c8bca0');dot(x,px+18.5,py+17.5,1.1,'#100c08');dot(x,px+21.5,py+17.5,1.1,'#100c08');}},
+    deco(x,px,py){if(Math.random()<0.03){for(let k=0;k<4;k++){x.strokeStyle='#b8ae94';x.lineWidth=1.8;const bx=px+rand(8,32),by=py+rand(8,32),a=rand(0,3);x.beginPath();x.moveTo(bx,by);x.lineTo(bx+Math.cos(a)*8,by+Math.sin(a)*8);x.stroke();}}}};
+  THEMES.a1moor={void:'#040504',floor(x,px,py,i,j){const rd=G.road&&G.road[j*MW+i];
+      if(rd){x.fillStyle=`hsl(32,${16+Math.random()*3}%,${17+Math.random()*2}%)`;x.fillRect(px,py,TILE,TILE);for(let k=0;k<6;k++)dot(x,px+rand(2,38),py+rand(2,38),rand(0.8,2),Math.random()<0.6?'rgba(0,0,0,.25)':'rgba(220,200,160,.12)');
+        x.strokeStyle='rgba(0,0,0,.18)';x.lineWidth=2;x.beginPath();x.moveTo(px,py+14);x.lineTo(px+TILE,py+14+rand(-2,2));x.moveTo(px,py+28);x.lineTo(px+TILE,py+28+rand(-2,2));x.stroke();}
+      else{x.fillStyle=`hsl(${78+Math.random()*12},13%,${13+Math.random()*1.5}%)`;x.fillRect(px,py,TILE,TILE);for(let k=0;k<5;k++){x.strokeStyle=`hsla(70,20%,${rand(18,26)}%,.6)`;x.lineWidth=1;const bx=px+rand(2,38),by=py+rand(4,38);x.beginPath();x.moveTo(bx,by);x.lineTo(bx+rand(-2,2),by-rand(3,6));x.stroke();}}},
+    wall(x,px,py,below,adj){treeWall(x,px,py,adj,95);},
+    deco(x,px,py){if(Math.random()<0.01){x.fillStyle='#2a2018';x.fillRect(px+18,py+8,3,24);dot(x,px+19.5,py+8,4,'rgba(255,200,110,.7)');addLight(px+19.5,py+8,110,0.55,'255,190,100',0.25,1);}}};
   THEMES._props=(x,gen,at,rooms)=>{const S=PROP_SET[gen];if(!S||!rooms)return;const tot=S.reduce((a,s)=>a+s[1],0),c=PROP_COL[gen],taken=new Set();
     for(const r of rooms){const n=Math.round(r.w*r.h/16*rand(0.7,1.3));
       for(let k=0;k<n;k++){let w=Math.random()*tot,P=S[0];for(const s of S){w-=s[1];if(w<0){P=s;break;}}
@@ -300,7 +327,7 @@ const THEMES={};
       else{const col=gen==='ember'?'rgba(255,90,20,.5)':gen==='citadel'?'rgba(200,235,255,.15)':'rgba(0,0,0,.45)';x.strokeStyle=col;x.lineWidth=1.2;x.beginPath();x.moveTo(px,py);for(let s=0;s<7;s++){a+=rand(-0.6,0.6);px+=Math.cos(a)*rand(6,12);py+=Math.sin(a)*rand(6,12);if(at(Math.floor(px/TILE),Math.floor(py/TILE))!==0)break;x.lineTo(px,py);}x.stroke();}}};
   // Walls with depth: the rim of a wall's top lit where it meets open floor, a darker inner top, and a soft
   // shadow down the side faces; drawn over the themes' own walls.
-  THEMES._wallDepth=(x,gen,at)=>{if(gen==='desert'||gen==='marsh')return;const lit=gen==='citadel'?'rgba(225,240,255,.22)':gen==='ember'?'rgba(255,110,40,.18)':'rgba(220,210,190,.14)';
+  THEMES._wallDepth=(x,gen,at)=>{if(['desert','marsh','a1fields','a1moor','a1gully','a1ossuary'].includes(gen))return;const lit=gen==='citadel'?'rgba(225,240,255,.22)':gen==='ember'?'rgba(255,110,40,.18)':'rgba(220,210,190,.14)';
     for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){if(at(i,j)!==1)continue;const px=i*TILE,py=j*TILE,n=at(i,j-1)!==1,s=at(i,j+1)!==1,w=at(i-1,j)!==1,e=at(i+1,j)!==1;if(!(n||s||w||e))continue;
       const top=s?TILE-15:TILE; // the face (if any) is the bottom 15px
       x.fillStyle='rgba(255,255,255,.025)';x.fillRect(px+3,py+3,TILE-6,top-6);
@@ -310,7 +337,7 @@ const THEMES={};
 // Light sources baked with the map (light.js lights them every frame): {x, y, r, i, rgb, g, fl: flickers, torch: draw a flame}.
 function addLight(x,y,r,i,rgb,g,fl,torch){(G.lights||(G.lights=[])).push({x,y,r,i,rgb,g,fl:!!fl,torch:!!torch});}
 // Wall torches along wall faces in the dungeon, at least 6 tiles apart: iron sconces in stone, wooden stakes in rock and brush.
-const TORCH_RGB={crypt:'255,165,85',desert:'255,180,100',marsh:'245,195,105',citadel:'255,160,80',ember:'255,110,40'};
+const TORCH_RGB={a1fields:'255,170,90',a1gully:'255,170,90',a1ossuary:'255,160,80',a1moor:'255,180,100',crypt:'255,165,85',desert:'255,180,100',marsh:'245,195,105',citadel:'255,160,80',ember:'255,110,40'};
 function placeTorches(x,gen,at,adjFloor){const rgb=TORCH_RGB[gen];if(!rgb)return;const C=[],picked=[];
   for(let j=1;j<MH-1;j++)for(let i=1;i<MW-1;i++)if(at(i,j)===1&&at(i,j+1)===0&&adjFloor(i,j))C.push([i,j]);
   C.sort(()=>Math.random()-0.5);
@@ -355,7 +382,7 @@ function wearMap(x,at){const W=MW*TILE,H=MH*TILE,A=aoStrips();
       x.beginPath();x.ellipse(cx,cy,r,r*rand(0.5,0.9),rand(0,3),0,TAU);x.fill();for(let k=0;k<4;k++){x.beginPath();x.arc(cx+rand(-r*1.6,r*1.6),cy+rand(-r*1.2,r*1.2),rand(1,3),0,TAU);x.fill();}}}}
 // Pull the colour toward earthy, muted tones: drain some saturation, then a faint tone wash. [desaturate, tone]
 // Each act has its own grade: sickly green crypt ruins, warm dusty desert, cold blue swamp, pale frozen steel, scorched red core.
-const GRADE={crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.22,'#ecd8bc']};
+const GRADE={a1fields:[0.42,'#c8d0b4'],a1gully:[0.4,'#d0ccb8'],a1ossuary:[0.42,'#c8ccb8'],a1moor:[0.4,'#ccd0b4'],crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.22,'#ecd8bc']};
 function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
   x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,W,H);
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
@@ -365,13 +392,13 @@ function renderMap(){const R0=Math.random;Math.random=artRng(R0()*4294967296|0);
 function paintMap(){
   G.lights=[];G.splats=[];sprClear(); // new map, new creatures: drop the old sprites
   const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');
-  const gen=G.inTown?'town'+actIdx(G.depth):ACTS[actIdx(G.depth)].gen,TH=THEMES[gen],g=G.grid,T=G.terrain;
+  const gen=G.inTown?'town'+actIdx(G.depth):(G.zoneTheme||ACTS[actIdx(G.depth)].gen),TH=THEMES[gen]||THEMES[ACTS[actIdx(G.depth)].gen],g=G.grid,T=G.terrain; /* zones.js: each zone has its own theme */
   const at=(i,j)=>i<0||j<0||i>=MW||j>=MH?1:g[j*MW+i];
   const adjFloor=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(at(i+a,j+b)===0)return true;return false;};
   x.fillStyle=TH.void;x.fillRect(0,0,cv.width,cv.height);
   // pass 1: floor, terrain and void tiles
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i,v=g[k],px=i*TILE,py=j*TILE;
-    if(v===0){if(T[k]===T_BRIDGE&&TH.bridge)TH.bridge(x,px,py,i,j,at);else if(T[k]===T_POISON&&TH.poison)TH.poison(x,px,py);else if(T[k]===T_LAVA&&TH.lava)TH.lava(x,px,py);else TH.floor(x,px,py);}
+    if(v===0){if(T[k]===T_BRIDGE&&TH.bridge)TH.bridge(x,px,py,i,j,at);else if(T[k]===T_POISON&&TH.poison)TH.poison(x,px,py);else if(T[k]===T_LAVA&&TH.lava)TH.lava(x,px,py);else TH.floor(x,px,py,i,j);}
     else if(v===2&&TH.voidT)TH.voidT(x,px,py,i,j,at);}
   // pass 2: walls (may overhang floor for organic shapes) and decorations
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i,v=g[k],px=i*TILE,py=j*TILE;

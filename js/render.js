@@ -30,7 +30,8 @@ function render(){
   const P=G.portal;if(onScreen(P.x,P.y,80)){ctx.save();ctx.translate(P.x,P.y);
     const g=ctx.createRadialGradient(0,0,4,0,0,44);g.addColorStop(0,P.active?'#e9d0ff':'#777');g.addColorStop(0.5,P.active?'#8a3dff99':'#44444499');g.addColorStop(1,'#0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,44,0,TAU);ctx.fill();
     ctx.strokeStyle=P.active?'#c79bff':'#666';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,30-k*7,G.time*(2+k)+k,G.time*(2+k)+k+3.5);ctx.stroke();}ctx.restore();}
-  if(!G.inTown)drawFeatures(onScreen);else drawTownLive(onScreen);
+  drawSidePortal(onScreen); /* zones.js */
+  if(!G.inTown)drawFeatures(onScreen);else{drawTownLive(onScreen);drawElder();}
   if(G.inTown&&G.merchant&&onScreen(G.merchant.x,G.merchant.y,120))drawMerchant();
   if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
@@ -364,11 +365,11 @@ function drawEnemy(e){
   if(e.hp<e.maxHp&&e.type!=='boss'){const w=e.r*2;ctx.fillStyle='#000a';ctx.fillRect(e.x-w/2,e.y-e.r-10,w,4);ctx.fillStyle=e.elite?'#6f8fff':'#c22';ctx.fillRect(e.x-w/2,e.y-e.r-10,w*Math.max(0,e.hp/e.maxHp),4);}
   if(e.shieldT>0){ctx.strokeStyle='#bcd0ff';ctx.fillStyle='rgba(150,180,255,.18)';ctx.lineWidth=2;ctx.globalAlpha=0.7+Math.sin(G.time*10)*0.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,TAU);ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
   if(e.type==='boss')drawBossState(e); /* bossfight.js */
-  if(e.elite||e.type==='thief')drawEliteLabel(e);
+  if(e.elite||e.type==='thief'||e.zb||e.type==='nest')drawEliteLabel(e);
 }
 // Elite name, with its affixes on a line underneath (each in its own colour).
 function drawEliteLabel(e){const A=e.affs||[],y=e.y-e.r-14,ny=A.length?y-12:y;
-  ctx.font='11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(e.name,e.x,ny);ctx.fillStyle=e.type==='thief'?'#f2d04a':'#8fa8ff';ctx.fillText(e.name,e.x,ny);
+  ctx.font=e.su||e.zb?'bold 12px Georgia':'11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(e.name,e.x,ny);ctx.fillStyle=e.zb?'#ff8a5a':e.su||e.type==='thief'?'#f2d04a':'#8fa8ff'; /* champions gold, zone bosses orange */ctx.fillText(e.name,e.x,ny);
   if(!A.length)return;ctx.font='9px sans-serif';const sep=' · ',sw=ctx.measureText(sep).width,ws=A.map(k=>ctx.measureText(AFFIXES[k].name).width);
   let x=e.x-(ws.reduce((a,b)=>a+b,0)+sw*(A.length-1))/2;ctx.textAlign='left';
   A.forEach((k,i)=>{if(i){ctx.strokeText(sep,x,y);ctx.fillStyle='#9c8b72';ctx.fillText(sep,x,y);x+=sw;}ctx.strokeText(AFFIXES[k].name,x,y);ctx.fillStyle=AFFIXES[k].col;ctx.fillText(AFFIXES[k].name,x,y);x+=ws[i];});

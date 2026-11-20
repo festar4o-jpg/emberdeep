@@ -55,10 +55,13 @@ function killEnemy(e){
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,G.depth+L.ilvl,3,min,{act:dropAct(G.depth),top:true}));}
     dropGold(e.x,e.y,G.depth*L.gold);dropGold(e.x+20,e.y,G.depth*L.gold*0.5);
     if(actIdx(G.depth)===4)emberCoreDrop(e);
+    if(G.depth===5)questDone('a1q4'); /* zones.js: Act 1 quest */
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
     if(G.depth===25&&!c.won){c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory();},1800);}
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
+  else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
+  else if(e.su)superDown(e);
   else if(e.elite){const n=(Math.random()<Math.min(1,0.4*lootMul)?2:1)+(e.affs.length>=3&&Math.random()<0.5?1:0);for(let k=0;k<n;k++)dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
   else if(Math.random()<T.drop*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
 }
@@ -129,7 +132,7 @@ function newChar(name,cls){
   return c;
 }
 function startGame(c){
-  G.char=c;G.stats=calcStats(c);noteSetPieces(EQ_SLOTS.map(s=>c.equip[s]).concat(c.bag));
+  migrateZones(c);G.char=c;G.stats=calcStats(c);noteSetPieces(EQ_SLOTS.map(s=>c.equip[s]).concat(c.bag));
   G.p={x:0,y:0,r:15,hp:G.stats.life,res:CLASSES[c.cls].res==='Fury'?20:G.stats.res,face:0,cd:[0,0,0,0,0],cdMax:[1,1,1,1,1],potions:c.potions??3+G.stats.pot,potCd:0,buffT:0,buffAmt:0,spin:0,leap:null,hurt:0,dead:false};
   $('mpb').classList.toggle('fury',CLASSES[c.cls].res==='Fury');
   $('dodgeBtn').firstChild.nodeValue=c.cls==='arcanist'?'💫':'💨'; /* Arcanists Blink, Wardens roll */
@@ -139,6 +142,8 @@ function startGame(c){
 }
 // mode (boss depths, from the Waystone): 'all' (default), 'boss' = the boss alone, 'noboss' = the packs only.
 function startDepth(d,mode){
+  if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js: Act 1 is built of zones */
+  G.zone=null;G.sidePortal=null;G.zboss=null;
   const c=G.char;G.depth=d;c.depth=d;c.maxDepth=Math.max(c.maxDepth,d);
   resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
@@ -149,16 +154,17 @@ function startDepth(d,mode){
   if(newAct)showActTitle(d);else toast(d>25?`Endless ${d-25} · ${ACTS[actIdx(d)].name}`:`${ACTS[actIdx(d)].name} ${stageOf(d)}/5`,d%5===0?(G.levelMode==='noboss'?'The boss is away; its halls are not empty':G.levelMode==='boss'?'The boss awaits, alone':'A powerful foe awaits…'):'');
 }
 function resetArea(){
-  G.areaT=G.time;G.bossIntro=null; // a new area: no boss banner left over from the last one
+  G.areaT=G.time;G.bossIntro=null;G.zoneTheme=null;G.elder=null; // a new area: no boss banner left over from the last one
   G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;
   const p=G.p;p.dead=false;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
 function startTown(next){
+  G.zone=null;G.sidePortal=null;G.zboss=null;
   const c=G.char;G.depth=next;c.depth=next; // quitting in town resumes at the next depth
   resetArea();G.inTown=true;
-  genTown();G.cam.x=G.p.x;G.cam.y=G.p.y;
+  genTown();placeElder();G.cam.x=G.p.x;G.cam.y=G.p.y;
   G.shop=rollShop(next);
   $('descBtn').textContent=`⬇ Enter Depth ${next}`;
   saveChar();setPause();
@@ -281,7 +287,8 @@ function update(dt){
   G.exploreT-=dt;if(G.exploreT<=0){G.exploreT=0.15;const tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE);for(let j=-8;j<=8;j++)for(let i=-8;i<=8;i++){if(i*i+j*j>64)continue;const x=tx+i,y=ty+j;if(x>=0&&y>=0&&x<MW&&y<MH)G.explored[y*MW+x]=1;}}
   // portal
   const nearPortal=G.portal.active&&Math.hypot(p.x-G.portal.x,p.y-G.portal.y)<70&&!p.dead;
-  $('descBtn').classList.toggle('hidden',!nearPortal);
+  if(G.zone&&!G.inTown)zonePortals(p); /* zones.js: locked exits, side passages */
+  else{$('descBtn').classList.toggle('hidden',!nearPortal);$('descBtn').classList.remove('dis');}
   const nearMerchant=G.inTown&&G.merchant&&!p.dead&&Math.hypot(p.x-G.merchant.x,p.y-G.merchant.y)<85;
   $('shopBtn').classList.toggle('hidden',!nearMerchant);
   const nearStash=G.inTown&&G.stash&&!p.dead&&Math.hypot(p.x-G.stash.x,p.y-G.stash.y)<70;

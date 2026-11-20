@@ -81,8 +81,9 @@ function placeEncounters(depth,rooms,start,exit,isBoss,spot){
 
 // ---------- using shrines and chests ----------
 function nearFeat(){const p=G.p;let best=null,bd=70;
-  for(const f of G.feats){if(f.kind==='shrine'?f.used:f.state!=='idle')continue;const d=Math.hypot(f.x-p.x,f.y-p.y);if(d<bd){bd=d;best=f;}}return best;}
-function useFeature(){const f=G.nearFeat,p=G.p;if(!f||G.paused||p.dead||G.inTown)return;
+  for(const f of G.feats){if(f.use?f.done:f.kind==='shrine'?f.used:f.state!=='idle')continue; /* f.use: zones.js features */const d=Math.hypot(f.x-p.x,f.y-p.y);if(d<bd){bd=d;best=f;}}return best;}
+function useFeature(){const f=G.nearFeat,p=G.p;if(G.inTown&&G.elderNear&&!G.paused)return openQuests(); /* zones.js */
+  if(!f||G.paused||p.dead||G.inTown)return;if(f.use){f.use(f);G.nearFeat=null;return;}
   if(f.kind==='shrine'&&!f.used){const S=SHRINES[f.type];f.used=true;(p.shr||(p.shr={}))[f.type]=SHRINE_T;refreshStats();
     toast(S.name,S.buff+' for 30s');G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:110,t:0,max:0.5,col:S.col});burst(f.x,f.y,30,S.col,200);}
   else if(f.kind==='chest'&&f.state==='idle'){f.state='waves';toast('The chest is cursed!','Survive 3 waves');G.shake=8;nextWave(f);}
@@ -136,7 +137,8 @@ function encounterTick(dt){const p=G.p,b=p.shr;
   G.walls=G.walls.filter(w=>w.t>0);
   for(const f of G.feats)if(f.kind==='chest')chestTick(f,dt);
   G.nearFeat=p.dead||G.inTown?null:nearFeat();
-  const lbl=G.nearFeat?(G.nearFeat.kind==='shrine'?'✦ '+SHRINES[G.nearFeat.type].name:'☠ Open Cursed Chest'):'';
+  zoneTick(dt);elderTick();
+  const lbl=G.inTown&&G.elderNear?'📜 Elder Maren':G.nearFeat?G.nearFeat.use?G.nearFeat.label:(G.nearFeat.kind==='shrine'?'✦ '+SHRINES[G.nearFeat.type].name:'☠ Open Cursed Chest'):'';
   if(lbl!==useLabel){useLabel=lbl;$('useBtn').textContent=lbl;$('useBtn').classList.toggle('hidden',!lbl);}
 }
 tap('useBtn',useFeature);
@@ -147,7 +149,7 @@ function drawFeatures(onScreen){
     ctx.globalAlpha=k;ctx.fillStyle='#4a3a2a';ctx.fillRect(x+2,y+2,TILE-4,TILE-4);ctx.fillStyle='#6a5640';ctx.fillRect(x+2,y+2,TILE-4,8);
     ctx.strokeStyle='#1a120a';ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);ctx.globalAlpha=1;}
   ctx.textAlign='center';
-  for(const f of G.feats){if(!onScreen(f.x,f.y,60))continue;
+  for(const f of G.feats){if(!onScreen(f.x,f.y,60))continue;if(f.zdraw){f.zdraw(f);continue;}
     if(f.kind==='shrine'){const S=SHRINES[f.type],on=!f.used,x=f.x,y=f.y;
       if(on){const g=ctx.createRadialGradient(x,y-18,2,x,y-18,40);g.addColorStop(0,S.col+'aa');g.addColorStop(1,S.col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y-18,40,0,TAU);ctx.fill();}
       ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(x,y+8,18,7,0,0,TAU);ctx.fill();
@@ -164,8 +166,8 @@ function drawFeatures(onScreen){
       const lbl=open?'':act?`Wave ${f.wave}/3`:'Cursed Chest';
       if(lbl){ctx.font='11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(lbl,x,y-32);ctx.fillStyle=act?'#ff70c0':'#c080ff';ctx.fillText(lbl,x,y-32);}}}
 }
-function minimapFeatures(s){
-  for(const f of G.feats){if(!G.explored[tileIdx(f.x,f.y)])continue;
+function minimapFeatures(s){minimapZone(s);
+  for(const f of G.feats){if(f.zdraw||!G.explored[tileIdx(f.x,f.y)])continue;
     if(f.kind==='shrine'){if(f.used)continue;mctx.fillStyle=SHRINES[f.type].col;mctx.beginPath();mctx.arc(f.x/TILE*s,f.y/TILE*s,4,0,TAU);mctx.fill();}
     else if(f.state!=='open'){mctx.fillStyle='#c060ff';mctx.fillRect(f.x/TILE*s-4,f.y/TILE*s-3,8,6);}}
   mctx.fillStyle='#f2d04a';for(const e of G.enemies)if(e.type==='thief'&&!e.dead&&G.explored[tileIdx(e.x,e.y)])mctx.fillRect(e.x/TILE*s-3,e.y/TILE*s-3,6,6);

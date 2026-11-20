@@ -187,7 +187,7 @@ const BOSS_PAINT=[
 ];
 // The ghoul is the default look for monster types without a painter of their own.
 const SHAPE_PAINT={blob:'ghoul',archer:'archer',scarab:'scarab',worm:'worm',toad:'toad',vine:'vine',troll:'troll',wraith:'wraith',golem:'golem',shard:'shard',imp:'imp',magma:'magma',thief:'thief'};
-function painterFor(e,T){if(e.type==='boss')return BOSS_PAINT[e.kind||0];if(T.shape==='robe')return PAINT[e.type]||PAINT.dustmage;if(e.type==='brute')return PAINT.ogre;return PAINT[SHAPE_PAINT[T.shape||'blob']];}
+function painterFor(e,T){if(e.type==='boss')return BOSS_PAINT[e.kind||0];if(e.type==='zboss')return ZB_PAINT[e.zb];if(e.type==='nest')return PAINT.nest; /* zones.js */if(T.shape==='robe')return PAINT[e.type]||PAINT.dustmage;if(e.type==='brute')return PAINT.ogre;return PAINT[SHAPE_PAINT[T.shape||'blob']];}
 // Walk cycle frame from distance actually moved (stands still when the creature does).
 function animFrame(o,stride){const dx=o.x-(o._ax??o.x),dy=o.y-(o._ay??o.y);o._ax=o.x;o._ay=o.y;o._ap=((o._ap||0)+Math.hypot(dx,dy)/stride)%SPR_F;return o._ap|0;}
 function creatureSprite(e,T){const P=painterFor(e,T);if(!P)return null;const r=Math.round(e.r),f=T.shape==='shard'?0:T.shape==='imp'||T.shape==='wraith'||T.shape==='vine'||e.type==='boss'&&e.kind===2?((G.time*(T.shape==='imp'?14:4)+e.seed)|0)%SPR_F:animFrame(e,Math.max(8,r*0.7));

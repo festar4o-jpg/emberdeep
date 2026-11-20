@@ -31,13 +31,13 @@ function updateHud(){
   $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
   const left=G.enemies.filter(e=>!e.dead).length;
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(D)}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
+  $('depthTxt').textContent=G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(D)}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
   const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);
     const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;el.children[0].style.setProperty('--p',f);el.children[1].textContent=(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'';}
   $('potCnt').textContent=p.potions;$('potBtn').classList.toggle('locked',p.potions<=0);$('potBtn').querySelector('.cd').style.setProperty('--p',p.potCd>0?p.potCd:0);
-  const b=G.boss;if(b&&!b.dead&&b.aggro){$('bossbar').classList.remove('hidden');
+  const b=G.boss&&!G.boss.dead?G.boss:G.zboss&&!G.zboss.dead&&G.zboss.aggro?G.zboss:null;if(b&&!b.dead&&b.aggro){$('bossbar').classList.remove('hidden');
     const st=b.transT>0||b.introT>0?'IMMUNE':b.shieldT>0?'SHIELDED':b.staggerT>0?'STAGGERED':b.punishT>0?'EXPOSED':b.enraged?'ENRAGED':''; /* bossfight.js states */
     $('bossName').textContent=b.name+(b.phase!=null?` · Phase ${ROMAN_PH[b.phase]}`:'')+(st?` · ${st}`:'');$('bossbar').querySelector('.bar>i').style.width=(b.hp/b.maxHp*100)+'%';
     $('bossStg').firstElementChild.style.width=(b.staggerT>0?100:Math.min(100,(b.stagger||0)/(b.staggerMax||100)*100))+'%';$('bossStg').classList.toggle('full',b.staggerT>0);}
@@ -89,7 +89,8 @@ const tap=(id,fn)=>$(id).addEventListener('click',fn);
 $('potBtn').addEventListener('touchstart',ev=>{ev.preventDefault();usePotion();},{passive:false});$('potBtn').addEventListener('mousedown',usePotion);
 $('dodgeBtn').addEventListener('touchstart',ev=>{ev.preventDefault();tryDodge();},{passive:false});$('dodgeBtn').addEventListener('mousedown',()=>tryDodge());
 tap('descBtn',descend);
-function descend(){if(G.paused||!G.portal.active)return;if(G.inTown)startDepth(G.depth);else startTown(G.depth+1);}
+function descend(){if(G.paused)return;if(G.zone&&!G.inTown)return zoneDescend(); /* zones.js */
+  if(!G.portal.active)return;if(G.inTown){if(zoneOfDepth(G.depth)&&G.char.zone&&ZONES[G.char.zone])startZone(G.char.zone);else startDepth(G.depth);}else startTown(G.depth+1);}
 tap('shopBtn',openShop);
 tap('bagBtn',toggleInv);tap('skBtn',toggleSkills);tap('menuBtn',toggleMenu);
 tap('resumeBtn',toggleMenu);
@@ -100,9 +101,9 @@ function showVictory(){const c=G.char;
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
-tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);startDepth(G.depth);});
+tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);if(G.zone)startZone(G.zone);else startDepth(G.depth);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});
-function anyPanel(){return ['invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','wayOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
+function anyPanel(){return ['questOv','invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','wayOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
 function setPause(){const panel=anyPanel();G.paused=panel||!G.char;for(let i=0;i<5;i++)held[i]=false;if(panel)G.texts=[];}
 let actTimer=0;
 function showActTitle(d){const A=ACTS[actIdx(d)],cy=cycleOf(d);
