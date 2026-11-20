@@ -123,7 +123,14 @@ const AI={
 };
 function blockedAt(x,y,r){const x0=Math.floor((x-r)/TILE),x1=Math.floor((x+r)/TILE),y0=Math.floor((y-r)/TILE),y1=Math.floor((y+r)/TILE);for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++)if(solid(tx,ty))return true;return false;}
 function moveEnt(e,dx,dy){const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/(e.r*0.7)));const sx=dx/steps,sy=dy/steps;
-  for(let k=0;k<steps;k++){if(!blockedAt(e.x+sx,e.y,e.r))e.x+=sx;if(!blockedAt(e.x,e.y+sy,e.r))e.y+=sy;}}
+  for(let k=0;k<steps;k++){
+    if(!blockedAt(e.x+sx,e.y,e.r))e.x+=sx;else if(sx&&Math.abs(sx)>Math.abs(sy))cornerSlide(e,sx,0);
+    if(!blockedAt(e.x,e.y+sy,e.r))e.y+=sy;else if(sy&&Math.abs(sy)>=Math.abs(sx))cornerSlide(e,0,sy);}}
+// Corner correction: pushing into a wall edge that is nearly lined up with an opening slides you sideways into it
+// (up to 9 px), instead of snagging on the corner. Found by the autotest bot: loot in one-tile nooks was unreachable.
+function cornerSlide(e,sx,sy){const m=Math.max(Math.abs(sx),Math.abs(sy));
+  for(let o=1;o<=9;o++)for(const s of [1,-1]){const ox=sy?s*o:0,oy=sx?s*o:0;
+    if(!blockedAt(e.x+ox,e.y+oy,e.r)&&!blockedAt(e.x+ox+sx,e.y+oy+sy,e.r)){const k=Math.min(o,m);e.x+=Math.sign(ox)*k;e.y+=Math.sign(oy)*k;return;}}}
 
 // Monster types. ai picks the behaviour; cost is the pack budget it uses (keeps difficulty smooth across acts);
 // heavy = immune to knockback; dr = damage reduction; shot = projectile attack.
