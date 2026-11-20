@@ -8,8 +8,8 @@
 //                A unique can do this once, at a much higher price.
 //   Add Stat     a white, magic or rare item with under 4 stats: roll 3 new stats and pick one to add
 //   Remove Stat  a white, magic or rare item: take off the chosen stat
-// Stat crafts (Add, Remove, Enchant, Reforge) on white, magic and rare items are limited: as many as the item's
-// base tier (Tier III = 3 crafts), rings and amulets by their act. Upgrade a white base first for more crafts.
+// Stat crafts (Add, Remove, Enchant, Reforge) on white, magic and rare items are limited: twice the item's
+// base tier (Tier III = 6 crafts), rings and amulets by their act. Upgrade a white base first for more crafts.
 // The stat count sets the rarity: 0 white, 1-2 magic, 3-4 rare.
 // Charms and Runebinds can't be smithed.
 // Salvage materials, one per rarity: white → Iron Scrap, magic → Arcane Dust, rare → Rare Essence,
@@ -53,7 +53,7 @@ const SMITH_OPS={
 // ---------- stat crafts ----------
 const MAX_STATS=4,ADD_OPTS=3,CRAFT_OPS=new Set(['add','remove','enchant','reforge']);
 const craftLimited=it=>it.rarity>=0&&it.rarity<=2&&it.slot!=='charm';
-const craftMax=it=>it.tier||itemAct(it);
+const craftMax=it=>2*(it.tier||itemAct(it));
 const craftsLeft=it=>Math.max(0,craftMax(it)-(it.crafts||0));
 const statCount=it=>it.affs.filter(a=>a.k!=='skill').length;
 // Rarity and name follow the stats: 0 white, 1-2 magic (prefix/suffix name), 3+ rare (a rare keeps its name).
