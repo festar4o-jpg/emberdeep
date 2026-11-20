@@ -29,12 +29,12 @@ function gatherLights(Lt){
   const L=[],p=G.p,t=G.time,hw=CW/Z/2,hh=CH/Z/2,cx=G.cam.x,cy=G.cam.y;
   // i = how much darkness it removes (0..1), g = strength of its coloured glow (0 = none)
   const add=(x,y,r,i,rgb,g)=>{if(L.length>=LIGHT_MAX||!(r>0)||Math.abs(x-cx)>hw+r||Math.abs(y-cy)>hh+r)return;L.push({x,y,r,i,rgb,g});};
-  if(p){add(p.x,p.y,Lt.r1,0.92,lightRgb(Lt),0.1);add(p.x,p.y,Lt.r0*1.5,0.75,null,0);
+  if(p){add(p.x,p.y,Lt.r1,0.92,lightRgb(Lt),G.inTown?0.16:0.1);add(p.x,p.y,Lt.r0*1.5,0.75,null,0);
     if(setAuraOn())add(p.x,p.y,140,0.5,auraCols()[0],0.22);
     if(hasPw('burnAura')&&!G.inTown&&!p.dead)add(p.x,p.y,AURA_R*1.2,0.4,'255,110,30',0.18);}
   for(const s of G.lights||[]){const f=s.fl?flick(t,s.x*0.37+s.y):1;add(s.x,s.y,s.r*(0.94+0.06*f),s.i*f,s.rgb,s.g*f);}
   if(G.inTown&&G.town){const T=G.town.T;for(const l of G.town.lights){const f=l.win?0.9+0.1*Math.sin(t*1.3+l.x):flick(t,l.x);
-      add(l.x,l.y,l.r*2.4,(l.win?0.55:0.85)*f,l.shroom?'120,255,190':l.way?'90,220,255':T.flame,(l.win?0.22:0.32)*f);}
+      add(l.x,l.y,l.r*(l.win?3:2.8),(l.win?0.72:0.9)*f,l.shroom?'120,255,190':l.way?'90,220,255':l.win?'255,190,110':T.flame,(l.win?0.32:0.4)*f);} // towns: warm, generous light
     if(G.smith)add(G.smith.x+34,G.smith.y-6,130,0.9*flick(t,3),'255,140,50',0.35);}
   const P=G.portal;if(P)add(P.x,P.y,170,P.active?0.85:0.4,P.active?'170,110,255':'150,150,150',P.active?0.28:0.08);
   if(!G.inTown)for(const f of G.feats){if(f.kind==='shrine'){if(!f.used)add(f.x,f.y-18,120,0.7,rgbOf(SHRINES[f.type].col),0.3);}else if(f.state!=='open')add(f.x,f.y,110,0.6,f.state==='waves'?'255,64,160':'144,64,255',0.25);}

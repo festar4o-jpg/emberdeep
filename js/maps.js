@@ -224,6 +224,88 @@ const THEMES={};
     deco(x,px,py){const r=Math.random();
       if(r<0.012){glow(x,px+20,py+20,18,'rgba(255,120,30,.45)');addLight(px+20,py+20,80,0.45,'255,120,30',0.25,1);}
       else if(r<0.035){x.fillStyle='#0c0605';x.beginPath();const cx=px+rand(10,30),cy=py+rand(10,30);x.moveTo(cx,cy-9);x.lineTo(cx+5,cy+4);x.lineTo(cx-4,cy+5);x.fill();x.strokeStyle='rgba(255,90,30,.4)';x.lineWidth=1;x.stroke();}}};
+  // ---------- props and floor detail (graphics stage 5) ----------
+  // Painted into the map once, after the floor and walls. Props are scenery only (they never block or get hit);
+  // tall ones (graves, cages, dead trees, pillars) prefer floor right under a wall so they read as standing against it.
+  const shade=(x,cx,cy,rx,ry,a)=>{x.fillStyle=`rgba(0,0,0,${a||0.4})`;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,TAU);x.fill();};
+  const lin=(x,x0,y0,x1,y1,c0,c1)=>{const g=x.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,c0);g.addColorStop(1,c1);return g;};
+  const PR={
+    // a weathered headstone: rounded top, lit face, dark top edge, crack and grime at the foot
+    grave(x,cx,cy,c){shade(x,cx+3,cy+3,11,4);x.fillStyle='#14110e';x.beginPath();x.moveTo(cx-8,cy+2);x.lineTo(cx-8,cy-14);x.arc(cx,cy-14,8,Math.PI,0);x.lineTo(cx+8,cy+2);x.closePath();x.fill();
+      x.fillStyle=lin(x,cx-7,0,cx+7,0,c||'#5a5650','#34312c');x.beginPath();x.moveTo(cx-7,cy+2);x.lineTo(cx-7,cy-13);x.arc(cx,cy-13,7,Math.PI,0);x.lineTo(cx+7,cy+2);x.closePath();x.fill();
+      x.strokeStyle='rgba(0,0,0,.5)';x.lineWidth=1;x.beginPath();x.moveTo(cx-3,cy-12);x.lineTo(cx+3,cy-12);x.moveTo(cx,cy-15);x.lineTo(cx,cy-6);x.stroke();
+      if(Math.random()<0.5){x.beginPath();x.moveTo(cx+2,cy-19);x.lineTo(cx+4,cy-11);x.lineTo(cx+1,cy-6);x.stroke();}
+      x.fillStyle='rgba(70,90,50,.35)';x.fillRect(cx-7,cy-2,14,4);dot(x,cx+rand(-9,9),cy+4,rand(1.5,3),'rgba(30,25,20,.6)');},
+    // a broken column: lit drum, shaded flank, jagged broken top, fallen chunks around it
+    pillar(x,cx,cy,c){shade(x,cx+4,cy+4,15,6,0.45);const h=rand(14,26),R=11;x.fillStyle=lin(x,cx-R,0,cx+R,0,c||'#6a645a','#2a2622');x.fillRect(cx-R,cy-h,R*2,h);
+      x.beginPath();x.ellipse(cx,cy,R,R*0.42,0,0,Math.PI);x.fill();x.strokeStyle='rgba(0,0,0,.3)';x.lineWidth=1;for(const k of [-5,0,5]){x.beginPath();x.moveTo(cx+k,cy-h+3);x.lineTo(cx+k,cy+R*0.3);x.stroke();}
+      x.fillStyle=c?'#8a8478':'#7e776a';x.beginPath();for(let k=0;k<=10;k++){const a=Math.PI+k/10*Math.PI,j=k%2?rand(-4,0):rand(0,3);x.lineTo(cx+Math.cos(a)*R,cy-h+Math.sin(a)*R*0.42+j);}for(let k=0;k<=10;k++){const a=k/10*Math.PI;x.lineTo(cx+Math.cos(a)*R,cy-h+Math.sin(a)*R*0.42);}x.fill();
+      for(let k=0;k<4;k++)PR.chunk(x,cx+rand(-20,20),cy+rand(2,10),rand(2.5,5),c);},
+    chunk(x,cx,cy,r,c){shade(x,cx+1,cy+1,r*1.1,r*0.5,0.4);x.fillStyle=c||'#5e584e';x.beginPath();for(let k=0;k<6;k++){const a=k/6*TAU,rr=r*rand(0.7,1.1);x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr*0.8);}x.fill();x.fillStyle='rgba(255,240,220,.12)';x.fillRect(cx-r*0.5,cy-r*0.6,r*0.8,1.2);},
+    debris(x,cx,cy,c){for(let k=0;k<rand(4,8);k++)PR.chunk(x,cx+rand(-14,14),cy+rand(-9,9),rand(1.8,4.5),c);},
+    // a low run of ruined wall: blocks of different heights with lit tops and dark faces
+    ruin(x,cx,cy,c){shade(x,cx,cy+6,30,6,0.4);let bx=cx-28;while(bx<cx+26){const w=rand(9,14),h=rand(4,16);x.fillStyle=lin(x,0,cy-h,0,cy+4,c||'#4e4840','#24201c');x.fillRect(bx,cy-h,w-1,h+4);x.fillStyle=c?'#7a7466':'#6a645a';x.fillRect(bx,cy-h-3,w-1,3);
+      x.fillStyle='rgba(0,0,0,.4)';x.fillRect(bx+w-2,cy-h,1,h+4);bx+=w;}PR.debris(x,cx+rand(-10,10),cy+12,c);},
+    // a skull and scattered long bones
+    bones(x,cx,cy){for(let k=0;k<3;k++){const a=rand(0,Math.PI),L=rand(7,12),bx=cx+rand(-10,10),by=cy+rand(-6,6);x.strokeStyle='#a69c84';x.lineWidth=2;x.beginPath();x.moveTo(bx-Math.cos(a)*L/2,by-Math.sin(a)*L/2);x.lineTo(bx+Math.cos(a)*L/2,by+Math.sin(a)*L/2);x.stroke();
+        dot(x,bx-Math.cos(a)*L/2,by-Math.sin(a)*L/2,1.7,'#b8ae94');dot(x,bx+Math.cos(a)*L/2,by+Math.sin(a)*L/2,1.7,'#b8ae94');}
+      if(Math.random()<0.7){shade(x,cx+1,cy+3,5,2);dot(x,cx,cy,4.5,'#c4b89c');x.fillStyle='#c4b89c';x.fillRect(cx-2.5,cy+2,5,3);dot(x,cx-1.6,cy-0.5,1.2,'#1a140e');dot(x,cx+1.6,cy-0.5,1.2,'#1a140e');}},
+    // the ribcage of something large, half sunk in the sand
+    ribs(x,cx,cy){const a=rand(-0.5,0.5);x.save();x.translate(cx,cy);x.rotate(a);x.strokeStyle='#b0a688';x.lineWidth=2.5;x.beginPath();x.moveTo(-24,0);x.lineTo(22,0);x.stroke();x.lineWidth=1.8;
+      for(let k=0;k<6;k++){const px=-18+k*7;for(const s of [-1,1]){x.beginPath();x.moveTo(px,0);x.quadraticCurveTo(px+5,s*9,px+2,s*15);x.stroke();}}x.fillStyle='#bfb496';x.beginPath();x.ellipse(26,0,6,4.5,0,0,TAU);x.fill();x.restore();},
+    // a dead tree seen from above: dark twisted branches forking out from the trunk, their shadow cast to the side
+    tree(x,cx,cy,c){const br=(x0,y0,a,L,w,d)=>{if(d>3||L<4)return;const x1=x0+Math.cos(a)*L,y1=y0+Math.sin(a)*L;x.lineWidth=w;x.beginPath();x.moveTo(x0,y0);x.quadraticCurveTo((x0+x1)/2+rand(-4,4),(y0+y1)/2+rand(-4,4),x1,y1);x.stroke();
+        for(let k=0;k<2;k++)br(x1,y1,a+rand(-0.7,0.7),L*rand(0.55,0.75),w*0.6,d+1);};
+      x.strokeStyle='rgba(0,0,0,.35)';x.lineCap='round';const seed=Math.random();for(let k=0;k<5;k++)br(cx+8,cy+8,k/5*TAU+seed*6,rand(12,20),3.5,0);
+      x.strokeStyle=c||'#2a1e14';for(let k=0;k<5;k++)br(cx,cy,k/5*TAU+seed*6,rand(12,20),3.5,0);dot(x,cx,cy,5,c||'#2a1e14');dot(x,cx-1,cy-1,2,'rgba(255,230,200,.1)');x.lineCap='butt';},
+    // an iron gibbet cage on the floor: base ring, bars, a domed top; sometimes bones inside, sometimes coals glowing
+    cage(x,cx,cy,hot){shade(x,cx+3,cy+4,14,5,0.45);if(hot){glow(x,cx,cy-4,18,'rgba(255,110,30,.5)');addLight(cx,cy-6,90,0.5,'255,110,30',0.3,1);}
+      x.strokeStyle='#1a1614';x.lineWidth=2;x.beginPath();x.ellipse(cx,cy,11,4.5,0,0,TAU);x.stroke();if(!hot&&Math.random()<0.6)PR.bones(x,cx,cy-3);if(hot)for(let k=0;k<5;k++)dot(x,cx+rand(-6,6),cy+rand(-2,2),rand(1.5,2.5),'#ff8a2a');
+      x.strokeStyle='#3a3430';x.lineWidth=1.6;for(let k=0;k<7;k++){const a=Math.PI*(0.05+k/6*0.9),bx=cx+Math.cos(a)*11;x.beginPath();x.moveTo(bx,cy+Math.sin(a)*4.5);x.lineTo(bx,cy-22+Math.sin(a)*4.5);x.stroke();}
+      x.beginPath();x.ellipse(cx,cy-22,11,4.5,0,0,TAU);x.stroke();x.beginPath();x.moveTo(cx-11,cy-22);x.quadraticCurveTo(cx,cy-34,cx+11,cy-22);x.stroke();x.fillStyle='rgba(255,230,200,.2)';x.fillRect(cx-9,cy-23,3,1);
+      x.strokeStyle='#2a2420';x.lineWidth=1.4;x.setLineDash([2,1.5]);x.beginPath();x.moveTo(cx,cy-30);x.lineTo(cx,cy-46);x.stroke();x.setLineDash([]);},
+    // a cluster of melted candles; lit, with a warm pool of light
+    candles(x,cx,cy){glow(x,cx,cy,22,'rgba(255,170,80,.3)');addLight(cx,cy-6,110,0.55,'255,175,90',0.28,1);
+      for(let k=0;k<rand(3,5);k++){const bx=cx+rand(-9,9),by=cy+rand(-4,5),h=rand(5,12);x.fillStyle='rgba(225,215,190,.5)';x.beginPath();x.ellipse(bx,by+1,3.5,1.6,0,0,TAU);x.fill();
+        x.fillStyle=lin(x,bx-2,0,bx+2,0,'#e6dcc0','#9a9076');x.fillRect(bx-2,by-h,4,h);x.fillStyle='#ffd27a';x.beginPath();x.ellipse(bx,by-h-2.5,1.3,2.6,0,0,TAU);x.fill();dot(x,bx,by-h-2,0.8,'#fff8e0');}},
+    // marsh: a rotting log with a lit top and dark rings at the cut end
+    log(x,cx,cy){const a=rand(-0.6,0.6),L=rand(26,40);x.save();x.translate(cx,cy);x.rotate(a);shade(x,3,5,L/2+3,6,0.4);x.fillStyle=lin(x,0,-6,0,6,'#4a3a26','#1e160c');x.fillRect(-L/2,-6,L,12);
+      x.fillStyle='rgba(90,120,60,.35)';x.fillRect(-L/2+4,-6,L*0.4,3);x.fillStyle='#5a4630';x.beginPath();x.ellipse(L/2,0,3,6,0,0,TAU);x.fill();x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=0.8;x.beginPath();x.ellipse(L/2,0,1.5,3.5,0,0,TAU);x.stroke();x.restore();},
+    // marsh: a dark pool of standing water with a pale sheen
+    puddle(x,cx,cy){const rx=rand(10,20),ry=rx*rand(0.45,0.7);x.fillStyle='rgba(8,14,12,.75)';x.beginPath();x.ellipse(cx,cy,rx,ry,rand(-0.3,0.3),0,TAU);x.fill();
+      x.strokeStyle='rgba(150,180,170,.18)';x.lineWidth=1;x.beginPath();x.ellipse(cx-rx*0.2,cy-ry*0.25,rx*0.55,ry*0.35,0,Math.PI*1.1,Math.PI*1.8);x.stroke();},
+    // ice: a jagged crust of frost crystals
+    ice(x,cx,cy){for(let k=0;k<rand(3,6);k++){const bx=cx+rand(-12,12),by=cy+rand(-6,6),h=rand(5,13);x.fillStyle='rgba(200,230,250,.75)';x.beginPath();x.moveTo(bx-3,by);x.lineTo(bx,by-h);x.lineTo(bx+3,by);x.fill();x.fillStyle='rgba(255,255,255,.6)';x.fillRect(bx-0.5,by-h+2,1,h-3);}},
+    chains(x,cx,cy){x.strokeStyle='#4a4440';x.lineWidth=1.6;let px=cx-18,py=cy;for(let k=0;k<9;k++){const nx=px+4.5,ny=py+rand(-2,2);x.beginPath();x.ellipse((px+nx)/2,(py+ny)/2,3,1.8,Math.atan2(ny-py,nx-px),0,TAU);x.stroke();px=nx;py=ny;}}};
+  // Props per act: [kind, weight, against-a-wall]. Colours lean on each act's stone.
+  const PROP_SET={
+    crypt:[['grave',3,1],['pillar',2,0],['candles',2,0],['bones',3,0],['ruin',1.5,0],['cage',1,1],['debris',2,0],['chains',1,0]],
+    desert:[['ribs',2,0],['bones',2,0],['pillar',2,0],['ruin',2,0],['tree',2,0],['debris',3,0]],
+    marsh:[['tree',4,0],['log',3,0],['puddle',4,0],['bones',1.5,0],['grave',1,1],['debris',1,0]],
+    citadel:[['pillar',3,0],['ice',3,0],['cage',1.5,1],['ruin',2,0],['debris',2,0],['bones',1,0]],
+    ember:[['cage',2,1],['pillar',2,0],['debris',3,0],['bones',2,0],['chains',2,0],['ruin',1,0]]};
+  const PROP_COL={crypt:'#5a5650',desert:'#8a7656',marsh:'#4a4a3a',citadel:'#7a8a9a',ember:'#3a2c28'};
+  THEMES._props=(x,gen,at,rooms)=>{const S=PROP_SET[gen];if(!S||!rooms)return;const tot=S.reduce((a,s)=>a+s[1],0),c=PROP_COL[gen],taken=new Set();
+    for(const r of rooms){const n=Math.round(r.w*r.h/16*rand(0.7,1.3));
+      for(let k=0;k<n;k++){let w=Math.random()*tot,P=S[0];for(const s of S){w-=s[1];if(w<0){P=s;break;}}
+        let i,j,ok=false;for(let t=0;t<8&&!ok;t++){i=r.x+randi(0,r.w-1);j=r.y+randi(0,r.h-1);if(P[2]){for(let jj=j;jj>=r.y-1;jj--)if(at(i,jj-1)===1){j=jj;break;}}ok=at(i,j)===0&&!taken.has(j*MW+i)&&(!P[2]||at(i,j-1)===1);}
+        if(!ok)continue;taken.add(j*MW+i);const cx=i*TILE+20+rand(-5,5),cy=j*TILE+(P[2]?26:20)+rand(-5,5);
+        if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c);}}};
+  // Floor detail across many tiles: roots in the marsh, wind ripples in the sand, long cracks in stone.
+  THEMES._floorDetail=(x,gen,at)=>{const N=gen==='marsh'?60:gen==='desert'?50:35;
+    for(let k=0;k<N;k++){const i=randi(1,MW-2),j=randi(1,MH-2);if(at(i,j)!==0)continue;let px=i*TILE+rand(0,TILE),py=j*TILE+rand(0,TILE),a=rand(0,TAU);
+      if(gen==='marsh'){x.strokeStyle='rgba(30,22,12,.85)';for(let b=0;b<3;b++){let qx=px,qy=py,aa=a+b*2.1,w=3;x.lineCap='round';for(let s=0;s<6;s++){aa+=rand(-0.5,0.5);const nx=qx+Math.cos(aa)*12,ny=qy+Math.sin(aa)*12;if(at(Math.floor(nx/TILE),Math.floor(ny/TILE))!==0)break;x.lineWidth=w;x.beginPath();x.moveTo(qx,qy);x.lineTo(nx,ny);x.stroke();
+          x.strokeStyle='rgba(120,100,70,.18)';x.lineWidth=w*0.35;x.stroke();x.strokeStyle='rgba(30,22,12,.85)';qx=nx;qy=ny;w*=0.82;}}x.lineCap='butt';}
+      else if(gen==='desert'){x.strokeStyle='rgba(255,225,180,.08)';x.lineWidth=1.5;for(let b=0;b<4;b++){x.beginPath();x.arc(px,py+b*6,40,Math.PI*1.25,Math.PI*1.75);x.stroke();}x.strokeStyle='rgba(0,0,0,.1)';for(let b=0;b<4;b++){x.beginPath();x.arc(px,py+b*6+2,40,Math.PI*1.25,Math.PI*1.75);x.stroke();}}
+      else{const col=gen==='ember'?'rgba(255,90,20,.5)':gen==='citadel'?'rgba(200,235,255,.15)':'rgba(0,0,0,.45)';x.strokeStyle=col;x.lineWidth=1.2;x.beginPath();x.moveTo(px,py);for(let s=0;s<7;s++){a+=rand(-0.6,0.6);px+=Math.cos(a)*rand(6,12);py+=Math.sin(a)*rand(6,12);if(at(Math.floor(px/TILE),Math.floor(py/TILE))!==0)break;x.lineTo(px,py);}x.stroke();}}};
+  // Walls with depth: the rim of a wall's top lit where it meets open floor, a darker inner top, and a soft
+  // shadow down the side faces; drawn over the themes' own walls.
+  THEMES._wallDepth=(x,gen,at)=>{if(gen==='desert'||gen==='marsh')return;const lit=gen==='citadel'?'rgba(225,240,255,.22)':gen==='ember'?'rgba(255,110,40,.18)':'rgba(220,210,190,.14)';
+    for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){if(at(i,j)!==1)continue;const px=i*TILE,py=j*TILE,n=at(i,j-1)!==1,s=at(i,j+1)!==1,w=at(i-1,j)!==1,e=at(i+1,j)!==1;if(!(n||s||w||e))continue;
+      const top=s?TILE-15:TILE; // the face (if any) is the bottom 15px
+      x.fillStyle='rgba(255,255,255,.025)';x.fillRect(px+3,py+3,TILE-6,top-6);
+      x.fillStyle=lit;if(s)x.fillRect(px,py+top-2,TILE,2);if(n)x.fillRect(px,py,TILE,2);if(w)x.fillRect(px,py,2,top);if(e)x.fillRect(px+TILE-2,py,2,top);
+      if(w){x.fillStyle=lin(x,px,0,px+8,0,'rgba(0,0,0,.45)','rgba(0,0,0,0)');x.fillRect(px-8,py,8,TILE);}if(e){x.fillStyle=lin(x,px+TILE+8,0,px+TILE,0,'rgba(0,0,0,.45)','rgba(0,0,0,0)');x.fillRect(px+TILE,py,8,TILE);}}};
 }
 // Light sources baked with the map (light.js lights them every frame): {x, y, r, i, rgb, g, fl: flickers, torch: draw a flame}.
 function addLight(x,y,r,i,rgb,g,fl,torch){(G.lights||(G.lights=[])).push({x,y,r,i,rgb,g,fl:!!fl,torch:!!torch});}
@@ -273,7 +355,7 @@ function wearMap(x,at){const W=MW*TILE,H=MH*TILE,A=aoStrips();
       x.beginPath();x.ellipse(cx,cy,r,r*rand(0.5,0.9),rand(0,3),0,TAU);x.fill();for(let k=0;k<4;k++){x.beginPath();x.arc(cx+rand(-r*1.6,r*1.6),cy+rand(-r*1.2,r*1.2),rand(1,3),0,TAU);x.fill();}}}}
 // Pull the colour toward earthy, muted tones: drain some saturation, then a faint tone wash. [desaturate, tone]
 // Each act has its own grade: sickly green crypt ruins, warm dusty desert, cold blue swamp, pale frozen steel, scorched red core.
-const GRADE={crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.3,'#d8d0c4']};
+const GRADE={crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.22,'#ecd8bc']};
 function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
   x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,W,H);
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
@@ -296,6 +378,7 @@ function paintMap(){
     if(v===1)TH.wall(x,px,py,at(i,j+1)===0,adjFloor(i,j),i,j);
     else if(v===0&&T[k]===0&&TH.deco)TH.deco(x,px,py,{up:at(i,j-1)===1,left:at(i-1,j)===1});}
   if(TH.rooms&&G.rooms)TH.rooms(x,G.rooms);
+  if(!G.inTown){THEMES._floorDetail(x,gen,at);THEMES._wallDepth(x,gen,at);THEMES._props(x,gen,at,G.rooms);} // stage 5: floor detail, wall depth, props
   wearMap(x,at);gradeMap(x,G.inTown?'town':gen);
   if(!G.inTown)placeTorches(x,gen,at,adjFloor);
   G.mapCv=cv;

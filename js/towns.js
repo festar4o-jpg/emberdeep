@@ -5,23 +5,23 @@
 // The ground and buildings are pre-drawn once into the map canvas (THEMES.town0..4); lights, folk and ambience are per frame.
 const TOWNS=[
   {name:'Gravewatch',sub:'Lanterns burn all night above the drowned crypts',mm:'#7d8590',amb:'mist',hat:'hood',
-   light:{r0:190,r1:560,tint:'rgba(150,180,255,0.03)',dark:'rgba(3,5,12,0.82)'},flame:'255,190,110',
+   light:{r0:240,r1:660,tint:'rgba(255,190,120,0.07)',dark:'rgba(16,10,8,0.66)'},flame:'255,190,110',
    folk:['#3d4a5c','#5a4636','#4a4a52','#2f3b33'],scatter:['grave','grave','grave','lamp','deadtree','barrel'],
    lines:['Bury them deep, or they climb back up.','The bells rang on their own last night.','Water seeps up through every grave here.','Don\'t follow the lights into the crypts.']},
   {name:'Kesh Oasis',sub:'The last cool water before the cinder dunes',mm:'#c4a46a',amb:'dust',hat:'wrap',
-   light:{r0:260,r1:700,tint:'rgba(255,200,120,0.05)',dark:'rgba(22,11,4,0.62)'},flame:'255,200,120',
+   light:{r0:280,r1:740,tint:'rgba(255,200,130,0.08)',dark:'rgba(24,13,6,0.52)'},flame:'255,200,120',
    folk:['#c8a060','#8a3a2a','#e0d0b0','#3a6a8a'],scatter:['palm','palm','pots','crate','pots'],
    lines:['Fill your skins. The wastes take everything.','The sun out there never set again.','Sand in the bread, sand in the bed.','Caravans stopped coming a year ago.']},
   {name:'Mirewatch',sub:'Stilt huts lashed together over black water',mm:'#7a9050',amb:'flies',hat:'straw',
-   light:{r0:170,r1:500,tint:'rgba(150,230,110,0.04)',dark:'rgba(3,8,4,0.84)'},flame:'190,255,140',
+   light:{r0:230,r1:640,tint:'rgba(255,190,120,0.07)',dark:'rgba(14,11,6,0.66)'},flame:'190,255,140',
    folk:['#5a6a3a','#6a4a2a','#3a5a4a','#7a6a3a'],scatter:['shroom','shroom','reeds','barrel','reeds'],
    lines:['Mind the planks. The water bites.','The mushrooms glow brighter when the rot is close.','My boy went to fish. Only his boat came back.','Boil the water. Twice.']},
   {name:'Frosthold',sub:'A palisade of pine against the endless winter',mm:'#b8c8d8',amb:'snow',hat:'fur',
-   light:{r0:220,r1:620,tint:'rgba(200,230,255,0.05)',dark:'rgba(4,8,18,0.74)'},flame:'255,170,90',
+   light:{r0:250,r1:680,tint:'rgba(255,185,115,0.08)',dark:'rgba(14,10,12,0.62)'},flame:'255,170,90',
    folk:['#6a4a3a','#4a5a7a','#7a3a3a','#5a5a5a'],scatter:['pine','pine','crystal','logs','pine'],
    lines:['Stay near the fire. The cold listens.','The citadel bells ring with no one inside.','We burn a log for every soul lost up there.','Ice on your blade? Good. It\'ll hold the edge.']},
   {name:'Cinderforge',sub:'The last forge-hold before the burning heart',mm:'#a06850',amb:'embers',hat:'helm',
-   light:{r0:190,r1:560,tint:'rgba(255,110,40,0.06)',dark:'rgba(14,4,2,0.8)'},flame:'255,120,40',
+   light:{r0:240,r1:660,tint:'rgba(255,160,90,0.08)',dark:'rgba(20,8,4,0.64)'},flame:'255,120,40',
    folk:['#4a3a3a','#6a2a1a','#3a3a40','#5a4030'],scatter:['brazier','brazier','obelisk','chains','obelisk'],
    lines:['The deep is hungry. Feed it steel, not yourself.','Every hammer here was forged in that fire.','Breathe through cloth. The ash cuts.','The Cinder King hears the anvils. Let him.']}
 ];
