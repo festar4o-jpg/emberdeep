@@ -293,6 +293,8 @@ function migrateItem(it){
   if(it.si&&it.rarity!==5)delete it.si;
   if(!(it.rarity>=0&&it.rarity<RNAME.length))it.rarity=it.affs.length?2:0;
   if(it.lock!==true)delete it.lock;
+  if(it.crafts!=null&&!(it.crafts>=0))delete it.crafts; // stat crafts used (smith.js)
+  if(it.addOpts){it.addOpts=(Array.isArray(it.addOpts)?it.addOpts:[]).filter(a=>a&&AFF[a.k]&&Number.isFinite(a.v)).slice(0,3);if(!it.addOpts.length)delete it.addOpts;}
   if(it.sockets!=null){it.sockets=clamp(Math.floor(+it.sockets)||0,0,4);if(!it.sockets)delete it.sockets;}
   if(it.socketed){it.socketed=(Array.isArray(it.socketed)?it.socketed:[]).filter(s=>s&&(s.r?RUNES[s.r]:GEMS[s.g]&&s.q>=1&&s.q<=5)).slice(0,it.sockets||0);if(!it.socketed.length)delete it.socketed;}
   if(it.rb&&!RUNEBINDS[it.rb]){delete it.rb;if(it.rarity===4)it.rarity=0;}

@@ -169,6 +169,7 @@ function openItem(it,equipped,price){
     for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
+    if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="fdim" style="font-size:11px">⚒ ${craftsLeft(x)}/${craftMax(x)} stat crafts left</div>`;
     if(x.sockets){const sk=x.socketed||[],hs=hostOf(x);h+=`<div class="sockrow">${Array.from({length:x.sockets},(_,i)=>sk[i]?`<span class="sock">${stoneSvg(sk[i])}</span>`:'<span class="sock empty"></span>').join('')}<span class="fdim">${sk.length}/${x.sockets} sockets</span></div>`;
       for(const sg of sk)h+=`<div class="isock"><span style="color:${stoneCol(sg)}">${esc(stoneName(sg))}</span>: ${esc(statText(stoneStat(sg,hs)))}</div>`;}
     return h+'</div>';};
