@@ -47,10 +47,11 @@ function render(){
   ctx.textAlign='center';
   for(const l of G.loot){if(!onScreen(l.x,l.y,40)||(l.item&&lootHidden(l.item)))continue;const bob=Math.sin(G.time*4+l.x)*2;
     if(l.gem){drawStoneLoot(l,bob);continue;}
-    if(l.gold){ctx.fillStyle='#f2d04a';ctx.strokeStyle='#7a5a10';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(l.x,l.y+bob,5,0,TAU);ctx.fill();ctx.stroke();continue;}
+    if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#f2d04a';ctx.strokeStyle='#7a5a10';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(l.x,l.y+bob,5,0,TAU);ctx.fill();ctx.stroke();continue;}
     const col=RCOL[l.item.rarity];
     if(l.item.rarity>=2){const g=ctx.createLinearGradient(0,l.y-90,0,l.y);g.addColorStop(0,col+'00');g.addColorStop(1,col+'88');ctx.fillStyle=g;ctx.fillRect(l.x-5,l.y-90,10,90);}
     const iy=l.y+bob; // rarity-coloured disc with the item's own inventory icon on top
+    softShadow(l.x,l.y+12,15-bob,6,0.8);
     ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(l.x,iy,15,0,TAU);ctx.fill();
     ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
     const im=iconImg(iconKey(l.item));
@@ -82,6 +83,7 @@ function render(){
   // darkness
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const Lt=G.inTown?townOf(G.depth).light:ACTS[actIdx(G.depth)].light;
+  drawFog(); // fx.js: under the light map, so mist only shows where light falls
   drawLighting(Lt); // light.js
   if(p.hurt>0){ctx.fillStyle=`rgba(160,0,0,${p.hurt})`;ctx.fillRect(0,0,CW,CH);}
   drawLootTip();
@@ -209,7 +211,7 @@ function drawSetAuraMotes(p,z){const t=G.time,cs=auraCols();ctx.save();ctx.globa
 function drawPlayer(){
   const p=G.p,C=CLASSES[G.char.cls];let z=0;if(p.leap){z=Math.sin(Math.min(1,p.leap.t/p.leap.dur)*Math.PI)*40;}
   const aura=setAuraOn();
-  ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(p.x,p.y+p.r*0.7,p.r*1.1,p.r*0.5,0,0,TAU);ctx.fill();
+  softShadow(p.x,p.y+p.r*0.55,p.r*1.5*(1-z/120),p.r*0.75*(1-z/120),1-z/80);
   if(p.dead){ctx.globalAlpha=0.4;}else if(p.dodge)ctx.globalAlpha=0.55; // see-through while dodging (untouchable)
   if(p.spin>0){ctx.strokeStyle='#ffe0b0';ctx.lineWidth=4;for(let k=0;k<3;k++){const a=G.time*18+k*TAU/3;ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(p.x,p.y,82,a,a+0.9);ctx.stroke();}ctx.globalAlpha=1;}
   if(hasPw('burnAura')&&!G.inTown&&!p.dead){const g=ctx.createRadialGradient(p.x,p.y,10,p.x,p.y,AURA_R);g.addColorStop(0,'#ff6a1a00');g.addColorStop(0.7,`rgba(255,110,30,${0.10+0.05*Math.sin(G.time*6)})`);g.addColorStop(1,'#ff6a1a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,AURA_R,0,TAU);ctx.fill();}
@@ -332,7 +334,7 @@ function drawEnemy(e){
   if(e.hidden){ // burrowed sandworm: a moving mound of sand
     ctx.fillStyle='rgba(50,34,18,.6)';ctx.beginPath();ctx.ellipse(e.x,e.y,e.r*1.1,e.r*0.6,0,0,TAU);ctx.fill();
     ctx.fillStyle='#9a7a4a';for(let k=0;k<5;k++){const a=k*1.26+G.time*3+e.seed;ctx.beginPath();ctx.arc(e.x+Math.cos(a)*e.r*0.7,e.y+Math.sin(a)*e.r*0.35,3,0,TAU);ctx.fill();}return;}
-  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(e.x,e.y+e.r*0.7,e.r*1.1,e.r*0.45,0,0,TAU);ctx.fill();
+  softShadow(e.x,e.y+e.r*0.55,e.r*1.5,e.r*0.7,T.shape==='wraith'||T.shape==='imp'?0.5:1);
   if(e.elite){ctx.strokeStyle=e.affs&&e.affs.length?AFFIXES[e.affs[0]].col:'#6f8fff';ctx.lineWidth=2;ctx.globalAlpha=0.6+Math.sin(G.time*5)*0.3;ctx.beginPath();ctx.arc(e.x,e.y,e.r+5,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
   const S=creatureSprite(e,T); // sprites.js: pre-rendered, only rotated and stamped here
   if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face;blit(S,e.x,e.y,ang,T.shape==='wraith'?0.9:null);

@@ -31,10 +31,27 @@ function stainFloor(e){const cv=G.mapCv;if(!cv||!cv.getContext||G.inTown)return;
   const [c1,c2,k]=STAIN[e.type]||['rgba(70,8,4,.42)','rgba(90,12,6,.6)',1],rnd=artRng(Math.floor((e.seed||1)*1e6)),R=e.r*k*(e.type==='boss'?1.4:1);
   x.save();x.fillStyle=c1;x.beginPath();x.ellipse(e.x,e.y+e.r*0.3,R*1.1,R*0.75,rnd()*3,0,TAU);x.fill();
   x.fillStyle=c2;for(let n=0;n<10;n++){const a=rnd()*TAU,d=R*(0.6+rnd()*1.2);x.beginPath();x.arc(e.x+Math.cos(a)*d,e.y+e.r*0.3+Math.sin(a)*d*0.7,0.8+rnd()*2.2,0,TAU);x.fill();}x.restore();}
+// ---------- fog ----------
+// Two layers of soft mist drifting at different speeds and scales (parallax), tinted per act and drawn before the
+// light map, so the fog is only seen where light falls on it. One noise texture, built once, tinted once per act.
+const FOG={crypt:['150,175,130',0.22],desert:['205,175,125',0.1],marsh:['140,170,195',0.2],citadel:['205,225,245',0.2],ember:['90,45,35',0.26]};
+let FOG_TEX=null;const FOG_TINT={};
+function fogTex(rgb){if(FOG_TINT[rgb])return FOG_TINT[rgb];if(!FOG_TEX){const S=128,c=mkCanvas(S,S),x=c.getContext('2d'),img=x.createImageData(S,S),v=new Float32Array(S*S),rnd=artRng(4242);
+    for(const [cell,amp] of [[32,0.6],[16,0.28],[8,0.12]]){const n=S/cell,R=new Float32Array(n*n).map(()=>rnd());
+      for(let j=0;j<S;j++)for(let i=0;i<S;i++){const fx=i/cell,fy=j/cell,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=R[iy%n*n+ix%n],b=R[iy%n*n+(ix+1)%n],cc=R[(iy+1)%n*n+ix%n],d=R[(iy+1)%n*n+(ix+1)%n];
+        v[j*S+i]+=amp*(a+(b-a)*sx+(cc-a)*sy+(a-b-cc+d)*sx*sy);}}
+    for(let k=0;k<S*S;k++){const a=Math.max(0,Math.min(1,(v[k]-0.35)/0.45));img.data[k*4]=img.data[k*4+1]=img.data[k*4+2]=255;img.data[k*4+3]=a*a*(3-2*a)*255|0;}x.putImageData(img,0,0);FOG_TEX=c;}
+  const c=mkCanvas(FOG_TEX.width,FOG_TEX.height),x=c.getContext('2d');x.drawImage(FOG_TEX,0,0);x.globalCompositeOperation='source-in';x.fillStyle=`rgb(${rgb})`;x.fillRect(0,0,c.width,c.height);return FOG_TINT[rgb]=c;}
+// Screen space (ctx transform = DPR): each layer is a handful of stretched tiles.
+function drawFog(){if(G.inTown||!G.p)return;const F=FOG[ACTS[actIdx(G.depth)].gen];if(!F)return;const tex=fogTex(F[0]),t=G.time;
+  const pat=tex.pat||(tex.pat=ctx.createPattern(tex,'repeat')); // a repeating pattern tiles without seams
+  for(const [sc,vx,vy,par,al] of [[5.5,9,3,1,F[1]],[3.4,-14,5,1.25,F[1]*0.7]]){const k=sc*Z,T=128*k,ox=-(((G.cam.x*par+t*vx)*Z)%T+T)%T,oy=-(((G.cam.y*par+t*vy)*Z)%T+T)%T;
+    ctx.save();ctx.globalAlpha=al;ctx.translate(ox,oy);ctx.scale(k,k);ctx.fillStyle=pat;ctx.fillRect(0,0,(CW-ox)/k+1,(CH-oy)/k+1);ctx.restore();}
+  ctx.globalAlpha=1;}
 // ---------- dungeon air ----------
 // A few dozen motes drift through the light: dust in the crypts and wastes, spores in the marsh, snow in the
 // citadel, embers in the core. Screen-space and wrapped, so they cost the same anywhere on the map.
-const AIR={crypt:['200,200,210',0.25,-4,6,1.4],desert:['220,190,140',0.3,14,4,1.5],marsh:['170,220,110',0.35,-3,-6,1.6],citadel:['235,245,255',0.55,-6,22,1.8],ember:['255,130,40',0.8,4,-26,1.6]};
+const AIR={crypt:['190,205,170',0.28,-4,6,1.4],desert:['220,190,140',0.3,14,4,1.5],marsh:['170,200,225',0.35,-3,-6,1.6],citadel:['235,245,255',0.55,-6,22,1.8],ember:['255,130,40',0.8,4,-26,1.6]};
 let airT=0;const airP=[],airRnd=artRng(9137); // its own random numbers: drawing never shifts gameplay rolls
 function drawAir(){if(G.inTown||!G.p)return;const A=AIR[ACTS[actIdx(G.depth)].gen];if(!A)return;const dt=Math.min(0.05,Math.max(0,G.time-airT));airT=G.time;
   const w=CW/Z,h=CH/Z,x0=G.cam.x-w/2,y0=G.cam.y-h/2,N=36;

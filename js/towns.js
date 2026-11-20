@@ -133,7 +133,7 @@ function drawWaystone(){const {x,y}=G.waystone,t=G.time;
 // A townsperson: round body, head and an act-specific hat; bobs while walking; a speech bubble when talking.
 function drawFolk(f){const T=G.town.T,bob=f.wait>0||f.sayT>0?0:Math.abs(Math.sin(f.step))*2;
   ctx.save();ctx.translate(f.x,f.y-bob);
-  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,f.r+bob*0.5,f.r,4,0,0,TAU);ctx.fill();
+  softShadow(0,f.r*0.7+bob,f.r*1.4,f.r*0.6,0.9);
   ctx.fillStyle=f.col;ctx.strokeStyle='#0a0705';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,f.r,0,TAU);ctx.fill();ctx.stroke();
   const hx=Math.cos(f.face)*3,hy=-6+Math.sin(f.face)*2;ctx.fillStyle='#d8b890';ctx.beginPath();ctx.arc(hx,hy,6,0,TAU);ctx.fill();ctx.stroke();
   const h=T.hat;ctx.lineWidth=1.5;

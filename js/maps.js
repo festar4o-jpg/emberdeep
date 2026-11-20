@@ -3,13 +3,13 @@
 // ---------- acts: 5 acts × 5 depths; depth 5 of each act is the boss. Depth 26+ repeats the acts as higher cycles. ----------
 const ACTS=[
   {name:'Sunken Crypts',sub:'Where the drowned dead keep their vigil',gen:'crypt',col:'#9ab0d8',boss:'Varrok the Hollow',bossCol:'#4a5a7a',mm:'#8a7f70',
-   light:{r0:150,r1:470,tint:'rgba(90,120,200,0.05)',dark:'rgba(3,5,10,0.95)'},
+   light:{r0:150,r1:470,tint:'rgba(150,190,110,0.05)',dark:'rgba(4,8,5,0.95)'},
    roster:[['grunt',5],['archer',3],['brute',2,2]]},
   {name:'Ashen Wastes',sub:'A desert of cinders beneath a dead sun',gen:'desert',col:'#e0a860',boss:'The Ash Tyrant',bossCol:'#8a4a1a',mm:'#b0905a',
    light:{r0:230,r1:640,tint:'rgba(255,170,90,0.07)',dark:'rgba(20,10,4,0.82)'},
    roster:[['scarab',4],['dustmage',2],['sandworm',1.6]]},
   {name:'Rotwood Marsh',sub:'The ground drinks, and the water bites',gen:'marsh',col:'#9fd060',boss:'Mother of Rot',bossCol:'#4a6a1f',mm:'#6f8a4a',
-   light:{r0:150,r1:450,tint:'rgba(140,220,90,0.06)',dark:'rgba(3,8,4,0.95)'},
+   light:{r0:150,r1:450,tint:'rgba(120,170,220,0.06)',dark:'rgba(2,6,12,0.95)'},
    roster:[['sporetoad',4],['vinelasher',2.4],['marshtroll',1.8]]},
   {name:'Frozen Citadel',sub:'Halls of ice above an endless fall',gen:'citadel',col:'#bfe4ff',boss:'Rimeheart, the Frozen King',bossCol:'#3a6a9a',mm:'#9ab8d0',
    light:{r0:180,r1:540,tint:'rgba(150,200,255,0.07)',dark:'rgba(3,7,16,0.92)'},
@@ -237,7 +237,16 @@ function placeTorches(x,gen,at,adjFloor){const rgb=TORCH_RGB[gen];if(!rgb)return
     if(wood){x.fillStyle='#2a1c10';x.fillRect(px-2,py-16,4,18);x.fillStyle='#4a3420';x.fillRect(px-1,py-16,1.5,18);x.fillStyle='#1a120a';x.fillRect(px-4,py-14,8,4);}
     else{x.fillStyle='#14100d';x.fillRect(px-4,py-15,8,10);x.fillStyle='#2c2621';x.beginPath();x.moveTo(px-6,py-12);x.lineTo(px+6,py-12);x.lineTo(px+3,py-6);x.lineTo(px-3,py-6);x.closePath();x.fill();
       x.fillStyle='rgba(255,190,120,.35)';x.fillRect(px-5,py-12,10,1);x.fillStyle='rgba(0,0,0,.5)';x.fillRect(px-3,py-5,6,2);}
-    addLight(px,py-15,240,0.88,rgb,0.34,1,1);}}
+    addLight(px,py-15,240,0.88,rgb,0.34,1,1);}
+  // standing iron braziers in the corners of larger rooms
+  for(const r of G.rooms||[]){if(r.w<8||r.h<7||Math.random()<0.45)continue;
+    for(const [ci,cj] of [[r.x+1,r.y+1],[r.x+r.w-2,r.y+r.h-2],[r.x+r.w-2,r.y+1],[r.x+1,r.y+r.h-2]].sort(()=>Math.random()-0.5).slice(0,Math.random()<0.5?1:2)){
+      if(at(ci,cj)!==0)continue;const bx=ci*TILE+20,by=cj*TILE+24;
+      x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.ellipse(bx,by+10,14,5,0,0,TAU);x.fill();
+      x.strokeStyle='#17120e';x.lineWidth=2.2;x.beginPath();for(const a of [-0.9,0,0.9]){x.moveTo(bx+Math.sin(a)*5,by-2);x.lineTo(bx+Math.sin(a)*12,by+10);}x.stroke();
+      x.fillStyle='#231c16';x.beginPath();x.ellipse(bx,by-3,11,5,0,0,TAU);x.fill();x.fillStyle='#3a2e24';x.beginPath();x.ellipse(bx,by-5,11,4,0,0,TAU);x.fill();
+      x.fillStyle='#120804';x.beginPath();x.ellipse(bx,by-5,8.5,2.8,0,0,TAU);x.fill();x.fillStyle='rgba(255,140,50,.8)';for(let k=0;k<5;k++)x.fillRect(bx+rand(-6,5),by-6+rand(-1,1),1.6,1.4);
+      G.lights.push({x:bx,y:by-9,r:300,i:0.92,rgb,g:0.4,fl:true,torch:true,big:true});}}}
 // ---------- grit and grade (once per map) ----------
 // Tileable value noise (several octaves), built once: light greys that a 'multiply' pass turns into grime.
 let GRIME=null;
@@ -263,7 +272,8 @@ function wearMap(x,at){const W=MW*TILE,H=MH*TILE,A=aoStrips();
     if(Math.random()<0.02){const cx=px+rand(8,32),cy=py+rand(8,32),r=rand(8,18);x.fillStyle=Math.random()<0.4?'rgba(60,8,4,.22)':'rgba(0,0,0,.2)';
       x.beginPath();x.ellipse(cx,cy,r,r*rand(0.5,0.9),rand(0,3),0,TAU);x.fill();for(let k=0;k<4;k++){x.beginPath();x.arc(cx+rand(-r*1.6,r*1.6),cy+rand(-r*1.2,r*1.2),rand(1,3),0,TAU);x.fill();}}}}
 // Pull the colour toward earthy, muted tones: drain some saturation, then a faint tone wash. [desaturate, tone]
-const GRADE={crypt:[0.4,'#d6d2cc'],desert:[0.38,'#dccab0'],marsh:[0.32,'#c9ccb6'],citadel:[0.36,'#cdd4dc'],ember:[0.28,'#dcc4bc'],town:[0.3,'#d8d0c4']};
+// Each act has its own grade: sickly green crypt ruins, warm dusty desert, cold blue swamp, pale frozen steel, scorched red core.
+const GRADE={crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.3,'#d8d0c4']};
 function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
   x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,W,H);
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}

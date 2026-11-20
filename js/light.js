@@ -71,6 +71,12 @@ function drawLighting(Lt){
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   ctx.drawImage(vignette(),0,0,CW,CH);
 }
+// ---------- soft drop shadows ----------
+// One blurred oval, pre-rendered, stretched under every character, monster and item.
+let SHADOW=null;
+function softShadow(x,y,rx,ry,a){if(!SHADOW){const W=64,H=32;SHADOW=mkCanvas(W,H);const s=SHADOW.getContext('2d');s.setTransform(1,0,0,0.5,0,0);const g=s.createRadialGradient(W/2,H,0,W/2,H,W/2);
+  g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(0.5,'rgba(0,0,0,.45)');g.addColorStop(1,'rgba(0,0,0,0)');s.fillStyle=g;s.fillRect(0,0,W,H*2);}
+  ctx.globalAlpha=a==null?1:a;ctx.drawImage(SHADOW,x-rx,y-ry,rx*2,ry*2);ctx.globalAlpha=1;}
 // ---------- torch flames ----------
 // Four pre-drawn flame frames (warm core, darker tips), tinted per light colour, drawn on top of the baked sconce.
 const FLAME={};
@@ -80,4 +86,4 @@ function flameFrames(rgb){let F=FLAME[rgb];if(F)return F;F=[];const W=24,H=40,[r
     lay(1,`rgb(${r*0.7|0},${g*0.35|0},${b*0.2|0})`,0.85);lay(0.72,`rgb(${r},${g*0.75|0},${b*0.45|0})`,0.95);lay(0.42,`rgb(255,${Math.min(255,g+60)},${Math.min(255,b+90)})`,1);
     F.push(c);}return FLAME[rgb]=F;}
 function drawTorches(onScreen){const t=G.time;
-  for(const s of G.lights||[]){if(!s.torch||!onScreen(s.x,s.y,40))continue;const F=flameFrames(s.rgb),f=F[((t*10+s.x*0.13)|0)&3];ctx.drawImage(f,s.x-6,s.y-17,12,20);}}
+  for(const s of G.lights||[]){if(!s.torch||!onScreen(s.x,s.y,40))continue;const F=flameFrames(s.rgb),f=F[((t*10+s.x*0.13)|0)&3],k=s.big?1.9:1;ctx.drawImage(f,s.x-6*k,s.y-17*k,12*k,20*k);}}
