@@ -12,6 +12,8 @@
 //   Enrage      below ENRAGE_AT in the last phase: faster attacks and movement.
 //   Shields     some phases raise a shield held up by adds (tethered to the boss); kill them to break it.
 //   Arenas      some phases shrink the arena: outside the ring you burn.
+//   Matchups    each boss takes more or less damage from each class (BOSSES[k].vs), so each class has bosses it
+//               finds easier and harder; the entrance banner says which.
 // Also here: area levels and the level/gear difference rule (diminishing returns when far overleveled/overgeared).
 const PHASE_AT=[0.7,0.35],TRANS_T=2.2,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.05,DPS_CAP=0.03,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
 const ROMAN_PH=['I','II','III'];
@@ -31,6 +33,7 @@ function overMul(){if(OM_T===G.time)return OM_V;OM_T=G.time;const c=G.char;if(!c
 const underMul=()=>{const c=G.char;if(!c||G.inTown)return 1;return Math.min(2,1+0.05*Math.max(0,areaLvl()-c.lvl-2));};
 // ---------- damage into a monster (hitEnemy) ----------
 function dmgTo(e,d,crit,opts){d*=overMul();if(e.type!=='boss')return Math.max(1,Math.round(d));
+  const V=(BOSSES[e.kind]||BOSSES[0]).vs,cm=V&&G.char&&V[G.char.cls];if(cm)d*=cm[0]; /* class matchup: each boss favours one class */
   const open=e.punishT>0||e.staggerT>0;if(e.punishT>0)d*=1.5;if(e.staggerT>0)d*=1.35;
   d=Math.min(d,e.maxHp*HIT_CAP,e.budget??e.maxHp*DPS_CAP*1.5);e.budget=(e.budget??e.maxHp*DPS_CAP*1.5)-d;
   if(!(e.staggerT>0)&&!(e.transT>0)&&!(e.shieldT>0)){e.stagger+=(opts&&opts.dot?0:4)+90*d/e.maxHp*(crit||(opts&&opts.kb>=95)?1.6:1);if(e.stagger>=e.staggerMax)staggerBoss(e);}

@@ -23,6 +23,7 @@ const BIG=e=>e.dmg*4; // a big attack: about half your life with act-appropriate
 const BOSSES=[
   { // Act 1: Varrok the Hollow, a crypt lord who raises the dead. Teaches dodging: Grave Cleave.
     hp:1,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
+    vs:{warden:[1.35,'Old bone shatters under steel'],arcanist:[0.55,'Grave wards blunt your spells']},
     loot:{n:3,rare:1,unique:0,ilvl:2,gold:60},
     phases:[
       {name:'Bone Ward',enter(e){shieldAdds(e,'grunt',4,'Bone Warden',2);}},
@@ -34,6 +35,7 @@ const BOSSES=[
     {name:'Grave Hands',w:3,cd:1.6,fn(e){const n=e.phase?7:5;e.busy=0.5;for(let i=0;i<n;i++)bossLater(e,i*0.15,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(110);groundStrike(e,x,y,58,0.9,e.dmg*0.9,'#9ab0d8');});}}]},
   { // Act 2: The Ash Tyrant, a fast brute of chained charges and falling ash
     hp:1.45,dmg:1.05,pace:0.95,spd:1.2,enrage:'whips up the sandstorm!',
+    vs:{warden:[1.3,'Steel finds the cracks in his ash-hardened hide'],arcanist:[0.75,'Keep your distance: his charges are deadly up close']},
     loot:{n:4,rare:1,unique:0,ilvl:3,gold:75},
     phases:[
       {name:'Sandstorm',tick(e,dt){e.trT=(e.trT||0)-dt;if(e.trT<=0){e.trT=0.4;addEHaz(e.x,e.y,34,4,e.dmg*0.4,'fire');}e.swT=(e.swT??3)-dt;if(e.swT<=0){e.swT=9;bossSummon(e,'scarab',5,12);}}},
@@ -49,6 +51,7 @@ const BOSSES=[
         if(e.phase)ring(e,12,240,'#f0c878',e.dmg*0.45,6,rand(0,TAU));});}}]},
   { // Act 3: Mother of Rot, slow, fills the arena with poison and spawn
     hp:1.0,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
+    vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic']},
     loot:{n:4,rare:2,unique:0,ilvl:3,gold:90},
     phases:[
       {name:'Brood Cocoon',enter(e){shieldAdds(e,'vinelasher',2,'Brood Sac',1.8);bossSummon(e,'sporetoad',2,5);}},
@@ -60,7 +63,8 @@ const BOSSES=[
     {name:'Spore Nova',w:2,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,18,170,'#a8e060',e.dmg*0.5,7,off,0,{slow:0.35});if(e.phase)bossLater(e,0.35,()=>ring(e,18,170,'#a8e060',e.dmg*0.5,7,off+TAU/36,0,{slow:0.35}));e.busy=0.6;}},
     {name:'Brood',w:2,cd:1.8,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#9fe04a'};e.act=()=>bossSummon(e,'sporetoad',e.phase?4:3,7);}}]},
   { // Act 4: Rimeheart, the Frozen King, ice lances, avalanches, a warded shield and a floor that shatters
-    hp:1.55,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,enrage:'calls down the endless winter!',
+    hp:1.55,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
+    vs:{warden:[0.75,'Ice armour turns your blades'],arcanist:[1.5,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
     loot:{n:5,rare:2,unique:0,ilvl:4,gold:110},
     phases:[
       {name:'Ice Ward',enter(e){shieldAdds(e,'frostwraith',3,'Rime Warden',2.2);},tick(e,dt){e.snowT=(e.snowT??2)-dt;if(e.snowT<=0){e.snowT=2.6;for(let i=0;i<3;i++)bossLater(e,i*0.2,()=>{const [x,y]=near(220);groundStrike(e,x,y,45,0.8,e.dmg*0.8,'#dff4ff',()=>slowPlayer(0.3,0.8));});}}},
@@ -72,6 +76,7 @@ const BOSSES=[
     {name:'Shardlings',w:2,cd:1.6,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#8fd0f8'};e.act=()=>bossSummon(e,'shardling',e.phase?4:3,6);}}]},
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
     hp:2.2,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
+    vs:{warden:[1.1,'His molten armour breaks under steel'],arcanist:[0.4,'Living flame shrugs off your spells']},
     loot:{n:6,rare:2,unique:1,ilvl:5,gold:140},
     phases:[
       {name:'Molten Shield',enter(e){shieldAdds(e,'magmabrute',2,'Molten Warden',1.3);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
