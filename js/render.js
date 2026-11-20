@@ -46,7 +46,7 @@ function render(){
   ctx.globalAlpha=1;
   for(const e of G.enemies)if(!e.dead&&e.wind>0&&e.tele){ctx.strokeStyle=e.tele.col;ctx.globalAlpha=0.75;ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.tele.r,0,TAU);ctx.stroke();ctx.globalAlpha=0.15;ctx.fillStyle=e.tele.col;ctx.fill();ctx.globalAlpha=1;}
   // loot
-  ctx.textAlign='center';
+  ctx.textAlign='center';LABELS.length=0;
   for(const l of G.loot){if(!onScreen(l.x,l.y,40)||(l.item&&lootHidden(l.item)))continue;const bob=Math.sin(G.time*4+l.x)*2;
     if(l.gem){drawStoneLoot(l,bob);continue;}
     if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}

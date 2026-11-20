@@ -74,8 +74,11 @@ function drawBeam(l,col,big){const rgb=rgbOf(col),H=big?200:125,W=big?26:18,pu=0
   ctx.globalAlpha=0.6*pu;ctx.save();ctx.translate(l.x,l.y+4);ctx.scale(1,0.4);const R=big?34:24;ctx.drawImage(falloff(rgb),-R,-R,R*2,R*2);ctx.restore();
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
+// Labels that would overlap one already drawn this frame stack upward instead (LABELS is reset by render()).
+const LABELS=[];
 function lootLabel(x,y,txt,col,edge,tag,tagCol,small){ctx.font=small?'10px sans-serif':'11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
-  const w=ctx.measureText(txt).width,tw=tag?ctx.measureText(' '+tag).width:0,W=w+tw+10,H=small?14:16,x0=x-W/2,y0=y-H/2;
+  const w=ctx.measureText(txt).width,tw=tag?ctx.measureText(' '+tag).width:0,W=w+tw+10,H=small?14:16,x0=x-W/2;
+  for(let k=0;k<8&&LABELS.some(r=>x0<r[0]+r[2]&&x0+W>r[0]&&y-H/2<r[1]+r[3]&&y+H/2>r[1]);k++)y-=H+1;LABELS.push([x0,y-H/2,W,H]);const y0=y-H/2;
   ctx.fillStyle='rgba(6,4,3,.84)';ctx.fillRect(x0,y0,W,H);ctx.strokeStyle=edge;ctx.lineWidth=1;ctx.strokeRect(x0+0.5,y0+0.5,W-1,H-1);
   ctx.fillStyle=col;ctx.fillText(txt,x0+5,y+0.5);if(tag){ctx.fillStyle=tagCol;ctx.fillText(' '+tag,x0+5+w,y+0.5);}ctx.textAlign='center';ctx.textBaseline='alphabetic';}
 // ---------- combat feel ----------
