@@ -72,10 +72,14 @@ function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}
 // Dodge: a quick dash (about 140px) in the move direction (or facing), untouchable while it lasts.
 const DODGE_CD=1.4,DODGE_DUR=0.26,DODGE_SPD=540;
 function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
-  const [mx,my]=moveInput();p.dodge={t:0,dur:DODGE_DUR,a:Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face};p.dodgeCd=DODGE_CD;
-  burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
+  const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;
+  if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
+    const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
+    p.dodge={t:0,dur:0.14,a,blink:true};p.face=a;burst(x0,y0,14,'#c48bff',160);burst(p.x,p.y,14,'#c48bff',160);G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:40,t:0,max:0.2,col:'#c48bff'});return true;}
+  p.dodge={t:0,dur:DODGE_DUR,a};burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
+const BLINK_DIST=175;
 function dmgPlayer(raw,src){
-  const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul(); /* bossfight.js: underleveled for the area */
+  const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;
@@ -128,6 +132,7 @@ function startGame(c){
   G.char=c;G.stats=calcStats(c);noteSetPieces(EQ_SLOTS.map(s=>c.equip[s]).concat(c.bag));
   G.p={x:0,y:0,r:15,hp:G.stats.life,res:CLASSES[c.cls].res==='Fury'?20:G.stats.res,face:0,cd:[0,0,0,0,0],cdMax:[1,1,1,1,1],potions:c.potions??3+G.stats.pot,potCd:0,buffT:0,buffAmt:0,spin:0,leap:null,hurt:0,dead:false};
   $('mpb').classList.toggle('fury',CLASSES[c.cls].res==='Fury');
+  $('dodgeBtn').firstChild.nodeValue=c.cls==='arcanist'?'💫':'💨'; /* Arcanists Blink, Wardens roll */
   buildSkillBar();
   ['titleOv','createOv'].forEach(i=>$(i).classList.add('hidden'));$('hud').classList.remove('hidden');
   startDepth(c.depth);
@@ -173,8 +178,8 @@ function update(dt){
   // movement
   const [mx,my]=moveInput(),ml=Math.hypot(mx,my);if(p.dodgeCd>0)p.dodgeCd-=dt;
   if(p.dead){}
-  else if(p.dodge){const D=p.dodge;D.t+=dt;moveEnt(p,Math.cos(D.a)*DODGE_SPD*dt,Math.sin(D.a)*DODGE_SPD*dt);p.face=D.a;
-    if(Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
+  else if(p.dodge){const D=p.dodge;D.t+=dt;if(!D.blink)moveEnt(p,Math.cos(D.a)*DODGE_SPD*dt,Math.sin(D.a)*DODGE_SPD*dt);p.face=D.a;
+    if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
     if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
@@ -252,7 +257,7 @@ function update(dt){
   for(const h of G.ehaz){h.t-=dt;if(Math.random()<dt*3)G.parts.push({x:h.x+rand(-h.r,h.r)*0.6,y:h.y+rand(-h.r,h.r)*0.6,vx:0,vy:-25,life:0.6,max:0.6,col:h.kind==='poison'?'#b8ff5a':'#ffa040',s:3});
     if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt;p.dotCol=h.kind==='poison'?'#9fe04a':h.kind==='frost'?'#bfe8ff':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);else if(h.kind==='frost')slowPlayer(0.4,0.4);}}
   G.ehaz=G.ehaz.filter(h=>h.t>0);
-  if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
+  if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
   for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}

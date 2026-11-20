@@ -75,8 +75,8 @@ const BOSSES=[
     {name:'Frost Ring',w:2,cd:1.2,fn(e){const off=rand(0,TAU);ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off,0,{slow:0.4});if(e.phase)bossLater(e,0.4,()=>ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off+TAU/48,0,{slow:0.4}));e.busy=0.6;}},
     {name:'Shardlings',w:2,cd:1.6,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#8fd0f8'};e.act=()=>bossSummon(e,'shardling',e.phase?4:3,6);}}]},
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
-    hp:8.6,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
-    vs:{warden:[1.3,'His molten armour breaks under steel'],arcanist:[0.6,'Living flame shrugs off your spells']},
+    hp:9.0,dmg:0.85,pace:0.8,spd:1,enrage:'ignites the Core!',
+    vs:{warden:[1.75,'His molten armour breaks under steel, but your plate burns',1.6],arcanist:[0.75,'Living flame shrugs off your spells, but your wards resist his fire',0.75]},
     loot:{n:6,rare:2,unique:1,ilvl:5,gold:140},
     phases:[
       {name:'Molten Shield',enter(e){shieldAdds(e,'magmabrute',2,'Molten Warden',1.3);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
@@ -84,17 +84,17 @@ const BOSSES=[
     moves:[
     {name:'Cataclysm',w:2,cd:1.6,big:1,fn(e){const a=rand(0,TAU),half=0.6;bigAttack(e,2.2,()=>{G.fx.push({type:'cata',x:e.x,y:e.y,a,half,t:0,max:2.2});
       bossLater(e,2.2,()=>{const p=G.p,pa=Math.atan2(p.y-e.y,p.x-e.x);if(Math.abs(angDiff(pa,a))>half&&!p.dodge)dmgPlayer(BIG(e)*1.25,e);G.shake=Math.max(G.shake,14);fxExplosion(e.x,e.y,200,'#ff6a1a');
-        for(let k=0;k<6;k++){const r=rand(80,400),b=a+Math.PI+rand(-2.4,2.4);addEHaz(e.x+Math.cos(b)*r,e.y+Math.sin(b)*r,45,2.5,e.dmg*0.35,'fire');}});});}},
-    {name:'Meteor Rain',w:3,cd:1.5,fn(e){const n=e.phase?9:7;e.busy=0.8;for(let i=0;i<n;i++)bossLater(e,i*0.18,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(180);groundStrike(e,x,y,70,1.1,e.dmg*1.2,'#ff6a1a',()=>addEHaz(x,y,55,3,e.dmg*0.4,'fire'));});}},
+        for(let k=0;k<6;k++){const r=rand(80,400),b=a+Math.PI+rand(-2.4,2.4);addEHaz(e.x+Math.cos(b)*r,e.y+Math.sin(b)*r,45,2.5,e.dmg*0.24,'fire');}});});}},
+    {name:'Meteor Rain',w:3,cd:1.5,fn(e){const n=e.phase?9:7;e.busy=0.8;for(let i=0;i<n;i++)bossLater(e,i*0.18,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(180);groundStrike(e,x,y,70,1.1,e.dmg*1.2,'#ff6a1a',()=>addEHaz(x,y,55,3,e.dmg*0.26,'fire'));});}},
     {name:'Burning Charge',w:2,cd:1.2,big:1,fn(e){const a=Math.atan2(G.p.y-e.y,G.p.x-e.x);e.lockA=a;bigAttack(e,1.1,()=>G.fx.push({type:'tline',x:e.x,y:e.y,a,len:400,w:e.r*2.2,t:0,max:1.1,col:'#ff7a3a'}),
-      ()=>{e.dash=0.55;e.dashHit=false;e.dashDmg=BIG(e);e.dvx=Math.cos(a)*760;e.dvy=Math.sin(a)*760;for(let i=0;i<8;i++)bossLater(e,i*0.06,()=>addEHaz(e.x,e.y,30,3,e.dmg*0.4,'fire'));},1.7);}},
+      ()=>{e.dash=0.55;e.dashHit=false;e.dashDmg=BIG(e);e.dvx=Math.cos(a)*760;e.dvy=Math.sin(a)*760;for(let i=0;i<8;i++)bossLater(e,i*0.06,()=>addEHaz(e.x,e.y,30,3,e.dmg*0.26,'fire'));},1.7);}},
     {name:'Supernova',w:4,cd:2,big:1,ph:2,fn(e){e.busy=0;bigAttack(e,2.4,()=>{G.fx.push({type:'nova',x:e.x,y:e.y,r:115,t:0,max:2.4});toast('Supernova!','Get close to him');
       bossLater(e,2.4,()=>{const p=G.p;if(Math.hypot(p.x-e.x,p.y-e.y)>115+p.r*0.5&&!p.dodge)dmgPlayer(BIG(e)*1.5,e);G.shake=Math.max(G.shake,18);G.hitStop=0.12;fxExplosion(e.x,e.y,320,'#ffcc66');
         G.fx.push({type:'ring',x:e.x,y:e.y,r0:115,r1:700,t:0,max:0.6,col:'#ffcc66'});});});}},
-    {name:'Flame Wave',w:3,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,36,190,'#ff8a2a',e.dmg*0.6,8,off,6);if(e.phase)bossLater(e,0.6,()=>ring(e,36,190,'#ff8a2a',e.dmg*0.6,8,off+Math.PI,6));e.busy=0.7;}}]}
+    {name:'Flame Wave',w:3,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,30,190,'#ff8a2a',e.dmg*0.42,8,off,6);if(e.phase)bossLater(e,0.6,()=>ring(e,30,190,'#ff8a2a',e.dmg*0.42,8,off+Math.PI,6));e.busy=0.7;}}]}
 ];
 // Rotating fire jets (n directions) from the Cinder King.
-function cinderJets(e,dt,n){e.jetT=(e.jetT||0)-dt;if(e.jetT<=0){e.jetT=0.24;e.jetA=(e.jetA||0)+0.2*(e.jetDir||1);for(let k=0;k<n;k++)enemyShoot(e,e.jetA+k*TAU/n,220,'#ffb040',e.dmg*0.28,6);}}
+function cinderJets(e,dt,n){e.jetT=(e.jetT||0)-dt;if(e.jetT<=0){e.jetT=0.34;e.jetA=(e.jetA||0)+0.2*(e.jetDir||1);for(let k=0;k<n;k++)enemyShoot(e,e.jetA+k*TAU/n,220,'#ffb040',e.dmg*0.18,6);}}
 function blinkNear(e){const p=G.p;for(let k=0;k<20;k++){const a=rand(0,TAU),r=rand(110,160),x=p.x+Math.cos(a)*r,y=p.y+Math.sin(a)*r,ti=tileIdx(x,y);
   if(blockedAt(x,y,e.r)||!(G.flow[ti]>=0))continue;burst(e.x,e.y,20,'#e0c080',180);e.x=x;e.y=y;burst(x,y,20,'#e0c080',180);return true;}return false;}
 function bossAI(e,T,d,toP,step,chase,dt){const B=BOSSES[e.kind]||BOSSES[0];
