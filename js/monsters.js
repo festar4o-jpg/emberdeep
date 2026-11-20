@@ -51,7 +51,7 @@ const BOSSES=[
         if(e.phase)ring(e,12,240,'#f0c878',e.dmg*0.45,6,rand(0,TAU));});}}]},
   { // Act 3: Mother of Rot, slow, fills the arena with poison and spawn
     hp:1.37,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
-    vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic']},
+    vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic, but you keep your distance',0.86]},
     loot:{n:4,rare:2,unique:0,ilvl:3,gold:90},
     phases:[
       {name:'Brood Cocoon',enter(e){shieldAdds(e,'vinelasher',2,'Brood Sac',1.8);bossSummon(e,'sporetoad',2,5);}},
@@ -64,7 +64,7 @@ const BOSSES=[
     {name:'Brood',w:2,cd:1.8,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#9fe04a'};e.act=()=>bossSummon(e,'sporetoad',e.phase?4:3,7);}}]},
   { // Act 4: Rimeheart, the Frozen King, ice lances, avalanches, a warded shield and a floor that shatters
     hp:2.7,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
-    vs:{warden:[0.95,'Ice armour turns your blades'],arcanist:[1.15,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
+    vs:{warden:[0.95,'Ice armour turns your blades, but your plate holds the cold out',0.95],arcanist:[1.15,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
     loot:{n:5,rare:2,unique:0,ilvl:4,gold:110},
     phases:[
       {name:'Ice Ward',enter(e){shieldAdds(e,'frostwraith',3,'Rime Warden',2.2);},tick(e,dt){e.snowT=(e.snowT??2)-dt;if(e.snowT<=0){e.snowT=2.6;for(let i=0;i<3;i++)bossLater(e,i*0.2,()=>{const [x,y]=near(220);groundStrike(e,x,y,45,0.8,e.dmg*0.8,'#dff4ff',()=>slowPlayer(0.3,0.8));});}}},
