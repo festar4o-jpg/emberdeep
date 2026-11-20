@@ -3,19 +3,19 @@
 // ---------- acts: 5 acts × 5 depths; depth 5 of each act is the boss. Depth 26+ repeats the acts as higher cycles. ----------
 const ACTS=[
   {name:'Sunken Crypts',sub:'Where the drowned dead keep their vigil',gen:'crypt',col:'#9ab0d8',boss:'Varrok the Hollow',bossCol:'#4a5a7a',mm:'#8a7f70',
-   light:{r0:150,r1:470,tint:'rgba(90,120,200,0.05)',dark:'rgba(2,3,8,0.9)'},
+   light:{r0:150,r1:470,tint:'rgba(90,120,200,0.05)',dark:'rgba(3,5,10,0.95)'},
    roster:[['grunt',5],['archer',3],['brute',2,2]]},
   {name:'Ashen Wastes',sub:'A desert of cinders beneath a dead sun',gen:'desert',col:'#e0a860',boss:'The Ash Tyrant',bossCol:'#8a4a1a',mm:'#b0905a',
-   light:{r0:230,r1:640,tint:'rgba(255,170,90,0.07)',dark:'rgba(28,12,2,0.62)'},
+   light:{r0:230,r1:640,tint:'rgba(255,170,90,0.07)',dark:'rgba(20,10,4,0.82)'},
    roster:[['scarab',4],['dustmage',2],['sandworm',1.6]]},
   {name:'Rotwood Marsh',sub:'The ground drinks, and the water bites',gen:'marsh',col:'#9fd060',boss:'Mother of Rot',bossCol:'#4a6a1f',mm:'#6f8a4a',
-   light:{r0:150,r1:450,tint:'rgba(140,220,90,0.06)',dark:'rgba(2,10,4,0.9)'},
+   light:{r0:150,r1:450,tint:'rgba(140,220,90,0.06)',dark:'rgba(3,8,4,0.95)'},
    roster:[['sporetoad',4],['vinelasher',2.4],['marshtroll',1.8]]},
   {name:'Frozen Citadel',sub:'Halls of ice above an endless fall',gen:'citadel',col:'#bfe4ff',boss:'Rimeheart, the Frozen King',bossCol:'#3a6a9a',mm:'#9ab8d0',
-   light:{r0:180,r1:540,tint:'rgba(150,200,255,0.07)',dark:'rgba(3,8,20,0.86)'},
+   light:{r0:180,r1:540,tint:'rgba(150,200,255,0.07)',dark:'rgba(3,7,16,0.92)'},
    roster:[['frostwraith',3],['icegolem',1.4],['shardling',3.4]]},
   {name:'The Ember Core',sub:'The heart of the deep still burns',gen:'ember',col:'#ff7a3a',boss:'The Cinder King',bossCol:'#9a1f0a',mm:'#a0604a',
-   light:{r0:170,r1:520,tint:'rgba(255,90,30,0.08)',dark:'rgba(22,3,0,0.86)'},
+   light:{r0:170,r1:520,tint:'rgba(255,90,30,0.08)',dark:'rgba(14,3,1,0.93)'},
    roster:[['imp',4],['magmabrute',2],['summoner',1.4]]}
 ];
 const actIdx=d=>Math.floor((d-1)/5)%5,cycleOf=d=>Math.floor((d-1)/25)+1,stageOf=d=>(d-1)%5+1;
@@ -137,41 +137,63 @@ const THEMES={};
   const glow=(x,cx,cy,r,col)=>{const g=x.createRadialGradient(cx,cy,1,cx,cy,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(cx-r,cy-r,r*2,r*2);};
   const dot=(x,cx,cy,r,col)=>{x.fillStyle=col;x.beginPath();x.arc(cx,cy,r,0,TAU);x.fill();};
   const crack=(x,px,py,col,w)=>{x.strokeStyle=col;x.lineWidth=w||1;x.beginPath();x.moveTo(px+rand(4,36),py+rand(4,36));x.lineTo(px+rand(4,36),py+rand(4,36));x.lineTo(px+rand(4,36),py+rand(4,36));x.stroke();};
-  const face=(x,px,py,c1,c2)=>{x.fillStyle=c1;x.fillRect(px,py+TILE-15,TILE,15);x.fillStyle=c2;x.fillRect(px,py+TILE-15,TILE,2);x.fillStyle='rgba(0,0,0,.3)';for(let k=0;k<TILE;k+=13)x.fillRect(px+k,py+TILE-13,1,13);};
+  // Wall face: two courses of worn bricks with dark mortar, a lit top edge and grime collecting toward the floor.
+  const face=(x,px,py,c1,c2)=>{const y0=py+TILE-15;x.fillStyle=c1;x.fillRect(px,y0,TILE,15);
+    for(let row=0;row<2;row++){const by=y0+2+row*6.5,off=row?0:7+Math.random()*5;
+      for(let bx=-off;bx<TILE;bx+=rand(11,16)){x.fillStyle=Math.random()<0.5?'rgba(255,240,220,.05)':'rgba(0,0,0,.14)';x.fillRect(px+Math.max(0,bx)+1,by,Math.min(rand(9,14),TILE-Math.max(0,bx)-1),5);x.fillStyle='rgba(0,0,0,.45)';if(bx>0)x.fillRect(px+bx,by,1.2,6);}
+      x.fillStyle='rgba(0,0,0,.4)';x.fillRect(px,by+5.2,TILE,1.2);}
+    x.fillStyle=c2;x.fillRect(px,y0,TILE,2);x.fillStyle='rgba(0,0,0,.18)';x.fillRect(px,y0+2,TILE,1);
+    const g=x.createLinearGradient(0,y0+6,0,y0+15);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');x.fillStyle=g;x.fillRect(px,y0+6,TILE,9);
+    if(Math.random()<0.3){x.fillStyle='rgba(0,0,0,.35)';x.fillRect(px+rand(4,34),y0+rand(3,10),rand(2,4),rand(1,3));}};
+  // Floor of worn flagstones: one, two or four slabs per tile in slightly different tones, bevelled and grouted,
+  // with chips and grit, so the floor never reads as a clean grid.
+  const slabs=(x,px,py,h,s,l,lv)=>{const c=Math.random();let R;
+    if(c<0.3)R=[[0,0,TILE,TILE]];
+    else if(c<0.62){const m=rand(13,27);R=Math.random()<0.5?[[0,0,m,TILE],[m,0,TILE-m,TILE]]:[[0,0,TILE,m],[0,m,TILE,TILE-m]];}
+    else{const mx=rand(13,27),my=rand(13,27);R=[[0,0,mx,my],[mx,0,TILE-mx,my],[0,my,mx,TILE-my],[mx,my,TILE-mx,TILE-my]];}
+    for(const [a,b,w,hh] of R){x.fillStyle=`hsl(${h+rand(-4,4)},${s}%,${l+rand(-lv,lv)}%)`;x.fillRect(px+a,py+b,w,hh);
+      x.fillStyle='rgba(255,236,210,.05)';x.fillRect(px+a+1,py+b+1,w-2,1.2);x.fillRect(px+a+1,py+b+1,1.2,hh-2);
+      x.fillStyle='rgba(0,0,0,.42)';x.fillRect(px+a,py+b+hh-1.4,w,1.4);x.fillRect(px+a+w-1.4,py+b,1.4,hh);
+      if(Math.random()<0.18){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();const cx=px+a+(Math.random()<0.5?1:w-1),cy=py+b+(Math.random()<0.5?1:hh-1);x.moveTo(cx,cy);x.lineTo(cx+rand(-5,5),cy);x.lineTo(cx,cy+rand(-5,5));x.fill();}}
+    for(let k=0;k<4;k++){x.fillStyle=Math.random()<0.6?'rgba(0,0,0,.22)':'rgba(255,240,220,.06)';x.fillRect(px+rand(1,TILE-2),py+rand(1,TILE-2),rand(0.8,1.8),rand(0.8,1.8));}};
   const stone=hue=>({void:'#060403',
-    floor(x,px,py){x.fillStyle=`hsl(${hue},14%,${12+Math.random()*4}%)`;x.fillRect(px,py,TILE,TILE);x.strokeStyle='rgba(0,0,0,.28)';x.lineWidth=1;x.strokeRect(px+.5,py+.5,TILE-1,TILE-1);
+    floor(x,px,py){slabs(x,px,py,hue,10,14,2.5);
       if(Math.random()<0.07)crack(x,px,py,'rgba(0,0,0,.4)');if(Math.random()<0.02)dot(x,px+rand(8,32),py+rand(8,32),rand(2,4),'rgba(200,190,160,.18)');},
     wall(x,px,py,below,adj){if(!adj)return;x.fillStyle=`hsl(${hue},12%,6%)`;x.fillRect(px,py,TILE,TILE);if(below)face(x,px,py,`hsl(${hue},14%,19%)`,`hsl(${hue},16%,27%)`);},
     deco(x,px,py,n){const r=Math.random();
       if(r<0.018){x.strokeStyle='rgba(215,205,180,.55)';x.lineWidth=2;x.beginPath();x.moveTo(px+10,py+12);x.lineTo(px+28,py+26);x.moveTo(px+28,py+12);x.lineTo(px+10,py+26);x.stroke();dot(x,px+20,py+10,3.5,'rgba(215,205,180,.6)');}
-      else if(r<0.03){glow(x,px+20,py+20,24,'rgba(255,180,80,.28)');x.fillStyle='#d8cfb0';x.fillRect(px+18,py+18,4,9);dot(x,px+20,py+16,2,'#ffd36b');}
+      else if(r<0.03){glow(x,px+20,py+20,24,'rgba(255,180,80,.28)');addLight(px+20,py+16,120,0.6,'255,180,90',0.25,1);x.fillStyle='#d8cfb0';x.fillRect(px+18,py+18,4,9);dot(x,px+20,py+16,2,'#ffd36b');}
       else if(n.up&&n.left&&r<0.3){x.strokeStyle='rgba(220,220,220,.18)';x.lineWidth=1;x.beginPath();for(let k=0;k<4;k++){x.moveTo(px,py);x.lineTo(px+22*Math.cos(k*0.45),py+22*Math.sin(k*0.45));}for(const rr of [8,15])x.arc(px,py,rr,0,Math.PI/2);x.stroke();}}});
   THEMES.crypt=Object.assign(stone(220),{
     rooms(x,rooms){for(const r of rooms){if(r.w<9||Math.random()<0.5)continue;const px=(r.x+1)*TILE+6,py=(r.y+r.h-2)*TILE-6; // sarcophagus
       x.fillStyle='#2a2420';x.fillRect(px,py,TILE*2-12,TILE-8);x.strokeStyle='#4a4038';x.lineWidth=2;x.strokeRect(px+3,py+3,TILE*2-18,TILE-14);x.fillStyle='rgba(0,0,0,.35)';x.fillRect(px,py+TILE-8,TILE*2-12,5);}}});
   THEMES.desert={void:'#120a05',
-    floor(x,px,py){x.fillStyle=`hsl(32,${26+Math.random()*6}%,${21+Math.random()*4}%)`;x.fillRect(px,py,TILE,TILE);
+    floor(x,px,py){x.fillStyle=`hsl(32,${24+Math.random()*2}%,${21.5+Math.random()*1.2}%)`;x.fillRect(px,py,TILE,TILE);
+      for(let k=0;k<2;k++)dot(x,px+rand(0,40),py+rand(0,40),rand(8,16),Math.random()<0.5?'rgba(0,0,0,.05)':'rgba(255,230,190,.035)');
       for(let k=0;k<3;k++)dot(x,px+rand(2,38),py+rand(2,38),rand(0.8,1.8),Math.random()<0.5?'rgba(0,0,0,.18)':'rgba(255,230,190,.12)');
       if(Math.random()<0.22){x.strokeStyle='rgba(255,225,180,.09)';x.lineWidth=2;x.beginPath();x.arc(px+20,py+48,30,Math.PI*1.2,Math.PI*1.8);x.stroke();}},
+    // jagged sandstone: a dark irregular base, a lit top face, strata lines and cracks
     wall(x,px,py,below,adj){if(!adj){x.fillStyle='#1d140c';x.fillRect(px,py,TILE,TILE);return;}
-      x.fillStyle='hsl(30,18%,12%)';x.beginPath();x.ellipse(px+20,py+22,24,21,rand(-0.4,0.4),0,TAU);x.fill();
-      x.fillStyle='hsl(28,20%,22%)';x.beginPath();x.ellipse(px+17,py+15,15,10,rand(-0.4,0.4),0,TAU);x.fill();dot(x,px+14,py+12,3,'rgba(255,230,190,.12)');},
+      const blob=(cx,cy,rx,ry,col)=>{x.fillStyle=col;x.beginPath();for(let k=0;k<9;k++){const a=k/9*TAU,r=rand(0.78,1.08);x.lineTo(cx+Math.cos(a)*rx*r,cy+Math.sin(a)*ry*r);}x.closePath();x.fill();};
+      blob(px+20,py+23,25,21,'hsl(28,16%,9%)');blob(px+19,py+18,21,16,'hsl(29,17%,16%)');blob(px+17,py+14,14,9,'hsl(31,18%,23%)');
+      x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;for(let k=0;k<2;k++){const yy=py+rand(14,28);x.beginPath();x.moveTo(px+rand(2,10),yy);x.lineTo(px+rand(30,38),yy+rand(-3,3));x.stroke();}
+      if(Math.random()<0.5)crack(x,px,py,'rgba(0,0,0,.45)');x.fillStyle='rgba(255,230,190,.1)';x.fillRect(px+rand(8,22),py+rand(8,12),rand(4,8),1.2);},
     deco(x,px,py){const r=Math.random();
       if(r<0.012){dot(x,px+20,py+20,6,'#d9d0b8');dot(x,px+18,py+19,1.6,'#2a1d10');dot(x,px+22,py+19,1.6,'#2a1d10');}
       else if(r<0.035){x.strokeStyle='#4a3420';x.lineWidth=2;x.beginPath();const bx=px+20,by=py+32;x.moveTo(bx,by);x.lineTo(bx,by-16);for(const s of [-1,1]){x.moveTo(bx,by-8);x.lineTo(bx+s*8,by-16);x.moveTo(bx,by-13);x.lineTo(bx+s*5,by-21);}x.stroke();}
-      else if(r<0.045)glow(x,px+rand(10,30),py+rand(10,30),10,'rgba(255,120,40,.35)');}};
+      else if(r<0.045){const gx=px+rand(10,30),gy=py+rand(10,30);glow(x,gx,gy,10,'rgba(255,120,40,.35)');addLight(gx,gy,55,0.35,'255,120,40',0.2,1);}}};
   THEMES.marsh={void:'#020602',
-    floor(x,px,py){x.fillStyle=`hsl(${88+Math.random()*16},22%,${11+Math.random()*4}%)`;x.fillRect(px,py,TILE,TILE);
+    floor(x,px,py){x.fillStyle=`hsl(${92+Math.random()*6},18%,${12+Math.random()*1.2}%)`;x.fillRect(px,py,TILE,TILE);
       for(let k=0;k<2;k++)dot(x,px+rand(6,34),py+rand(6,34),rand(5,11),'rgba(0,0,0,.14)');if(Math.random()<0.15)dot(x,px+rand(6,34),py+rand(6,34),rand(3,7),'rgba(120,170,70,.12)');},
-    poison(x,px,py){x.fillStyle='hsl(82,62%,22%)';x.fillRect(px,py,TILE,TILE);dot(x,px+20,py+20,26,'hsla(84,66%,28%,.85)');
+    poison(x,px,py){if(Math.random()<0.12)addLight(px+20,py+20,80,0.3,'150,230,80',0.15,0);x.fillStyle='hsl(82,62%,22%)';x.fillRect(px,py,TILE,TILE);dot(x,px+20,py+20,26,'hsla(84,66%,28%,.85)');
       for(let k=0;k<3;k++){x.strokeStyle='rgba(190,255,120,.35)';x.lineWidth=1;x.beginPath();x.arc(px+rand(6,34),py+rand(6,34),rand(1.5,3.5),0,TAU);x.stroke();}},
     wall(x,px,py,below,adj){x.fillStyle='hsl(120,30%,5%)';x.fillRect(px,py,TILE,TILE);if(!adj)return;
-      for(let k=0;k<3;k++)dot(x,px+rand(4,36),py+rand(4,36),rand(10,17),`hsl(${105+rand(0,30)},35%,${9+rand(0,7)}%)`);},
+      for(let k=0;k<3;k++)dot(x,px+rand(4,36),py+rand(4,36),rand(10,17),`hsl(${95+rand(0,30)},22%,${7+rand(0,6)}%)`);},
     deco(x,px,py){const r=Math.random();
-      if(r<0.016){const cx=px+rand(10,30),cy=py+rand(10,30);glow(x,cx,cy,16,'rgba(90,255,210,.28)');x.fillStyle='#cfe';x.fillRect(cx-1,cy,2,5);dot(x,cx,cy,4,'#5fd8c0');}
+      if(r<0.016){const cx=px+rand(10,30),cy=py+rand(10,30);glow(x,cx,cy,16,'rgba(90,255,210,.28)');addLight(cx,cy,80,0.4,'90,255,210',0.2,0);x.fillStyle='#cfe';x.fillRect(cx-1,cy,2,5);dot(x,cx,cy,4,'#5fd8c0');}
       else if(r<0.04){x.strokeStyle='hsl(90,35%,30%)';x.lineWidth=1.5;x.beginPath();const bx=px+rand(8,32),by=py+34;for(let k=-2;k<=2;k++){x.moveTo(bx+k*3,by);x.lineTo(bx+k*4+rand(-2,2),by-rand(12,22));}x.stroke();}}};
   THEMES.citadel={void:'#02050b',
-    floor(x,px,py){x.fillStyle=`hsl(${200+Math.random()*12},18%,${23+Math.random()*5}%)`;x.fillRect(px,py,TILE,TILE);x.strokeStyle='rgba(210,235,255,.09)';x.lineWidth=1;x.strokeRect(px+.5,py+.5,TILE-1,TILE-1);
+    floor(x,px,py){slabs(x,px,py,206,13,21,3);
       if(Math.random()<0.25)dot(x,px+rand(4,36),py+rand(4,36),rand(4,10),'rgba(240,250,255,.06)');if(Math.random()<0.05)crack(x,px,py,'rgba(200,235,255,.18)');},
     voidT(x,px,py,i,j,at){x.fillStyle='#02050b';x.fillRect(px,py,TILE,TILE);if(Math.random()<0.1)dot(x,px+rand(0,40),py+rand(0,40),rand(8,18),'rgba(120,160,220,.035)');
       if(at(i,j-1)===0){x.fillStyle='hsl(210,16%,17%)';x.fillRect(px,py,TILE,14);x.fillStyle='hsl(205,20%,30%)';x.fillRect(px,py,TILE,2);x.fillStyle='rgba(220,240,255,.5)';
@@ -183,23 +205,73 @@ const THEMES={};
       x.fillStyle='rgba(0,0,0,.22)';x.fillRect(px,py+13,TILE,1.5);x.fillRect(px,py+27,TILE,1.5);x.fillRect(px+20,py,1.5,13);x.fillRect(px+8,py+14,1.5,13);x.fillRect(px+30,py+28,1.5,12);
       x.fillStyle='rgba(240,250,255,.55)';x.fillRect(px,py,TILE,4);if(below)face(x,px,py,'hsl(210,16%,22%)','hsl(205,30%,40%)');},
     deco(x,px,py){const r=Math.random();
-      if(r<0.016){const cx=px+rand(10,30),cy=py+rand(14,30);x.fillStyle='rgba(180,225,255,.75)';x.beginPath();x.moveTo(cx,cy-14);x.lineTo(cx+5,cy);x.lineTo(cx-5,cy);x.fill();x.beginPath();x.moveTo(cx+6,cy-8);x.lineTo(cx+9,cy);x.lineTo(cx+3,cy);x.fill();}
+      if(r<0.016){const cx=px+rand(10,30),cy=py+rand(14,30);addLight(cx,cy-6,70,0.4,'170,215,255',0.25,0);x.fillStyle='rgba(180,225,255,.75)';x.beginPath();x.moveTo(cx,cy-14);x.lineTo(cx+5,cy);x.lineTo(cx-5,cy);x.fill();x.beginPath();x.moveTo(cx+6,cy-8);x.lineTo(cx+9,cy);x.lineTo(cx+3,cy);x.fill();}
       else if(r<0.05){x.fillStyle='rgba(240,250,255,.12)';x.beginPath();x.ellipse(px+20,py+24,rand(10,18),rand(5,9),0,0,TAU);x.fill();}}};
   THEMES.ember={void:'#1a0400',
-    floor(x,px,py){x.fillStyle=`hsl(${6+Math.random()*10},14%,${8+Math.random()*4}%)`;x.fillRect(px,py,TILE,TILE);if(Math.random()<0.13)crack(x,px,py,'rgba(255,90,20,.55)',1.5);},
-    voidT(x,px,py){x.fillStyle=`hsl(${16+Math.random()*8},95%,${40+Math.random()*6}%)`;x.fillRect(px,py,TILE,TILE);
+    floor(x,px,py){slabs(x,px,py,10,10,10,2);if(Math.random()<0.13)crack(x,px,py,'rgba(255,90,20,.55)',1.5);},
+    voidT(x,px,py,i,j,at){if(Math.random()<0.16)addLight(px+20,py+20,140,0.55,'255,110,30',0.12,0);x.fillStyle=`hsl(${18+Math.random()*4},90%,${41+Math.random()*2}%)`;x.fillRect(px,py,TILE,TILE);
+      // cooled crust where the lava meets rock: a dark rim fading inward, with lumpy edges
+      for(const [di,dj,gx,gy,w,h] of [[0,-1,0,0,TILE,12],[0,1,0,TILE-12,TILE,12],[-1,0,0,0,12,TILE],[1,0,TILE-12,0,12,TILE]]){if(at(i+di,j+dj)===2)continue;
+        const g=x.createLinearGradient(px+(di>0?TILE:di<0?0:0),py+(dj>0?TILE:0),px+(di>0?TILE-12:di<0?12:0),py+(dj>0?TILE-12:dj<0?12:0));g.addColorStop(0,'rgba(20,6,2,.95)');g.addColorStop(0.5,'rgba(70,14,2,.6)');g.addColorStop(1,'rgba(120,30,4,0)');x.fillStyle=g;x.fillRect(px+gx,py+gy,w,h);
+        for(let k=0;k<3;k++)dot(x,px+(di?gx+(di>0?TILE-gx-12:0)+rand(0,6)+(di>0?6:0):rand(2,38)),py+(dj?(dj>0?TILE-rand(2,8):rand(2,8)):rand(2,38)),rand(2.5,5),'rgba(24,8,3,.9)');}
       for(let k=0;k<2;k++){x.fillStyle='rgba(255,220,120,.35)';x.beginPath();x.ellipse(px+rand(6,34),py+rand(6,34),rand(4,10),rand(2,4),rand(0,3),0,TAU);x.fill();}
       if(Math.random()<0.4)dot(x,px+rand(6,34),py+rand(6,34),rand(3,7),'rgba(90,10,0,.45)');},
-    lava(x,px,py){x.fillStyle='hsl(14,88%,33%)';x.fillRect(px,py,TILE,TILE);
+    lava(x,px,py){if(Math.random()<0.3)addLight(px+20,py+20,120,0.5,'255,110,30',0.14,0);x.fillStyle='hsl(14,88%,33%)';x.fillRect(px,py,TILE,TILE);
       for(let k=0;k<3;k++){x.fillStyle='rgba(40,8,2,.75)';x.beginPath();const cx=px+rand(6,34),cy=py+rand(6,34);for(let m=0;m<5;m++){const a=m/5*TAU,rr=rand(4,8);x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}x.fill();}
       crack(x,px,py,'rgba(255,220,120,.7)',1.5);},
     wall(x,px,py,below,adj){x.fillStyle='hsl(0,8%,5%)';x.fillRect(px,py,TILE,TILE);if(!adj)return;x.fillStyle='rgba(255,80,20,.16)';x.fillRect(px,py,TILE,2);
       if(below){face(x,px,py,'hsl(4,12%,11%)','hsl(10,60%,30%)');x.fillStyle='rgba(255,90,20,.35)';x.fillRect(px+rand(4,30),py+TILE-12,rand(3,8),1.5);}},
     deco(x,px,py){const r=Math.random();
-      if(r<0.012)glow(x,px+20,py+20,18,'rgba(255,120,30,.45)');
+      if(r<0.012){glow(x,px+20,py+20,18,'rgba(255,120,30,.45)');addLight(px+20,py+20,80,0.45,'255,120,30',0.25,1);}
       else if(r<0.035){x.fillStyle='#0c0605';x.beginPath();const cx=px+rand(10,30),cy=py+rand(10,30);x.moveTo(cx,cy-9);x.lineTo(cx+5,cy+4);x.lineTo(cx-4,cy+5);x.fill();x.strokeStyle='rgba(255,90,30,.4)';x.lineWidth=1;x.stroke();}}};
 }
-function renderMap(){
+// Light sources baked with the map (light.js lights them every frame): {x, y, r, i, rgb, g, fl: flickers, torch: draw a flame}.
+function addLight(x,y,r,i,rgb,g,fl,torch){(G.lights||(G.lights=[])).push({x,y,r,i,rgb,g,fl:!!fl,torch:!!torch});}
+// Wall torches along wall faces in the dungeon, at least 6 tiles apart: iron sconces in stone, wooden stakes in rock and brush.
+const TORCH_RGB={crypt:'255,165,85',desert:'255,180,100',marsh:'245,195,105',citadel:'255,160,80',ember:'255,110,40'};
+function placeTorches(x,gen,at,adjFloor){const rgb=TORCH_RGB[gen];if(!rgb)return;const C=[],picked=[];
+  for(let j=1;j<MH-1;j++)for(let i=1;i<MW-1;i++)if(at(i,j)===1&&at(i,j+1)===0&&adjFloor(i,j))C.push([i,j]);
+  C.sort(()=>Math.random()-0.5);
+  for(const [i,j] of C){if(picked.length>=46)break;if(picked.some(([a,b])=>Math.max(Math.abs(a-i),Math.abs(b-j))<6))continue;picked.push([i,j]);
+    const px=i*TILE+20,py=(j+1)*TILE,wood=gen==='desert'||gen==='marsh';
+    if(wood){x.fillStyle='#2a1c10';x.fillRect(px-2,py-16,4,18);x.fillStyle='#4a3420';x.fillRect(px-1,py-16,1.5,18);x.fillStyle='#1a120a';x.fillRect(px-4,py-14,8,4);}
+    else{x.fillStyle='#14100d';x.fillRect(px-4,py-15,8,10);x.fillStyle='#2c2621';x.beginPath();x.moveTo(px-6,py-12);x.lineTo(px+6,py-12);x.lineTo(px+3,py-6);x.lineTo(px-3,py-6);x.closePath();x.fill();
+      x.fillStyle='rgba(255,190,120,.35)';x.fillRect(px-5,py-12,10,1);x.fillStyle='rgba(0,0,0,.5)';x.fillRect(px-3,py-5,6,2);}
+    addLight(px,py-15,240,0.88,rgb,0.34,1,1);}}
+// ---------- grit and grade (once per map) ----------
+// Tileable value noise (several octaves), built once: light greys that a 'multiply' pass turns into grime.
+let GRIME=null;
+function grimeTex(){if(GRIME)return GRIME;const S=256,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),img=x.createImageData(S,S),v=new Float32Array(S*S);
+  for(const [cell,amp] of [[64,0.5],[32,0.28],[16,0.14],[4,0.08]]){const n=S/cell,R=new Float32Array(n*n).map(()=>Math.random());
+    for(let j=0;j<S;j++)for(let i=0;i<S;i++){const fx=i/cell,fy=j/cell,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty),a=R[iy%n*n+ix%n],b=R[iy%n*n+(ix+1)%n],cc=R[(iy+1)%n*n+ix%n],d=R[(iy+1)%n*n+(ix+1)%n];
+      v[j*S+i]+=amp*(a+(b-a)*sx+(cc-a)*sy+(a-b-cc+d)*sx*sy);}}
+  for(let k=0;k<S*S;k++){const g=Math.round(255-Math.pow(Math.max(0,v[k]-0.3)/0.7,1.6)*140);img.data[k*4]=g;img.data[k*4+1]=g*0.97|0;img.data[k*4+2]=g*0.93|0;img.data[k*4+3]=255;}
+  x.putImageData(img,0,0);return GRIME=c;}
+// Shadow strips cast by walls onto the floor beside them, pre-drawn once per side.
+let AO=null;
+function aoStrips(){if(AO)return AO;AO={};const D=16;
+  for(const [k,w,h,x0,y0,x1,y1,a] of [['n',TILE,D,0,0,0,D,0.55],['s',TILE,D,0,D,0,0,0.3],['w',D,TILE,0,0,D,0,0.42],['e',D,TILE,D,0,0,0,0.42]]){
+    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),g=x.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,w,h);AO[k]=c;}
+  return AO;}
+// Grime over everything, wall shadows on the floor, grit and old stains along the walls, a few dark splashes.
+function wearMap(x,at){const W=MW*TILE,H=MH*TILE,A=aoStrips();
+  x.save();x.globalCompositeOperation='multiply';x.fillStyle=x.createPattern(grimeTex(),'repeat');x.fillRect(0,0,W,H);
+  x.setTransform(3.1,0,0,3.1,0,0);x.globalAlpha=0.55;x.fillRect(0,0,W/3.1,H/3.1);x.restore();
+  for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){if(at(i,j)!==0)continue;const px=i*TILE,py=j*TILE;
+    if(at(i,j-1)===1)x.drawImage(A.n,px,py);if(at(i,j+1)===1)x.drawImage(A.s,px,py+TILE-16);if(at(i-1,j)===1)x.drawImage(A.w,px,py);if(at(i+1,j)===1)x.drawImage(A.e,px+TILE-16,py);
+    if((at(i,j-1)===1||at(i-1,j)===1||at(i+1,j)===1)&&Math.random()<0.5)for(let k=0;k<5;k++){x.fillStyle=Math.random()<0.5?'rgba(0,0,0,.35)':'rgba(190,175,150,.12)';x.beginPath();x.arc(px+rand(2,38),py+rand(2,14),rand(0.7,2),0,TAU);x.fill();}
+    if(Math.random()<0.02){const cx=px+rand(8,32),cy=py+rand(8,32),r=rand(8,18);x.fillStyle=Math.random()<0.4?'rgba(60,8,4,.22)':'rgba(0,0,0,.2)';
+      x.beginPath();x.ellipse(cx,cy,r,r*rand(0.5,0.9),rand(0,3),0,TAU);x.fill();for(let k=0;k<4;k++){x.beginPath();x.arc(cx+rand(-r*1.6,r*1.6),cy+rand(-r*1.2,r*1.2),rand(1,3),0,TAU);x.fill();}}}}
+// Pull the colour toward earthy, muted tones: drain some saturation, then a faint tone wash. [desaturate, tone]
+const GRADE={crypt:[0.4,'#d6d2cc'],desert:[0.38,'#dccab0'],marsh:[0.32,'#c9ccb6'],citadel:[0.36,'#cdd4dc'],ember:[0.28,'#dcc4bc'],town:[0.3,'#d8d0c4']};
+function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
+  x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,W,H);
+  x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
+// Painting uses its own random numbers (seeded by one draw), so art changes never shift gameplay randomness.
+const artRng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+function renderMap(){const R0=Math.random;Math.random=artRng(R0()*4294967296|0);try{paintMap();}finally{Math.random=R0;}}
+function paintMap(){
+  G.lights=[];sprClear(); // new map, new creatures: drop the old sprites
   const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');
   const gen=G.inTown?'town'+actIdx(G.depth):ACTS[actIdx(G.depth)].gen,TH=THEMES[gen],g=G.grid,T=G.terrain;
   const at=(i,j)=>i<0||j<0||i>=MW||j>=MH?1:g[j*MW+i];
@@ -214,6 +286,8 @@ function renderMap(){
     if(v===1)TH.wall(x,px,py,at(i,j+1)===0,adjFloor(i,j),i,j);
     else if(v===0&&T[k]===0&&TH.deco)TH.deco(x,px,py,{up:at(i,j-1)===1,left:at(i-1,j)===1});}
   if(TH.rooms&&G.rooms)TH.rooms(x,G.rooms);
+  wearMap(x,at);gradeMap(x,G.inTown?'town':gen);
+  if(!G.inTown)placeTorches(x,gen,at,adjFloor);
   G.mapCv=cv;
 }
 function computeFlow(){

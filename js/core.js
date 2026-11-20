@@ -14,7 +14,7 @@ const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;r
 
 // ---------- saves ----------
 // Game version: shown in the pause menu; bump it (and VERSION in sw.js) after every change.
-const GAME_VERSION='1.0.19';
+const GAME_VERSION='1.0.23';
 const SAVE_KEY='emberdeep_v1';
 let SAVES=[];
 try{SAVES=JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){SAVES=[];}
@@ -24,6 +24,6 @@ function storeSaves(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVES));}
 function saveChar(){if(!G.char)return;if(G.p)G.char.potions=G.p.potions;const i=SAVES.findIndex(c=>c.id===G.char.id);if(i>=0)SAVES[i]=G.char;else SAVES.push(G.char);storeSaves();}
 
 // ---------- game state ----------
-const G={ehaz:[],feats:[],walls:[],nearFeat:null,paused:true,char:null,stats:null,p:null,enemies:[],proj:[],fx:[],parts:[],texts:[],loot:[],hazards:[],delayed:[],grid:null,explored:null,mapCv:null,rooms:[],portal:null,boss:null,cam:{x:0,y:0},shake:0,time:0,flow:null,flowTile:-1,flowT:0,depth:1,bagFullT:0,exploreT:0,mmT:0,saveT:0};
+const G={ehaz:[],feats:[],walls:[],nearFeat:null,paused:true,char:null,stats:null,p:null,enemies:[],proj:[],fx:[],parts:[],texts:[],loot:[],hazards:[],delayed:[],grid:null,explored:null,mapCv:null,lights:[],rooms:[],portal:null,boss:null,cam:{x:0,y:0},shake:0,time:0,flow:null,flowTile:-1,flowT:0,depth:1,bagFullT:0,exploreT:0,mmT:0,saveT:0};
 const held=[false,false,false,false,false];
 const keys={};

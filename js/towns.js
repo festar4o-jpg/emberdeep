@@ -5,23 +5,23 @@
 // The ground and buildings are pre-drawn once into the map canvas (THEMES.town0..4); lights, folk and ambience are per frame.
 const TOWNS=[
   {name:'Gravewatch',sub:'Lanterns burn all night above the drowned crypts',mm:'#7d8590',amb:'mist',hat:'hood',
-   light:{r0:190,r1:560,tint:'rgba(150,180,255,0.03)',dark:'rgba(2,4,12,0.62)'},flame:'255,190,110',
+   light:{r0:190,r1:560,tint:'rgba(150,180,255,0.03)',dark:'rgba(3,5,12,0.82)'},flame:'255,190,110',
    folk:['#3d4a5c','#5a4636','#4a4a52','#2f3b33'],scatter:['grave','grave','grave','lamp','deadtree','barrel'],
    lines:['Bury them deep, or they climb back up.','The bells rang on their own last night.','Water seeps up through every grave here.','Don\'t follow the lights into the crypts.']},
   {name:'Kesh Oasis',sub:'The last cool water before the cinder dunes',mm:'#c4a46a',amb:'dust',hat:'wrap',
-   light:{r0:260,r1:700,tint:'rgba(255,200,120,0.05)',dark:'rgba(30,14,2,0.42)'},flame:'255,200,120',
+   light:{r0:260,r1:700,tint:'rgba(255,200,120,0.05)',dark:'rgba(22,11,4,0.62)'},flame:'255,200,120',
    folk:['#c8a060','#8a3a2a','#e0d0b0','#3a6a8a'],scatter:['palm','palm','pots','crate','pots'],
    lines:['Fill your skins. The wastes take everything.','The sun out there never set again.','Sand in the bread, sand in the bed.','Caravans stopped coming a year ago.']},
   {name:'Mirewatch',sub:'Stilt huts lashed together over black water',mm:'#7a9050',amb:'flies',hat:'straw',
-   light:{r0:170,r1:500,tint:'rgba(150,230,110,0.04)',dark:'rgba(2,10,4,0.66)'},flame:'190,255,140',
+   light:{r0:170,r1:500,tint:'rgba(150,230,110,0.04)',dark:'rgba(3,8,4,0.84)'},flame:'190,255,140',
    folk:['#5a6a3a','#6a4a2a','#3a5a4a','#7a6a3a'],scatter:['shroom','shroom','reeds','barrel','reeds'],
    lines:['Mind the planks. The water bites.','The mushrooms glow brighter when the rot is close.','My boy went to fish. Only his boat came back.','Boil the water. Twice.']},
   {name:'Frosthold',sub:'A palisade of pine against the endless winter',mm:'#b8c8d8',amb:'snow',hat:'fur',
-   light:{r0:220,r1:620,tint:'rgba(200,230,255,0.05)',dark:'rgba(4,10,24,0.52)'},flame:'255,170,90',
+   light:{r0:220,r1:620,tint:'rgba(200,230,255,0.05)',dark:'rgba(4,8,18,0.74)'},flame:'255,170,90',
    folk:['#6a4a3a','#4a5a7a','#7a3a3a','#5a5a5a'],scatter:['pine','pine','crystal','logs','pine'],
    lines:['Stay near the fire. The cold listens.','The citadel bells ring with no one inside.','We burn a log for every soul lost up there.','Ice on your blade? Good. It\'ll hold the edge.']},
   {name:'Cinderforge',sub:'The last forge-hold before the burning heart',mm:'#a06850',amb:'embers',hat:'helm',
-   light:{r0:190,r1:560,tint:'rgba(255,110,40,0.06)',dark:'rgba(20,3,0,0.6)'},flame:'255,120,40',
+   light:{r0:190,r1:560,tint:'rgba(255,110,40,0.06)',dark:'rgba(14,4,2,0.8)'},flame:'255,120,40',
    folk:['#4a3a3a','#6a2a1a','#3a3a40','#5a4030'],scatter:['brazier','brazier','obelisk','chains','obelisk'],
    lines:['The deep is hungry. Feed it steel, not yourself.','Every hammer here was forged in that fire.','Breathe through cloth. The ash cuts.','The Cinder King hears the anvils. Let him.']}
 ];
@@ -158,11 +158,7 @@ function drawTownAmb(){const W=G.town;if(!W)return;const A=W.T.amb;
     else{ctx.globalAlpha=a*0.9;ctx.fillStyle=q.ph%2<1?'#ffb040':'#ff6a1a';ctx.fillRect(q.x,q.y,q.s,q.s);}}
   ctx.globalAlpha=1;}
 // Town lights shine through the dark (screen space, added on top of the darkness).
-function drawTownGlow(){const W=G.town;if(!W)return;const T=W.T;ctx.globalCompositeOperation='lighter';
-  for(const L of W.lights){const sx=(L.x-G.cam.x)*Z+CW/2,sy=(L.y-G.cam.y)*Z+CH/2,r=L.r*Z;if(sx<-r||sy<-r||sx>CW+r||sy>CH+r)continue;
-    const f=L.win?0.85+0.15*Math.sin(G.time*1.3+L.x):0.8+0.2*Math.sin(G.time*9+L.x)*Math.sin(G.time*5.7+L.y),rgb=L.shroom?'120,255,190':L.way?'90,220,255':T.flame;
-    const g=ctx.createRadialGradient(sx,sy,1,sx,sy,r);g.addColorStop(0,`rgba(${rgb},${(L.win?0.22:0.3)*f})`);g.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(sx,sy,r,0,TAU);ctx.fill();}
-  ctx.globalCompositeOperation='source-over';}
+// Town lights (windows, lamps, the centerpiece, the Waystone) are lit by light.js from G.town.lights.
 
 // ---------- pre-drawn town art ----------
 {
