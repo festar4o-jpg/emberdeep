@@ -15,7 +15,7 @@
 //   Matchups    each boss takes more or less damage from each class (BOSSES[k].vs), so each class has bosses it
 //               finds easier and harder; the entrance banner says which.
 // Also here: area levels and the level/gear difference rule (diminishing returns when far overleveled/overgeared).
-const PHASE_AT=[0.7,0.35],TRANS_T=2.2,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.05,DPS_CAP=0.03,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
+const PHASE_AT=[0.7,0.35],TRANS_T=1.3,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.08,DPS_CAP=0.06,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
 const ROMAN_PH=['I','II','III'];
 function bossInit(e){e.phase=0;e.stagger=0;e.staggerMax=100;e.staggers=0;e.punishes=0;e.homeX=e.x;e.homeY=e.y;e.maxHp*=BOSS_HP_K;e.hp=e.maxHp;}
 // ---------- area level and the level / gear difference ----------
@@ -90,6 +90,10 @@ function drawArena(){const b=G.enemies.find(e=>e.type==='boss'&&!e.dead&&e.arena
 function drawCata(f,t){const R=900,pulse=0.75+0.25*Math.sin(G.time*14);ctx.save();ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);ctx.moveTo(f.x,f.y);ctx.arc(f.x,f.y,R,f.a+f.half,f.a-f.half,true);ctx.closePath();
   ctx.fillStyle=`rgba(150,25,5,${0.16+0.18*t})`;ctx.fill('evenodd');ctx.strokeStyle=`rgba(120,255,160,${0.8*pulse})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(f.a-f.half)*R,f.y+Math.sin(f.a-f.half)*R);
   ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(f.a+f.half)*R,f.y+Math.sin(f.a+f.half)*R);ctx.stroke();ctx.restore();}
+// Supernova: the whole arena is marked except a small ring around the Cinder King.
+function drawNova(f,t){const pulse=0.75+0.25*Math.sin(G.time*16);ctx.save();ctx.beginPath();ctx.arc(f.x,f.y,900,0,TAU);ctx.arc(f.x,f.y,f.r,0,TAU,true);
+  ctx.fillStyle=`rgba(255,${120-60*t|0},20,${0.12+0.22*t})`;ctx.fill('evenodd');ctx.strokeStyle=`rgba(140,255,170,${0.85*pulse})`;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.lineDashOffset=-G.time*40;
+  ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
 // "Phase II" banner across the screen (screen space).
 function drawPhaseBanner(){const B=G.phaseBanner;if(!B)return;const u=(G.time-B.t)/2.2;if(u>1||u<0){if(u>1)G.phaseBanner=null;return;}const a=u<0.15?u/0.15:u>0.7?(1-u)/0.3:1,y=CH*0.32;
   ctx.globalAlpha=a;ctx.textAlign='center';ctx.font=`bold ${Math.round(24*Math.min(1.3,Z))}px Georgia`;ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeText(B.text,CW/2,y);ctx.fillStyle='#d8c8a8';ctx.fillText(B.text,CW/2,y);

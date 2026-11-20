@@ -22,7 +22,7 @@ const near=(r)=>{const p=G.p;for(let k=0;k<12;k++){const a=rand(0,TAU),d=rand(0,
 const BIG=e=>e.dmg*4; // a big attack: about half your life with act-appropriate gear
 const BOSSES=[
   { // Act 1: Varrok the Hollow, a crypt lord who raises the dead. Teaches dodging: Grave Cleave.
-    hp:1,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
+    hp:0.75,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
     vs:{warden:[1.35,'Old bone shatters under steel'],arcanist:[0.55,'Grave wards blunt your spells']},
     loot:{n:3,rare:1,unique:0,ilvl:2,gold:60},
     phases:[
@@ -50,7 +50,7 @@ const BOSSES=[
     {name:'Blink Slam',w:2,cd:1,big:1,fn(e){if(!blinkNear(e))return;bigAttack(e,1.1,()=>{e.tele={r:130,col:'#e0a860'};},()=>{if(dist(e,G.p)<130+G.p.r)dmgPlayer(BIG(e)*0.85,e);G.shake=Math.max(G.shake,10);burst(e.x,e.y,24,'#c8a070',220);fxCracks(e.x,e.y,130,'#ffb060');
         if(e.phase)ring(e,12,240,'#f0c878',e.dmg*0.45,6,rand(0,TAU));});}}]},
   { // Act 3: Mother of Rot, slow, fills the arena with poison and spawn
-    hp:1.0,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
+    hp:1.37,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
     vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic']},
     loot:{n:4,rare:2,unique:0,ilvl:3,gold:90},
     phases:[
@@ -63,8 +63,8 @@ const BOSSES=[
     {name:'Spore Nova',w:2,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,18,170,'#a8e060',e.dmg*0.5,7,off,0,{slow:0.35});if(e.phase)bossLater(e,0.35,()=>ring(e,18,170,'#a8e060',e.dmg*0.5,7,off+TAU/36,0,{slow:0.35}));e.busy=0.6;}},
     {name:'Brood',w:2,cd:1.8,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#9fe04a'};e.act=()=>bossSummon(e,'sporetoad',e.phase?4:3,7);}}]},
   { // Act 4: Rimeheart, the Frozen King, ice lances, avalanches, a warded shield and a floor that shatters
-    hp:1.55,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
-    vs:{warden:[0.75,'Ice armour turns your blades'],arcanist:[1.5,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
+    hp:2.7,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
+    vs:{warden:[0.95,'Ice armour turns your blades'],arcanist:[1.15,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
     loot:{n:5,rare:2,unique:0,ilvl:4,gold:110},
     phases:[
       {name:'Ice Ward',enter(e){shieldAdds(e,'frostwraith',3,'Rime Warden',2.2);},tick(e,dt){e.snowT=(e.snowT??2)-dt;if(e.snowT<=0){e.snowT=2.6;for(let i=0;i<3;i++)bossLater(e,i*0.2,()=>{const [x,y]=near(220);groundStrike(e,x,y,45,0.8,e.dmg*0.8,'#dff4ff',()=>slowPlayer(0.3,0.8));});}}},
@@ -75,8 +75,8 @@ const BOSSES=[
     {name:'Frost Ring',w:2,cd:1.2,fn(e){const off=rand(0,TAU);ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off,0,{slow:0.4});if(e.phase)bossLater(e,0.4,()=>ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off+TAU/48,0,{slow:0.4}));e.busy=0.6;}},
     {name:'Shardlings',w:2,cd:1.6,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#8fd0f8'};e.act=()=>bossSummon(e,'shardling',e.phase?4:3,6);}}]},
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
-    hp:2.2,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
-    vs:{warden:[1.1,'His molten armour breaks under steel'],arcanist:[0.4,'Living flame shrugs off your spells']},
+    hp:8.6,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
+    vs:{warden:[1.3,'His molten armour breaks under steel'],arcanist:[0.6,'Living flame shrugs off your spells']},
     loot:{n:6,rare:2,unique:1,ilvl:5,gold:140},
     phases:[
       {name:'Molten Shield',enter(e){shieldAdds(e,'magmabrute',2,'Molten Warden',1.3);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
@@ -88,6 +88,9 @@ const BOSSES=[
     {name:'Meteor Rain',w:3,cd:1.5,fn(e){const n=e.phase?9:7;e.busy=0.8;for(let i=0;i<n;i++)bossLater(e,i*0.18,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(180);groundStrike(e,x,y,70,1.1,e.dmg*1.2,'#ff6a1a',()=>addEHaz(x,y,55,3,e.dmg*0.4,'fire'));});}},
     {name:'Burning Charge',w:2,cd:1.2,big:1,fn(e){const a=Math.atan2(G.p.y-e.y,G.p.x-e.x);e.lockA=a;bigAttack(e,1.1,()=>G.fx.push({type:'tline',x:e.x,y:e.y,a,len:400,w:e.r*2.2,t:0,max:1.1,col:'#ff7a3a'}),
       ()=>{e.dash=0.55;e.dashHit=false;e.dashDmg=BIG(e);e.dvx=Math.cos(a)*760;e.dvy=Math.sin(a)*760;for(let i=0;i<8;i++)bossLater(e,i*0.06,()=>addEHaz(e.x,e.y,30,3,e.dmg*0.4,'fire'));},1.7);}},
+    {name:'Supernova',w:4,cd:2,big:1,ph:2,fn(e){e.busy=0;bigAttack(e,2.4,()=>{G.fx.push({type:'nova',x:e.x,y:e.y,r:115,t:0,max:2.4});toast('Supernova!','Get close to him');
+      bossLater(e,2.4,()=>{const p=G.p;if(Math.hypot(p.x-e.x,p.y-e.y)>115+p.r*0.5&&!p.dodge)dmgPlayer(BIG(e)*1.5,e);G.shake=Math.max(G.shake,18);G.hitStop=0.12;fxExplosion(e.x,e.y,320,'#ffcc66');
+        G.fx.push({type:'ring',x:e.x,y:e.y,r0:115,r1:700,t:0,max:0.6,col:'#ffcc66'});});});}},
     {name:'Flame Wave',w:3,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,36,190,'#ff8a2a',e.dmg*0.6,8,off,6);if(e.phase)bossLater(e,0.6,()=>ring(e,36,190,'#ff8a2a',e.dmg*0.6,8,off+Math.PI,6));e.busy=0.7;}}]}
 ];
 // Rotating fire jets (n directions) from the Cinder King.
