@@ -26,7 +26,7 @@ function renderWay(){const M=wayMax(),cur=G.depth;
   $('wayList').innerHTML=h;
   $('wayModes').querySelectorAll('[data-m]').forEach(el=>el.onclick=()=>setWayMode(el.dataset.m));
   $('wayList').querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.d,false));
-  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();startZone(z,z==='a1z5'?wayMode:undefined);});
+  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();startZone(z,z==='a1z5'?wayMode:'fresh');});
   $('wayList').querySelectorAll('[data-town]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.town,true));
   $('wayList').querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>{wayEnd=clamp(wayEnd+ +el.dataset.e,26,M);renderWay();});}
 // Travel. Returns false for a depth this hero hasn't reached.

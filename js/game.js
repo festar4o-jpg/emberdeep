@@ -161,6 +161,7 @@ function resetArea(){
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
 function startTown(next){
+  if(G.zone&&typeof saveInstance==='function')saveInstance(); /* zones.js: come back to the zone as you left it */
   G.zone=null;G.sidePortal=null;G.zboss=null;
   const c=G.char;G.depth=next;c.depth=next; // quitting in town resumes at the next depth
   resetArea();G.inTown=true;

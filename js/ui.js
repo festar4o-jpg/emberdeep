@@ -101,7 +101,7 @@ function showVictory(){const c=G.char;
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
-tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);if(G.zone)startZone(G.zone);else startDepth(G.depth);});
+tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);if(G.zone)startZone(G.zone,'respawn');else startDepth(G.depth);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});
 function anyPanel(){return ['questOv','invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','wayOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
 function setPause(){const panel=anyPanel();G.paused=panel||!G.char;for(let i=0;i<5;i++)held[i]=false;if(panel)G.texts=[];}

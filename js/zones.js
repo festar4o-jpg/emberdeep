@@ -35,7 +35,7 @@ const ZBOSS={
   grieve:{name:'Old Grieve, the Gravedigger',r:30,hp:1,dmg:1,spd:72,moves:['coffin','corpses'],quest:'a1q1'},
   hangman:{name:'The Hangman',r:26,hp:1.1,dmg:1.05,spd:80,moves:['hook','noose']},
   weaver:{name:'The Bone Weaver',r:30,hp:1.2,dmg:1.05,spd:68,moves:['spiral','bonecage']},
-  abbess:{name:'Abbess Morwen',r:24,hp:1.3,dmg:1.1,spd:64,moves:['pyres','mend'],ranged:1},
+  abbess:{name:'Abbess Morwen',r:24,hp:0.55,dmg:1.1,spd:64,moves:['pyres','mend'],ranged:1},
   lamplighter:{name:'The Lamplighter',r:26,hp:1.05,dmg:1,spd:70,moves:['lanterns','pyres']},
   wight:{name:'The Barrow Wight',r:28,hp:1.35,dmg:1.1,spd:74,moves:['chill','corpses'],quest:'a1q3'}
 };
@@ -47,7 +47,7 @@ const SUPERU={
   calix:{name:'Brother Calix',base:'archer',affs:['explodes','shielded']},penitent:{name:'The Penitent',base:'brute',affs:['fast','vampiric']},
   moll:{name:'Old Moll',base:'brute',affs:['shielded']},pell:{name:'Grave-Robber Pell',base:'grunt',affs:['fast','explodes']}
 };
-ETYPES.zboss={name:'Zone Boss',r:28,hp:115,dmg:9,spd:70,range:26,cd:1.6,xp:90,col:'#7a6a5a',ai:'zboss',drop:1,heavy:1,shape:'zboss'};
+ETYPES.zboss={name:'Zone Boss',r:28,hp:850,dmg:9,spd:70,range:26,cd:1.6,xp:90,col:'#7a6a5a',ai:'zboss',drop:1,heavy:1,shape:'zboss'};
 ETYPES.nest={name:'Monster Nest',r:24,hp:70,dmg:0,spd:0,range:0,cd:4,xp:30,col:'#5a4a3a',ai:'nest',drop:0.6,shape:'nest'};
 function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);
   e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;return e;}
@@ -138,12 +138,24 @@ const LAYOUT={
     for(let k=0;k<pts.length;k+=10)regs.push(regionAt(pts[k][0],pts[k][1]));
     keepConnected();const start=regionAt(pts[0][0]+1,pts[0][1]),exit=regionAt(pts[pts.length-1][0],pts[pts.length-1][1]);return finishLayout([start,...regs,exit],start,exit);}
 };
+// ---------- zone instances ----------
+// The zone you step out of (through a side passage, or to town) is kept as you left it: layout, monsters, loot,
+// objectives. Coming back through the town portal or the side passage within 15 minutes restores it, like a PoE
+// instance; waypoint travel and a death (respawn) build it fresh.
+let ZCACHE=null;
+function saveInstance(){if(!G.zone||G.inTown||!G.grid)return;ZCACHE={zid:G.zone,t:Date.now(),grid:G.grid,terrain:G.terrain,road:G.road,rooms:G.rooms,portal:G.portal,side:G.sidePortal,enemies:G.enemies,zboss:G.zboss,
+  feats:G.feats,loot:G.loot,explored:G.explored,mapCv:G.mapCv,lights:G.lights,theme:G.zoneTheme,splats:G.splats,px:G.p.x,py:G.p.y};}
+function restoreInstance(zid,mode){const C=ZCACHE;if(!C||C.zid!==zid||(mode!==undefined&&mode!=='back')||Date.now()-C.t>15*60e3)return false;ZCACHE=null; /* town portal and side passages only: waypoints, respawns and next-zone walks build fresh */
+  Object.assign(G,{grid:C.grid,terrain:C.terrain,road:C.road,rooms:C.rooms,portal:C.portal,sidePortal:C.side,enemies:C.enemies,zboss:C.zboss,feats:C.feats,loot:C.loot,explored:C.explored,mapCv:C.mapCv,lights:C.lights,zoneTheme:C.theme,splats:C.splats||[]});
+  G.boss=null;for(const e of G.enemies)if(!e.dead){e.aggro=false;e.wind=0;e.busy=0;}
+  const at=mode==='back'&&C.side?{x:C.side.x,y:C.side.y+60}:{x:C.px,y:C.py};G.p.x=at.x;G.p.y=at.y;if(blockedAt(G.p.x,G.p.y,G.p.r)){G.p.x=C.px;G.p.y=C.py;}
+  G.flow=new Int16Array(MW*MH);G.flowTile=-1;return true;}
 // ---------- building a zone ----------
 function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZones(c);
   G.zone=zid;G.depth=Z.depth;c.depth=Z.depth;c.zone=zid;c.maxDepth=Math.max(c.maxDepth||1,Z.depth);
   resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&mode&&mode!=='side'?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
-  if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;}else genZone(Z,mode);
+  if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;}else if(!restoreInstance(zid,mode))genZone(Z,mode);
   G.cam.x=p.x;G.cam.y=p.y;
   const newAct=Z.depth===1&&!Z.parent&&(c.actSeen||0)<1;if(newAct)c.actSeen=1;
   saveChar();setPause();if(newAct)showActTitle(1);else toast(Z.name,Z.sub);}
@@ -239,7 +251,7 @@ function zonePortals(p){const P=G.portal,S=G.sidePortal,Z=ZONES[G.zone];
 function zoneGoal(){const Z=ZONES[G.zone],S=zst(G.char,G.zone);if(gateOpen(G.zone))return 'Exit open';
   return Z.gate==='boss'?`Slay ${ZBOSS[Z.boss].name.split(',')[0]}`:Z.gate==='key'?`Find the ${Z.key}`:Z.gate==='seals'?`Light the seals (${S.seals||0}/3)`:Z.gate==='actboss'?'Defeat Varrok':'';}
 function zoneDescend(){const Z=ZONES[G.zone];
-  if(G.atSide&&G.sidePortal)return startZone(G.sidePortal.to,'side');
+  if(G.atSide&&G.sidePortal){saveInstance();return startZone(G.sidePortal.to,'side');}
   if(!G.portal.active)return;
   if(Z.parent)return startZone(Z.parent,'back');
   if(Z.next)return startZone(Z.next);
