@@ -49,7 +49,7 @@ function gatherLights(Lt){
     else if((f.type==='tele'||f.type==='tline')&&!f.own){const x=f.type==='tline'?f.x+Math.cos(f.a)*f.len/2:f.x,y=f.type==='tline'?f.y+Math.sin(f.a)*f.len/2:f.y;add(x,y,(f.r||f.len/2)+50,0.55,'255,80,30',0.25*(1-k)+0.05);} // enemy warnings light the floor red
     else if(f.type==='tele'||f.type==='tline'){const x=f.type==='tline'?f.x+Math.cos(f.a)*f.len/2:f.x,y=f.type==='tline'?f.y+Math.sin(f.a)*f.len/2:f.y;add(x,y,(f.r||f.len/2)+30,0.35,rgbOf(f.col),0.1);}}
   for(const h of G.hazards)add(h.x,h.y,h.r*1.5,0.6,h.rot?'140,210,64':'255,110,30',0.25);
-  for(const h of G.ehaz)add(h.x,h.y,h.r*1.5,0.5*Math.min(1,h.t/h.max*2),h.kind==='poison'?'150,220,70':'255,110,30',0.22);
+  for(const h of G.ehaz)add(h.x,h.y,h.r*1.5,0.5*Math.min(1,h.t/h.max*2),h.kind==='poison'?'150,220,70':h.kind==='frost'?'170,215,255':'255,110,30',0.22);
   for(const l of G.loot){if(!l.item||l.item.rarity<2||lootHidden(l.item))continue;add(l.x,l.y,60,0.55,rgbOf(RCOL[l.item.rarity]),0.22);}
   for(const e of G.enemies){if(e.dead||e.hidden)continue;
     const M=e.type==='boss'?[BOSS_LIGHT[e.kind||0],e.r*4,0.55]:MON_LIGHT[e.type];

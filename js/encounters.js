@@ -15,7 +15,7 @@ const AFFIXES={
   reflect:{name:'Reflects Damage',col:'#ff5ad0',act:4}
 };
 // Affix count [min,max] per act; endless depths always get 3.
-const AFFIX_N=[[1,1],[1,2],[1,2],[2,3],[2,3]];
+const AFFIX_N=[[1,2],[1,2],[1,2],[2,3],[2,3]];
 function rollAffixes(depth){const a=actIdx(depth)+1,end=depth>25,pool=Object.keys(AFFIXES).filter(k=>end||AFFIXES[k].act<=a);
   const [lo,hi]=end?[3,3]:AFFIX_N[a-1],n=randi(lo,hi),out=[];
   while(out.length<n&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);

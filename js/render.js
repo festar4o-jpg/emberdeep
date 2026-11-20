@@ -40,10 +40,11 @@ function render(){
   drawSplats(); // fx.js: blood that fades
   for(const f of G.fx)if(f.type==='tline'&&f.own){const t=f.t/f.max;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.strokeStyle=f.col;ctx.globalAlpha=0.7;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);ctx.globalAlpha=0.2;ctx.fillStyle=f.col;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.restore();ctx.globalAlpha=1;}
   for(const f of G.fx)if(f.type==='tele'&&f.own){const t=f.t/f.max;if(f.meteor)drawMeteorFall(f,t);ctx.strokeStyle=f.col;ctx.globalAlpha=0.8;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();ctx.fillStyle=f.col;ctx.globalAlpha=0.18;ctx.beginPath();ctx.arc(f.x,f.y,f.r*t,0,TAU);ctx.fill();ctx.globalAlpha=1;}
-  for(const h of G.ehaz){if(!onScreen(h.x,h.y,h.r))continue;const a=Math.min(1,h.t/h.max*2)*(0.8+0.2*Math.sin(G.time*5+h.x)),poi=h.kind==='poison';
-    ctx.globalAlpha=0.28*a;ctx.fillStyle=poi?'#8fd040':'#ff6a1a';ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
-    ctx.globalAlpha=0.35*a;ctx.fillStyle=poi?'#c8ff70':'#ffc040';ctx.beginPath();ctx.arc(h.x,h.y,h.r*0.55,0,TAU);ctx.fill();}
+  for(const h of G.ehaz){if(!onScreen(h.x,h.y,h.r))continue;const a=Math.min(1,h.t/h.max*2)*(0.8+0.2*Math.sin(G.time*5+h.x)),poi=h.kind==='poison',fr=h.kind==='frost';
+    ctx.globalAlpha=0.28*a;ctx.fillStyle=poi?'#8fd040':fr?'#8fc8f0':'#ff6a1a';ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
+    ctx.globalAlpha=0.35*a;ctx.fillStyle=poi?'#c8ff70':fr?'#e6f6ff':'#ffc040';ctx.beginPath();ctx.arc(h.x,h.y,h.r*0.55,0,TAU);ctx.fill();}
   ctx.globalAlpha=1;
+  drawArena();for(const f of G.fx)if(f.type==='cata')drawCata(f,f.t/f.max); /* bossfight.js: shrinking arenas, Cataclysm's safe wedge */
   for(const e of G.enemies)if(!e.dead&&e.wind>0&&e.tele){ctx.strokeStyle=e.tele.col;ctx.globalAlpha=0.75;ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.tele.r,0,TAU);ctx.stroke();ctx.globalAlpha=0.15;ctx.fillStyle=e.tele.col;ctx.fill();ctx.globalAlpha=1;}
   // loot
   ctx.textAlign='center';LABELS.length=0;
@@ -89,6 +90,7 @@ function render(){
   drawFog(); // fx.js: under the light map, so mist only shows where light falls
   drawLighting(Lt); // light.js
   drawBossIntro(); // sprites.js
+  drawPhaseBanner(); // bossfight.js
   if(p.hurt>0){ctx.fillStyle=`rgba(160,0,0,${p.hurt})`;ctx.fillRect(0,0,CW,CH);}
   drawLootTip();
 }
@@ -361,6 +363,7 @@ function drawEnemy(e){
   if(e.stun>0){ctx.fillStyle='#ffd54a';ctx.font='12px sans-serif';ctx.fillText('✦',e.x+Math.cos(G.time*8)*8,e.y-e.r-6);}
   if(e.hp<e.maxHp&&e.type!=='boss'){const w=e.r*2;ctx.fillStyle='#000a';ctx.fillRect(e.x-w/2,e.y-e.r-10,w,4);ctx.fillStyle=e.elite?'#6f8fff':'#c22';ctx.fillRect(e.x-w/2,e.y-e.r-10,w*Math.max(0,e.hp/e.maxHp),4);}
   if(e.shieldT>0){ctx.strokeStyle='#bcd0ff';ctx.fillStyle='rgba(150,180,255,.18)';ctx.lineWidth=2;ctx.globalAlpha=0.7+Math.sin(G.time*10)*0.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,TAU);ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
+  if(e.type==='boss')drawBossState(e); /* bossfight.js */
   if(e.elite||e.type==='thief')drawEliteLabel(e);
 }
 // Elite name, with its affixes on a line underneath (each in its own colour).

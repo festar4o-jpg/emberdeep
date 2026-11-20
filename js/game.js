@@ -4,8 +4,9 @@
 function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
+  if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));e.hp-=r.d;
+  const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -74,7 +75,7 @@ function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin
   const [mx,my]=moveInput();p.dodge={t:0,dur:DODGE_DUR,a:Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face};p.dodgeCd=DODGE_CD;
   burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
 function dmgPlayer(raw,src){
-  const p=G.p;if(p.dead||p.leap||p.dodge)return false;
+  const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul(); /* bossfight.js: underleveled for the area */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;
@@ -197,17 +198,18 @@ function update(dt){
     if(e.dead)continue;e.flash-=dt;
     if(e.stunCd>0)e.stunCd-=dt;
     if(e.shieldT>0)e.shieldT-=dt;
-    if(e.bleedT>0){e.bleedT-=dt;const b=e.bleedDps*dt;e.hp-=b;e.bleedAcc=(e.bleedAcc||0)+b;e.bleedTick=(e.bleedTick||0)-dt;
+    if(e.bleedT>0){e.bleedT-=dt;const b=e.bleedDps*dt;e.hp-=b;bossGate(e);e.bleedAcc=(e.bleedAcc||0)+b;e.bleedTick=(e.bleedTick||0)-dt;
       if(Math.random()<dt*6)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y,vx:rand(-15,15),vy:rand(20,60),life:0.5,max:0.5,col:'#b01818',s:3});
       if(e.bleedTick<=0&&e.bleedAcc>=1){e.bleedTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.bleedAcc),'#e04040',false);e.bleedAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
-    if(e.burnT>0){e.burnT-=dt;const b=e.burnDps*dt;e.hp-=b;e.burnAcc=(e.burnAcc||0)+b;e.burnTick=(e.burnTick||0)-dt;
+    if(e.burnT>0){e.burnT-=dt;const b=e.burnDps*dt;e.hp-=b;bossGate(e);e.burnAcc=(e.burnAcc||0)+b;e.burnTick=(e.burnTick||0)-dt;
       if(Math.random()<dt*8)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y-rand(0,e.r),vx:rand(-10,10),vy:rand(-70,-30),life:0.45,max:0.45,col:'#ff8a2a',s:3});
       if(e.burnTick<=0&&e.burnAcc>=1){e.burnTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.burnAcc),'#ff9a4a',false);e.burnAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
     if(e.spawnT>0)e.spawnT-=dt;
     if(e.type==='boss'&&!e.introDone&&G.time-(G.areaT||0)>2.4&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<430){/* after the area title has faded */e.introDone=true;bossIntro(e);} // sprites.js: the entrance
     if(e.introT>0){e.introT-=dt;if(e.introT>1.2&&Math.random()<dt*10)burst(e.x+rand(-e.r,e.r),e.y+e.r*0.6,3,'#8a7a62',90);continue;}
+    if(e.type==='boss'&&bossFrame(e,dt))continue; /* bossfight.js: phase transitions, shields, arena, enrage */
     const T=ETYPES[e.type];
     if(T.regen&&e.hp<e.maxHp&&G.time-(e.lastHit||-9)>2&&!(e.bleedT>0)){ // troll regen; bleeding stops it
       e.hp=Math.min(e.maxHp,e.hp+e.maxHp*T.regen*dt);if(Math.random()<dt*5)G.parts.push({x:e.x+rand(-e.r,e.r)*0.7,y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-35,life:0.6,max:0.6,col:'#7fe060',s:3});}
@@ -217,9 +219,9 @@ function update(dt){
     if(!e.aggro||p.dead)continue;
     if(e.affs&&e.affs.length)affixTick(e,d,dt);
     if(e.busy>0)e.busy-=dt;else e.cd-=dt; // bosses don't count down to the next move mid-pattern
-    const toP=Math.atan2(p.y-e.y,p.x-e.x);e.face=toP;
-    if(e.dash>0){e.dash-=dt;moveEnt(e,e.dvx*dt,e.dvy*dt);if(!e.dashHit&&dist(e,p)<e.r+p.r+6){e.dashHit=true;dmgPlayer(e.dmg*1.5,e);G.shake=8;}continue;}
-    if(e.wind>0){e.wind-=dt;if(e.wind<=0){const act=e.act;e.act=null;e.tele=null;
+    const toP=Math.atan2(p.y-e.y,p.x-e.x);e.face=e.wind>0&&e.lockA!=null?e.lockA:toP; /* big attacks keep their aim */
+    if(e.dash>0){e.dash-=dt;moveEnt(e,e.dvx*dt,e.dvy*dt);if(!e.dashHit&&dist(e,p)<e.r+p.r+6){e.dashHit=true;dmgPlayer(e.dashDmg||e.dmg*1.5,e);G.shake=8;}continue;}
+    if(e.wind>0){e.wind-=dt;if(e.wind<=0){const act=e.act;e.act=null;e.tele=null;e.lockA=null;
       if(typeof act==='function')act();
       else if(act==='charge'){e.dash=0.5;e.dashHit=false;e.dvx=Math.cos(e.chargeA)*560;e.dvy=Math.sin(e.chargeA)*560;}
       else if(act==='slam'){if(d<120+p.r)dmgPlayer(e.dmg*1.3,e);G.shake=10;G.fx.push({type:'ring',x:e.x,y:e.y,r0:10,r1:125,t:0,max:0.3,col:'#ff4a3a'});}
@@ -248,7 +250,7 @@ function update(dt){
   // enemy ground hazards: poison clouds slow and hurt, fire patches burn (armor halves it)
   let dot=0;
   for(const h of G.ehaz){h.t-=dt;if(Math.random()<dt*3)G.parts.push({x:h.x+rand(-h.r,h.r)*0.6,y:h.y+rand(-h.r,h.r)*0.6,vx:0,vy:-25,life:0.6,max:0.6,col:h.kind==='poison'?'#b8ff5a':'#ffa040',s:3});
-    if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt;p.dotCol=h.kind==='poison'?'#9fe04a':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);}}
+    if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt;p.dotCol=h.kind==='poison'?'#9fe04a':h.kind==='frost'?'#bfe8ff':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);else if(h.kind==='frost')slowPlayer(0.4,0.4);}}
   G.ehaz=G.ehaz.filter(h=>h.t>0);
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}

@@ -261,3 +261,8 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .overlay{background:radial-gradient(ellipse at center,rgba(10,6,4,.82),rgba(0,0,0,.94));}
 .orb>span,#hpb.orb>span,#mpb.orb>span{flex-direction:column;line-height:1.05;}
 .orb>span small{font-size:8px;font-weight:normal;opacity:.8;border-top:1px solid rgba(255,255,255,.45);padding-top:1px;margin-top:1px;}
+/* boss bar: phase marks at 70% / 35%, and the stagger bar under it */
+#bossbar .bar{position:relative;}#bossbar .pm{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e8dcc4;box-shadow:0 0 3px #000;}
+#bossbar .stg{height:4px;margin-top:3px;background:#0008;border:1px solid #000;box-shadow:0 0 0 1px var(--iron);overflow:hidden;}
+#bossbar .stg>i{display:block;height:100%;width:0;background:linear-gradient(#ffe08a,#c89a2a);transition:width .1s linear;}
+#bossbar .stg.full>i{background:#fff6c0;animation:stgfull .3s ease-in-out infinite alternate;}@keyframes stgfull{to{opacity:.5;}}

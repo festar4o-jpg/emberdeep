@@ -1,5 +1,5 @@
 'use strict';
-// Sound cues, synthesised with WebAudio (no sound files): a chime when a rare, unique, set item or a rune drops.
+// Sound cues, synthesised with WebAudio (no sound files): a chime when a rare, unique, set item or a rune drops, and boss cues.
 // Browsers only allow audio after a tap, so the audio context is created on the first touch or key press.
 // Settings → Sound turns them off.
 let AC=null;
@@ -13,6 +13,10 @@ const DROP_SFX={
   rare:a=>{const t=a.currentTime;tone(a,988,t,0.35,0.07,'triangle');tone(a,1480,t+0.09,0.5,0.06,'triangle');},
   unique:a=>{const t=a.currentTime;for(const [f,v,d] of [[196,0.14,1.8],[294,0.08,1.5],[392,0.06,1.2],[784,0.035,0.9],[1176,0.02,0.7]])tone(a,f,t,d,v);tone(a,1568,t+0.15,0.6,0.02,'triangle');},
   set:a=>{const t=a.currentTime;for(const [f,v,d] of [[233,0.12,1.5],[349,0.07,1.3],[466,0.05,1.1],[698,0.03,0.8]])tone(a,f,t,d,v);tone(a,932,t+0.12,0.5,0.03,'triangle');},
+  // boss cues: a low warning horn before a big attack, a deep boom at a phase change, a crack on a stagger
+  warn:a=>{const t=a.currentTime;tone(a,98,t,0.9,0.1,'sawtooth');tone(a,147,t+0.05,0.8,0.05,'sawtooth');tone(a,196,t+0.1,0.6,0.03);},
+  phase:a=>{const t=a.currentTime;tone(a,55,t,1.4,0.2);tone(a,82,t,1.1,0.1);tone(a,330,t,0.5,0.03,'triangle');},
+  stagger:a=>{const t=a.currentTime;tone(a,420,t,0.15,0.08,'square');tone(a,210,t+0.02,0.35,0.07,'triangle');tone(a,840,t,0.12,0.03,'square');},
   rune:a=>{const t=a.currentTime;tone(a,1320,t,0.25,0.06,'square');tone(a,1980,t+0.02,0.3,0.04);tone(a,660,t,0.4,0.05);}};
 let sfxLast=0;
 function playSfx(k){if(SETTINGS.sound===false||!DROP_SFX[k])return;const a=audio();if(!a||a.state!=='running')return;

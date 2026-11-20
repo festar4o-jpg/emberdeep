@@ -117,7 +117,7 @@ function genLevel(depth,mode){
     if(isBoss&&r===exit){let bx=(r.cx+0.5)*TILE,by=(r.cy-1)*TILE;if(blockedAt(bx,by,40))by=(r.cy+0.5)*TILE;const b=makeEnemy('boss',bx,by,depth,false,++packId);G.enemies.push(b);G.boss=b;continue;}
     if(bossOnly)continue;
     const packs=randi(1,2);
-    for(let k=0;k<packs;k++){const id=++packId;const eliteP=Math.random()<Math.min(depth>25?0.45:0.3,0.1+depth*0.006),affs=eliteP?rollAffixes(depth):null;
+    for(let k=0;k<packs;k++){const id=++packId;const eliteP=Math.random()<(depth<=5?0.2:Math.min(depth>25?0.45:0.3,0.1+depth*0.006)) /* Act 1: elite packs twice as often */,affs=eliteP?rollAffixes(depth):null;
       const c=spot(r);rollPack(depth,eliteP).forEach((type,m)=>{const T=ETYPES[type];
         let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(type==='vinelasher'){const q=spot(r);x=q.x;y=q.y;}
         if(!safe(x,y,T.r)){x=c.x;y=c.y;}

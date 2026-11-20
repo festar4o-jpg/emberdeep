@@ -31,13 +31,17 @@ function updateHud(){
   $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
   const left=G.enemies.filter(e=>!e.dead).length;
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`;
+  $('depthTxt').textContent=G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(D)}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
   const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);
     const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;el.children[0].style.setProperty('--p',f);el.children[1].textContent=(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'';}
   $('potCnt').textContent=p.potions;$('potBtn').classList.toggle('locked',p.potions<=0);$('potBtn').querySelector('.cd').style.setProperty('--p',p.potCd>0?p.potCd:0);
-  const b=G.boss;if(b&&!b.dead&&b.aggro){$('bossbar').classList.remove('hidden');$('bossName').textContent=b.name;$('bossbar').querySelector('i').style.width=(b.hp/b.maxHp*100)+'%';}else $('bossbar').classList.add('hidden');
+  const b=G.boss;if(b&&!b.dead&&b.aggro){$('bossbar').classList.remove('hidden');
+    const st=b.transT>0||b.introT>0?'IMMUNE':b.shieldT>0?'SHIELDED':b.staggerT>0?'STAGGERED':b.punishT>0?'EXPOSED':b.enraged?'ENRAGED':''; /* bossfight.js states */
+    $('bossName').textContent=b.name+(b.phase!=null?` · Phase ${ROMAN_PH[b.phase]}`:'')+(st?` · ${st}`:'');$('bossbar').querySelector('.bar>i').style.width=(b.hp/b.maxHp*100)+'%';
+    $('bossStg').firstElementChild.style.width=(b.staggerT>0?100:Math.min(100,(b.stagger||0)/(b.staggerMax||100)*100))+'%';$('bossStg').classList.toggle('full',b.staggerT>0);}
+  else $('bossbar').classList.add('hidden');
 }
 function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;healPlayer(G.stats.life*0.45);burst(p.x,p.y,16,'#5f5',120);
   if(hasPw('potionReset')){p.cd.fill(0);floatText(p.x,p.y-40,'Cooldowns reset','#ff9a3a',false);}}
