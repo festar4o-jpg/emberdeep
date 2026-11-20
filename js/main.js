@@ -4,7 +4,8 @@
 let last=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(G.char&&G.p&&!G.paused&&!portraitBlocked())update(dt);
+  if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
+  else if(G.char&&G.p&&!G.paused&&!portraitBlocked())update(dt);
   render();
   if(G.char&&G.p){updateHud();G.mmT-=dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}
   requestAnimationFrame(frame);

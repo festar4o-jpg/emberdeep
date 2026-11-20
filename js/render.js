@@ -13,7 +13,7 @@ function placeJoy(on){const j=$('joy'),k=$('knob');if(on){j.style.left=joy.ox+'p
 function render(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#060403';ctx.fillRect(0,0,cv.width,cv.height);
   if(!G.mapCv||!G.p)return;
-  const p=G.p;const sx=G.shake?rand(-G.shake,G.shake):0,sy=G.shake?rand(-G.shake,G.shake):0;
+  const p=G.p;const sx=G.shake?fr(-G.shake,G.shake):0,sy=G.shake?fr(-G.shake,G.shake):0; // fx.js rng: shaking never shifts gameplay rolls
   ctx.setTransform(DPR*Z,0,0,DPR*Z,DPR*(CW/2-G.cam.x*Z+sx),DPR*(CH/2-G.cam.y*Z+sy));
   const vw=CW/Z,vh=CH/Z,vx=G.cam.x-vw/2-20,vy=G.cam.y-vh/2-20;
   const x0=Math.max(0,vx),y0=Math.max(0,vy),x1=Math.min(G.mapCv.width,vx+vw+40),y1=Math.min(G.mapCv.height,vy+vh+40);
@@ -36,8 +36,10 @@ function render(){
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
   // hazards & telegraphs
   for(const h of G.hazards){const g=ctx.createRadialGradient(h.x,h.y,5,h.x,h.y,h.r);g.addColorStop(0,h.rot?'#8fd04066':'#ff6a1a66');g.addColorStop(1,h.rot?'#6ab02000':'#ff3a0a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();}
-  for(const f of G.fx)if(f.type==='tline'){const t=f.t/f.max;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.strokeStyle=f.col;ctx.globalAlpha=0.7;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);ctx.globalAlpha=0.2;ctx.fillStyle=f.col;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.restore();ctx.globalAlpha=1;}
-  for(const f of G.fx)if(f.type==='tele'){const t=f.t/f.max;ctx.strokeStyle=f.col;ctx.globalAlpha=0.8;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();ctx.fillStyle=f.col;ctx.globalAlpha=0.18;ctx.beginPath();ctx.arc(f.x,f.y,f.r*t,0,TAU);ctx.fill();ctx.globalAlpha=1;}
+  for(const f of G.fx)if((f.type==='tele'||f.type==='tline')&&!f.own)drawWarning(f,f.t/f.max); // fx.js: enemy attacks, red/orange
+  drawSplats(); // fx.js: blood that fades
+  for(const f of G.fx)if(f.type==='tline'&&f.own){const t=f.t/f.max;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.strokeStyle=f.col;ctx.globalAlpha=0.7;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);ctx.globalAlpha=0.2;ctx.fillStyle=f.col;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.restore();ctx.globalAlpha=1;}
+  for(const f of G.fx)if(f.type==='tele'&&f.own){const t=f.t/f.max;if(f.meteor)drawMeteorFall(f,t);ctx.strokeStyle=f.col;ctx.globalAlpha=0.8;ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();ctx.fillStyle=f.col;ctx.globalAlpha=0.18;ctx.beginPath();ctx.arc(f.x,f.y,f.r*t,0,TAU);ctx.fill();ctx.globalAlpha=1;}
   for(const h of G.ehaz){if(!onScreen(h.x,h.y,h.r))continue;const a=Math.min(1,h.t/h.max*2)*(0.8+0.2*Math.sin(G.time*5+h.x)),poi=h.kind==='poison';
     ctx.globalAlpha=0.28*a;ctx.fillStyle=poi?'#8fd040':'#ff6a1a';ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
     ctx.globalAlpha=0.35*a;ctx.fillStyle=poi?'#c8ff70':'#ffc040';ctx.beginPath();ctx.arc(h.x,h.y,h.r*0.55,0,TAU);ctx.fill();}
@@ -75,9 +77,10 @@ function render(){
       ctx.globalAlpha=1-t;ctx.lineWidth=lw*0.6;ctx.stroke();ctx.strokeStyle='#fff6e0';ctx.globalAlpha=(1-t)*0.7;ctx.lineWidth=Math.max(1,lw*0.18);ctx.beginPath();ctx.arc(f.x,f.y,f.r,f.a-hf*0.8+sw,f.a+hf*0.8+sw);ctx.stroke();
       ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
     else if(f.type==='lflash'){ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.globalAlpha=1-t;ctx.fillStyle='#fff';ctx.fillRect(0,-f.w/4,f.len,f.w/2);ctx.fillStyle=f.col;ctx.globalAlpha=(1-t)*0.6;ctx.fillRect(0,-f.w/2,f.len,f.w);ctx.restore();ctx.globalAlpha=1;}
-    else if(f.type==='ring'){const R=f.r0+(f.r1-f.r0)*t;ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.col;ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);
+    else if(f.type==='boom'||f.type==='cracks')drawSkillFx(f,t);
+    else if(f.type==='ring'){const R=f.r0+(f.r1-f.r0)*t;if(elementOf(f.col)==='ice'&&f.r1>100)drawIceRing(f,t,R);ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.col;ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);
       ctx.globalAlpha=(1-t)*0.35;ctx.lineWidth=12*(1-t)+2;ctx.stroke();ctx.globalAlpha=1-t;ctx.lineWidth=3;ctx.stroke();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
-    else if(f.type==='bolt'){ctx.strokeStyle='#bfe4ff';ctx.lineWidth=3;ctx.globalAlpha=1-t;ctx.beginPath();for(let k=0;k<f.pts.length;k++){const a=f.pts[k];if(k===0){ctx.moveTo(a.x,a.y);continue;}const b=f.pts[k-1];for(let m=1;m<=4;m++){const u=m/4;ctx.lineTo(b.x+(a.x-b.x)*u+(m<4?rand(-10,10):0),b.y+(a.y-b.y)*u+(m<4?rand(-10,10):0));}}ctx.stroke();ctx.globalAlpha=1;}}
+    else if(f.type==='bolt')drawBolt(f,t);}
   drawParticles(); // fx.js
   if(G.inTown)drawTownAmb();else drawAir();
   for(const t of G.texts){ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold 18px':'bold 13px')+' sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);}ctx.globalAlpha=1;
@@ -348,7 +351,7 @@ function drawEnemy(e){
   if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face,P=creaturePose(e),ex=e.x+Math.cos(e.face)*P.dx,ey=e.y+Math.sin(e.face)*P.dx;
     let sc=P.sc;if(e.introT>0){const u=1-e.introT/2.4;sc*=0.55+0.45*Math.min(1,u*1.6);ctx.globalAlpha=Math.min(1,u*2);} // a boss rising for its entrance
     litBlit(S,ex,ey,ang,T.shape==='wraith'?0.9:null,sc);ctx.globalAlpha=1;
-    if(e.flash>0){ctx.globalCompositeOperation='lighter';blit(S,ex,ey,ang,0.6);ctx.globalCompositeOperation='source-over';}
+    if(e.flash>0)blit(whiteOf(S),ex,ey,ang,Math.min(1,e.flash/0.1)*0.85); // a brief white hit flash
     if(e.frozen>0){ctx.fillStyle='rgba(150,210,255,.3)';ctx.strokeStyle='rgba(225,245,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.05,0,TAU);ctx.fill();ctx.stroke();}
     if(e.wind>0&&Math.floor(G.time*20)%2===0){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,70,30,.3)';ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.1,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
     if(e.type==='boss'&&e.phase){ctx.globalAlpha=0.35+Math.sin(G.time*6)*0.15;ctx.strokeStyle=`rgb(${BOSS_LIGHT[e.kind||0]})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10,0,TAU);ctx.stroke();ctx.globalAlpha=1;}

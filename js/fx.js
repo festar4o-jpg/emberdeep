@@ -9,13 +9,15 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
 // Projectiles: a short fading tail and a hot core.
 function drawProjectiles(){if(!G.proj.length)return;ctx.globalCompositeOperation='lighter';
-  for(const q of G.proj){const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2;
+  for(const q of G.proj){projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2;
     for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,q.y-q.vy*0.014*k-r,r*2,r*2);}
     ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,q.y-R,R*2,R*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // Particles: dull ones as small dark flecks, hot ones as additive sparks.
 function drawParticles(){const P=G.parts;if(!P.length)return;
-  for(const q of P){if(isHot(q.col))continue;ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.col;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s);}
+  for(const q of P){if(isHot(q.col))continue;const a=Math.max(0,q.life/q.max);
+    if(q.soft){const r=q.s*(1.6-a*0.6);ctx.globalAlpha=a*0.32;ctx.drawImage(falloff(rgbOf(q.col)),q.x-r,q.y-r,r*2,r*2);continue;} // dust and smoke: soft, spreading
+    ctx.globalAlpha=a;ctx.fillStyle=q.col;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s);}
   ctx.globalCompositeOperation='lighter';
   for(const q of P){if(!isHot(q.col))continue;const a=Math.max(0,q.life/q.max),r=q.s*2.2;ctx.globalAlpha=a;ctx.drawImage(sparkSprite(rgbOf(q.col)),q.x-r,q.y-r,r*2,r*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
@@ -60,3 +62,86 @@ function drawAir(){if(G.inTown||!G.p)return;const A=AIR[ACTS[actIdx(G.depth)].ge
   for(const m of airP){m.x=(m.x+(A[2]+Math.sin(G.time*0.7+m.p)*5)*m.s*dt+w)%w;m.y=(m.y+A[3]*m.s*dt+h)%h;
     const r=A[4]*m.s*2.4;ctx.globalAlpha=A[1]*(0.5+0.5*Math.sin(G.time*1.3+m.p));ctx.drawImage(S,x0+m.x-r,y0+m.y-r,r*2,r*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// ---------- combat feel ----------
+// Cosmetic randomness has its own generator: effects never shift gameplay rolls (or the seeded tests).
+const fxRnd=artRng(77177),fr=(a,b)=>a+fxRnd()*(b-a);
+// What comes off a creature when it is struck, by material.
+const MAT_OF={archer:'bone',scarab:'chitin',vinelasher:'sap',sporetoad:'sap',icegolem:'ice',shardling:'ice',frostwraith:'ice',magmabrute:'magma'};
+const matOf=e=>e.type==='boss'?['armor','armor','sap','ice','magma'][e.kind||0]:MAT_OF[e.type]||'flesh';
+const MAT={flesh:{blood:'#5e0a06',spray:'#8a1410'},bone:{spray:'#b8ae90',sparks:0.3,sparkCol:'#fff0d0',dust:1},chitin:{blood:'#2a4224',spray:'#4a6a3a'},sap:{blood:'#34501a',spray:'#6a8a2a'},
+  ice:{spray:'#dff4ff',sparks:0.7,sparkCol:'#bfe8ff'},magma:{blood:'#140604',spray:'#ff7a2a',sparks:1,sparkCol:'#ffb040'},armor:{blood:'#4e0a06',spray:'#7a1410',sparks:1}};
+function part(x,y,vx,vy,life,col,s,extra){if(G.parts.length>420)return;const q={x,y,vx,vy,life,max:life,col,s};if(extra)Object.assign(q,extra);G.parts.push(q);}
+// Struck: a spray along the blow, sparks off armour, bone and ice, a splat that lingers on the floor; heavy blows
+// (crits, two-handers, big chunks of life) also freeze the action for a few frames (hit-stop) and shake the screen.
+function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const M=MAT[matOf(e)],p=G.p,a=Math.atan2(e.y-p.y,e.x-p.x),heavy=!!(crit||(opts&&opts.kb>=95)||d>=e.maxHp*0.25);
+  const ox=e.x-Math.cos(a)*e.r*0.4,oy=e.y-Math.sin(a)*e.r*0.4;
+  for(let k=0;k<(heavy?9:5);k++){const b=a+fr(-0.7,0.7),v=fr(60,200)*(heavy?1.3:1);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.25,0.5),M.spray,fr(1.5,3));}
+  const sp=M.sparks||(e.elite||e.shieldT>0?0.5:0);
+  for(let k=0;k<(sp?Math.round((heavy?8:4)*sp)+1:0);k++){const b=a+Math.PI+fr(-1.2,1.2),v=fr(150,340);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.12,0.28),M.sparkCol||'#ffe0a0',fr(1.2,2.2));}
+  if(M.dust)dustPuff(e.x,e.y,e.r*0.6,3);
+  if(M.blood&&fxRnd()<0.75)splat(e.x+Math.cos(a)*fr(4,e.r*1.4),e.y+Math.sin(a)*fr(4,e.r*1.2),fr(3,6)*(heavy?1.5:1),M.blood);
+  if(heavy){G.hitStop=Math.max(G.hitStop||0,crit?0.06:0.045);G.shake=Math.max(G.shake,crit?5:3);}}
+// Dust kicked up by impacts: soft, slow, spreading puffs.
+function dustPuff(x,y,r,n,col){for(let k=0;k<n;k++){const a=fr(0,TAU),v=fr(15,60);part(x+Math.cos(a)*r*fr(0.3,1),y+Math.sin(a)*r*fr(0.3,1)*0.6,Math.cos(a)*v,Math.sin(a)*v*0.6-8,fr(0.6,1.1),col||'#6e604c',fr(6,11),{soft:1});}}
+// ---------- blood on the floor ----------
+// Splats from hits stay a few seconds and fade (kills leave a permanent stain, see stainFloor).
+function splat(x,y,r,col){const S=G.splats||(G.splats=[]);if(S.length>90)S.shift();const dots=[];for(let k=0;k<6;k++){const a=fr(0,TAU),d=r*fr(1,2.6);dots.push([Math.cos(a)*d,Math.sin(a)*d*0.7,fr(0.6,1.8)]);}
+  S.push({x,y,r,col,b:G.time,max:6,rot:fr(0,3),dots});}
+function drawSplats(){const S=G.splats;if(!S||!S.length)return;let n=0;
+  for(const s of S){const age=G.time-s.b;if(age>s.max||age<0)continue;S[n++]=s;ctx.globalAlpha=Math.min(1,(s.max-age)/2)*0.85;ctx.fillStyle=s.col;
+    ctx.beginPath();ctx.ellipse(s.x,s.y,s.r,s.r*0.65,s.rot,0,TAU);ctx.fill();for(const [dx,dy,r] of s.dots){ctx.beginPath();ctx.arc(s.x+dx,s.y+dy,r,0,TAU);ctx.fill();}}
+  S.length=n;ctx.globalAlpha=1;}
+// ---------- deaths ----------
+// Small, brittle or volatile things burst apart; everything else collapses (sprites.js addCorpse) and fades later.
+const BURSTS={scarab:1,shardling:1,imp:1,frostwraith:1,sporetoad:1};
+function deathBurst(e){const M=MAT[matOf(e)],hot=e.type==='imp';
+  for(let k=0;k<(e.r>14?26:16);k++){const a=fr(0,TAU),v=fr(80,260);part(e.x,e.y,Math.cos(a)*v,Math.sin(a)*v,fr(0.35,0.8),k%3===0&&M.sparkCol?M.sparkCol:hot&&k%2?'#ffb040':M.spray,fr(2,4.5));}
+  if(M.blood)for(let k=0;k<3;k++)splat(e.x+fr(-e.r,e.r),e.y+fr(-e.r,e.r)*0.7,fr(4,8),M.blood);
+  dustPuff(e.x,e.y,e.r,e.type==='sporetoad'?6:3,e.type==='sporetoad'?'#7a8a3a':e.type==='frostwraith'?'#a8c0d8':'#5e5244');
+  G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r*0.5,r1:e.r*2.2,t:0,max:0.22,col:M.sparkCol||M.spray});}
+// ---------- skill effects ----------
+// Elements by colour: fire, ice, chaos (violet), nature (green), storm (cyan); used for trails and explosions.
+function elementOf(col){const [r,g,b]=rgbOf(col).split(',').map(Number);if(r>200&&g<190&&b<120)return 'fire';if(b>200&&r<200&&g>200)return r<140&&g<230?'storm':'ice';if(r>150&&b>200&&g<160)return 'chaos';if(g>200&&r<160&&b<120)return 'nature';return null;}
+const TRAIL={fire:[['#ffb040',0.7,1],['#2a1a12',0.35,0]],ice:[['#dff4ff',0.5,1]],chaos:[['#c48bff',0.6,1],['#1a0a24',0.25,0]],nature:[['#a8e060',0.45,1]],storm:[['#bff4ff',0.55,1]]};
+// Projectiles shed embers, frost glints or wisps as they fly.
+function projTrail(q){const el=q._el!==undefined?q._el:(q._el=elementOf(q.col));const T=el&&TRAIL[el];if(!T)return;
+  for(const [col,ch,hot] of T)if(fxRnd()<ch){const a=fr(0,TAU),v=fr(5,30);part(q.x+fr(-q.r,q.r)*0.6,q.y+fr(-q.r,q.r)*0.6,Math.cos(a)*v-q.vx*0.08,Math.sin(a)*v-q.vy*0.08,hot?fr(0.2,0.45):fr(0.5,0.9),col,hot?fr(1.2,2.4):fr(5,9),hot?null:{soft:1});}}
+// Explosion: a white-hot flash, a swelling fireball, a ring of smoke and flying embers (and light, see light.js).
+function fxExplosion(x,y,r,col){col=col||'#ff8a2a';G.fx.push({type:'boom',x,y,r,t:0,max:0.55,col});
+  for(let k=0;k<22;k++){const a=fr(0,TAU),v=fr(100,320);part(x,y,Math.cos(a)*v,Math.sin(a)*v,fr(0.3,0.7),k%2?col:'#ffe0a0',fr(1.5,3));}dustPuff(x,y,r*0.5,6,'#3a2a20');}
+// Ground torn open (Earthshatter, Leap Slam): dark cracks glowing from inside, fading out.
+function fxCracks(x,y,r,col){const L=[];for(let k=0;k<9;k++){let a=k/9*TAU+fr(-0.2,0.2),px=0,py=0;const pts=[[0,0]];for(let s=0;s<4;s++){a+=fr(-0.4,0.4);const d=r*fr(0.18,0.3);px+=Math.cos(a)*d;py+=Math.sin(a)*d;pts.push([px,py]);}L.push(pts);}
+  G.fx.push({type:'cracks',x,y,r,L,t:0,max:1.6,col:col||'#ff7a2a'});dustPuff(x,y,r*0.6,10);}
+function drawSkillFx(f,t){
+  if(f.type==='boom'){const k=1-t,R=f.r*(0.45+0.75*Math.sqrt(t));ctx.globalCompositeOperation='lighter';
+    if(t<0.25){ctx.globalAlpha=(1-t/0.25);const W=f.r*0.9;ctx.drawImage(sparkSprite('255,250,235'),f.x-W,f.y-W,W*2,W*2);}
+    ctx.globalAlpha=k*0.9;ctx.drawImage(falloff(rgbOf(f.col)),f.x-R,f.y-R,R*2,R*2);ctx.globalCompositeOperation='source-over';
+    ctx.strokeStyle=`rgba(30,20,14,${0.5*k})`;ctx.lineWidth=10*k+2;ctx.beginPath();ctx.arc(f.x,f.y,R*0.95,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
+  else if(f.type==='cracks'){const k=t<0.1?t/0.1:1-(t-0.1)/0.9;ctx.lineCap='round';
+    for(const pts of f.L){ctx.beginPath();pts.forEach(([a,b],i)=>i?ctx.lineTo(f.x+a,f.y+b):ctx.moveTo(f.x+a,f.y+b));ctx.strokeStyle=`rgba(10,6,4,${0.8*k})`;ctx.lineWidth=4;ctx.stroke();
+      ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.col;ctx.globalAlpha=k*0.85;ctx.lineWidth=1.6;ctx.stroke();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}}}
+// Chain lightning: a wide soft glow, a bright channel and a white core, re-forking every frame, sparks at each jump.
+function drawBolt(f,t){const k=1-t,P=f.pts;const jag=()=>{ctx.beginPath();for(let i=0;i<P.length;i++){const a=P[i];if(!i){ctx.moveTo(a.x,a.y);continue;}const b=P[i-1];for(let m=1;m<=5;m++){const u=m/5;ctx.lineTo(b.x+(a.x-b.x)*u+(m<5?fr(-11,11):0),b.y+(a.y-b.y)*u+(m<5?fr(-11,11):0));}}};
+  ctx.globalCompositeOperation='lighter';ctx.lineJoin='round';jag();ctx.strokeStyle='rgba(120,180,255,1)';ctx.globalAlpha=0.28*k;ctx.lineWidth=12;ctx.stroke();ctx.globalAlpha=0.8*k;ctx.lineWidth=4;ctx.strokeStyle='#9fd0ff';ctx.stroke();
+  jag();ctx.globalAlpha=k;ctx.lineWidth=1.6;ctx.strokeStyle='#ffffff';ctx.stroke();
+  for(let i=1;i<P.length;i++){const W=18*k+6;ctx.globalAlpha=k;ctx.drawImage(sparkSprite('170,210,255'),P[i].x-W,P[i].y-W,W*2,W*2);}
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  if(!f.sparked){f.sparked=1;for(let i=1;i<P.length;i++)for(let n=0;n<5;n++){const a=fr(0,TAU),v=fr(80,220);part(P[i].x,P[i].y,Math.cos(a)*v,Math.sin(a)*v,fr(0.15,0.35),'#dff0ff',fr(1,2));}}}
+// Frost: icicles bursting outward along the expanding ring.
+function drawIceRing(f,t,R){const k=1-t;ctx.fillStyle=`rgba(225,245,255,${0.85*k})`;ctx.strokeStyle=`rgba(90,150,200,${0.7*k})`;ctx.lineWidth=1;
+  for(let n=0;n<18;n++){const a=n/18*TAU+(n%2)*0.1,L=(n%3?10:18)*k+4;const x=f.x+Math.cos(a)*R,y=f.y+Math.sin(a)*R;ctx.beginPath();ctx.moveTo(x+Math.cos(a+1.57)*3,y+Math.sin(a+1.57)*3);ctx.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);ctx.lineTo(x-Math.cos(a+1.57)*3,y-Math.sin(a+1.57)*3);ctx.closePath();ctx.fill();ctx.stroke();}}
+// Meteor: the rock falls in from above during its marker, trailing fire.
+function drawMeteorFall(f,t){const k=1-t,x=f.x-160*k,y=f.y-300*k,S=sparkSprite('255,150,50');ctx.globalCompositeOperation='lighter';
+  for(let n=4;n>=1;n--){const W=(14-n*2)*(1+t);ctx.globalAlpha=0.5-n*0.08;ctx.drawImage(S,x+n*14-W,y+n*26-W,W*2,W*2);}ctx.globalAlpha=1;const W=18+10*t;ctx.drawImage(S,x-W,y-W,W*2,W*2);ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle='#2a1a12';ctx.beginPath();ctx.arc(x,y,6+4*t,0,TAU);ctx.fill();}
+// Enemy telegraphs: always red/orange ground markers, a dark scorched fill that swells as the blow nears, a pulsing
+// rim and a turning ring of dashes, so they read as danger whatever the attack's own colour.
+function drawWarning(f,t){const pulse=0.75+0.25*Math.sin(G.time*14);
+  if(f.type==='tele'){ctx.fillStyle=`rgba(120,20,8,${0.18+0.12*t})`;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,70,20,${0.22*t})`;ctx.beginPath();ctx.arc(f.x,f.y,f.r*t,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(255,110,40,${0.85*pulse})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.stroke();
+    ctx.setLineDash([8,8]);ctx.lineDashOffset=-G.time*40;ctx.strokeStyle=`rgba(255,180,80,${0.6*pulse})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(f.x,f.y,f.r*0.8,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalCompositeOperation='source-over';}
+  else{ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.fillStyle=`rgba(120,20,8,${0.2+0.12*t})`;ctx.fillRect(0,-f.w/2,f.len,f.w);
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,70,20,${0.25*t})`;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.strokeStyle=`rgba(255,110,40,${0.85*pulse})`;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);
+    ctx.fillStyle=`rgba(255,170,70,${0.5*pulse})`;for(let d=(G.time*120)%40;d<f.len-10;d+=40){ctx.beginPath();ctx.moveTo(d,-f.w*0.25);ctx.lineTo(d+10,0);ctx.lineTo(d,f.w*0.25);ctx.lineTo(d+4,0);ctx.closePath();ctx.fill();}
+    ctx.restore();ctx.globalCompositeOperation='source-over';}}

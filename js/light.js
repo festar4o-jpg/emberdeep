@@ -42,8 +42,11 @@ function gatherLights(Lt){
   for(const f of G.fx){const k=1-f.t/f.max;if(k<=0)continue;
     if(f.type==='ring')add(f.x,f.y,(f.r1||60)+40,0.75*k,rgbOf(f.col),0.3*k);
     else if(f.type==='arc')add(f.x+Math.cos(f.a)*f.r*0.6,f.y+Math.sin(f.a)*f.r*0.6,f.r+40,0.45*k,rgbOf(f.col),0.18*k);
+    else if(f.type==='boom')add(f.x,f.y,f.r*3,0.95*k,rgbOf(f.col),0.55*k);
+    else if(f.type==='cracks')add(f.x,f.y,f.r*1.6,0.5*k,rgbOf(f.col),0.25*k);
     else if(f.type==='bolt'){for(let n=0;n<f.pts.length;n+=2)add(f.pts[n].x,f.pts[n].y,90,0.85*k,'190,225,255',0.4*k);}
     else if(f.type==='lflash')add(f.x+Math.cos(f.a)*f.len/2,f.y+Math.sin(f.a)*f.len/2,f.len*0.6,0.7*k,rgbOf(f.col),0.3*k);
+    else if((f.type==='tele'||f.type==='tline')&&!f.own){const x=f.type==='tline'?f.x+Math.cos(f.a)*f.len/2:f.x,y=f.type==='tline'?f.y+Math.sin(f.a)*f.len/2:f.y;add(x,y,(f.r||f.len/2)+50,0.55,'255,80,30',0.25*(1-k)+0.05);} // enemy warnings light the floor red
     else if(f.type==='tele'||f.type==='tline'){const x=f.type==='tline'?f.x+Math.cos(f.a)*f.len/2:f.x,y=f.type==='tline'?f.y+Math.sin(f.a)*f.len/2:f.y;add(x,y,(f.r||f.len/2)+30,0.35,rgbOf(f.col),0.1);}}
   for(const h of G.hazards)add(h.x,h.y,h.r*1.5,0.6,h.rot?'140,210,64':'255,110,30',0.25);
   for(const h of G.ehaz)add(h.x,h.y,h.r*1.5,0.5*Math.min(1,h.t/h.max*2),h.kind==='poison'?'150,220,70':'255,110,30',0.22);

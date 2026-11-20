@@ -218,14 +218,14 @@ const lifeCost=i=>G.char.cls==='warden'&&i===1&&hasPw('bloodleap')?Math.round(G.
 function counterBlast(){const p=G.p;if(p.counterCd>0)return;p.counterCd=0.6;aoe(p.x,p.y,130,0.9,{kb:90,splashed:true});
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:135,t:0,max:0.3,col:'#cfd6dc'});}
 // Worldbreaker: an Earthshatter at a fixed spot (Leap Slam landing).
-function earthshatterAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:165,t:0,max:0.35,col:'#ff7a2a'});
-  G.delayed.push({t:0.35,fn:()=>{aoe(x,y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.fx.push({type:'ring',x,y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(x,y,40,'#c8763a',260);}});}
+function earthshatterAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:165,t:0,max:0.35,col:'#ff7a2a',own:1});
+  G.delayed.push({t:0.35,fn:()=>{aoe(x,y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(x,y,175);G.fx.push({type:'ring',x,y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(x,y,40,'#c8763a',260);}});}
 // Rimeheart Vestment: a free Frost Nova when you get hit.
 function autoNova(){const p=G.p;if(p.novaCd>0)return;p.novaCd=4;const r=pwRank(2);
   aoe(p.x,p.y,150,0.8+0.1*(r-1),{freeze:1.8+0.1*r});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:155,t:0,max:0.4,col:'#9fe4ff'});burst(p.x,p.y,30,'#bff0ff',240);}
 // Eye of the Falling Sky: a free Meteor.
-function meteorAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a'});
-  G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
+function meteorAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a',own:1,meteor:1});
+  G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
     G.hazards.push({x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}
 // Litany of Ash: turn a bolt toward the nearest enemy.
 function homeIn(q,dt){const e=nearest(q.x,q.y,320);if(!e)return;const sp=Math.hypot(q.vx,q.vy),a=Math.atan2(q.vy,q.vx),want=Math.atan2(e.y-q.y,e.x-q.x);

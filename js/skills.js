@@ -34,8 +34,8 @@ const SKILLS={
         for(const e of G.enemies)if(!e.dead&&dist(e,p)<200)e.stun=Math.max(e.stun,0.6);}},
     {name:'Earthshatter',icon:'🌋',cd:12,cost:50,
       desc:r=>`Split the earth around you for ${pct(3.2+0.4*(r-1))} damage and stun for 1.5s. Costs 50 Fury.`,
-      cast(r){const p=G.p;G.fx.push({type:'tele',x:p.x,y:p.y,r:165,t:0,max:0.35,col:'#ff7a2a'});
-        G.delayed.push({t:0.35,fn:()=>{aoe(p.x,p.y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.fx.push({type:'ring',x:p.x,y:p.y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(p.x,p.y,40,'#c8763a',260);}});}}
+      cast(r){const p=G.p;G.fx.push({type:'tele',x:p.x,y:p.y,r:165,t:0,max:0.35,col:'#ff7a2a',own:1});
+        G.delayed.push({t:0.35,fn:()=>{aoe(p.x,p.y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(p.x,p.y,175);G.fx.push({type:'ring',x:p.x,y:p.y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(p.x,p.y,40,'#c8763a',260);}});}}
   ],
   arcanist:[
     {name:'Arcane Bolt',icon:'✴️',cd:0.38,cost:0,
@@ -57,8 +57,8 @@ const SKILLS={
         G.fx.push({type:'bolt',pts,t:0,max:0.22});}},
     {name:'Meteor',icon:'☄️',cd:10,cost:40,
       desc:r=>`Call down a meteor for ${pct(3.8+0.45*(r-1))} damage. Leaves burning ground for 3s. Costs 40 Mana.`,
-      cast(r){const a=aimPoint(440);const x=a.x,y=a.y;G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a'});
-        G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
+      cast(r){const a=aimPoint(440);const x=a.x,y=a.y;G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a',own:1,meteor:1});
+        G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
           G.hazards.push({x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}}
   ]
 };

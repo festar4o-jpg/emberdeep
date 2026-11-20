@@ -6,6 +6,7 @@ function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
   const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));e.hp-=r.d;
+  hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
   if(st.bleed>0&&!opts.dot&&Math.random()*100<st.bleed){const dps=r.d*0.8/3;e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
@@ -93,7 +94,7 @@ function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);
 function enemyShoot(e,ang,spd,col,dmg,r,extra){G.proj.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r||5,col,life:2.5,from:'e',dmg,src:e},extra));}
 function eShoot(e,ang){e._lunge=G.time; // sprites.js: recoil as the shot leaves
 const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
-function explodeAt(x,y,rad,mult){aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
+function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
 
 function gainXp(v){
   const c=G.char;if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
@@ -174,7 +175,7 @@ function update(dt){
     if(Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
+    if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
     if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04);burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;

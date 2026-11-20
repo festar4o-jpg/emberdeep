@@ -281,7 +281,7 @@ function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x
 const artRng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
 function renderMap(){const R0=Math.random;Math.random=artRng(R0()*4294967296|0);try{paintMap();}finally{Math.random=R0;}}
 function paintMap(){
-  G.lights=[];sprClear(); // new map, new creatures: drop the old sprites
+  G.lights=[];G.splats=[];sprClear(); // new map, new creatures: drop the old sprites
   const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');
   const gen=G.inTown?'town'+actIdx(G.depth):ACTS[actIdx(G.depth)].gen,TH=THEMES[gen],g=G.grid,T=G.terrain;
   const at=(i,j)=>i<0||j<0||i>=MW||j>=MH?1:g[j*MW+i];
