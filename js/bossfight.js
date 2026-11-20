@@ -7,13 +7,13 @@
 //               afterwards the boss is EXPOSED for PUNISH_T and takes +50% damage.
 //   Stagger     hits fill a bar (heavy hits more); when full the boss is STAGGERED (stunned) for STAG_T and takes +35%;
 //               each stagger makes the bar 30% longer; it drains when you stop hitting.
-//   Hit cap     one hit takes at most HIT_CAP of a boss's life (x1.5 while exposed/staggered): great gear speeds a fight
-//               up without skipping it.
+//   Damage cap  a boss loses at most DPS_CAP of its life per second (x1.5 while exposed/staggered; a small reserve
+//               lets a burst land) and at most HIT_CAP in one hit: great gear speeds a fight up but can't skip it.
 //   Enrage      below ENRAGE_AT in the last phase: faster attacks and movement.
 //   Shields     some phases raise a shield held up by adds (tethered to the boss); kill them to break it.
 //   Arenas      some phases shrink the arena: outside the ring you burn.
 // Also here: area levels and the level/gear difference rule (diminishing returns when far overleveled/overgeared).
-const PHASE_AT=[0.7,0.35],TRANS_T=2.2,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.016,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
+const PHASE_AT=[0.7,0.35],TRANS_T=2.2,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.05,DPS_CAP=0.03,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
 const ROMAN_PH=['I','II','III'];
 function bossInit(e){e.phase=0;e.stagger=0;e.staggerMax=100;e.staggers=0;e.punishes=0;e.homeX=e.x;e.homeY=e.y;e.maxHp*=BOSS_HP_K;e.hp=e.maxHp;}
 // ---------- area level and the level / gear difference ----------
@@ -32,7 +32,7 @@ const underMul=()=>{const c=G.char;if(!c||G.inTown)return 1;return Math.min(2,1+
 // ---------- damage into a monster (hitEnemy) ----------
 function dmgTo(e,d,crit,opts){d*=overMul();if(e.type!=='boss')return Math.max(1,Math.round(d));
   const open=e.punishT>0||e.staggerT>0;if(e.punishT>0)d*=1.5;if(e.staggerT>0)d*=1.35;
-  d=Math.min(d,e.maxHp*HIT_CAP*(open?1.5:1));
+  d=Math.min(d,e.maxHp*HIT_CAP,e.budget??e.maxHp*DPS_CAP*1.5);e.budget=(e.budget??e.maxHp*DPS_CAP*1.5)-d;
   if(!(e.staggerT>0)&&!(e.transT>0)&&!(e.shieldT>0)){e.stagger+=(opts&&opts.dot?0:4)+90*d/e.maxHp*(crit||(opts&&opts.kb>=95)?1.6:1);if(e.stagger>=e.staggerMax)staggerBoss(e);}
   return Math.max(1,Math.round(d));}
 // After any loss of life (hits, bleeding, burning): hold a boss at its phase threshold and start the transition.
@@ -59,6 +59,7 @@ function shieldAdds(e,type,n,name,hpK){e.shieldBy=true;e.shieldT=9999;e.hpLock=e
 // Runs every frame for a boss before its AI. Returns true while it can't act (transition).
 function bossFrame(e,dt){const B=BOSSES[e.kind]||BOSSES[0];
   if(e.punishT>0)e.punishT-=dt;if(e.staggerT>0)e.staggerT-=dt;
+  {const k=e.punishT>0||e.staggerT>0?1.5:1;e.budget=Math.min(e.maxHp*DPS_CAP*1.5*k,(e.budget??e.maxHp*DPS_CAP*1.5)+e.maxHp*DPS_CAP*k*dt);} /* the damage-per-second allowance refills */
   if(e.stagger>0&&G.time-(e.lastHit||-9)>2)e.stagger=Math.max(0,e.stagger-12*dt);
   if(e.transT>0){e.transT-=dt;if(e.hp<e.hpLock)e.hp=e.hpLock;if(Math.random()<dt*14)burst(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r),2,ACTS[e.kind||0].col,120);
     if(e.transT<=0){e.hpLock=null;const P=B.phases[e.phase-1];if(P&&P.enter)P.enter(e);}return true;}

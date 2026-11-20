@@ -71,10 +71,10 @@ const BOSSES=[
     {name:'Frost Ring',w:2,cd:1.2,fn(e){const off=rand(0,TAU);ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off,0,{slow:0.4});if(e.phase)bossLater(e,0.4,()=>ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off+TAU/48,0,{slow:0.4}));e.busy=0.6;}},
     {name:'Shardlings',w:2,cd:1.6,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#8fd0f8'};e.act=()=>bossSummon(e,'shardling',e.phase?4:3,6);}}]},
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
-    hp:1.7,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
+    hp:2.2,dmg:1.2,pace:0.8,spd:1,enrage:'ignites the Core!',
     loot:{n:6,rare:2,unique:1,ilvl:5,gold:140},
     phases:[
-      {name:'Molten Shield',enter(e){shieldAdds(e,'summoner',2,'Ember Summoner',1.6);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
+      {name:'Molten Shield',enter(e){shieldAdds(e,'magmabrute',2,'Molten Warden',1.3);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
       {name:'Core Meltdown',enter(e){e.arena={x:e.homeX,y:e.homeY,r:500,min:190,rate:14};toast('The Core melts down','Stay inside the ring');},tick(e,dt){cinderJets(e,dt,e.enraged?4:3);}}],
     moves:[
     {name:'Cataclysm',w:2,cd:1.6,big:1,fn(e){const a=rand(0,TAU),half=0.6;bigAttack(e,2.2,()=>{G.fx.push({type:'cata',x:e.x,y:e.y,a,half,t:0,max:2.2});
