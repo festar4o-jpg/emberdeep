@@ -11,7 +11,13 @@ function sprite(key,half,paint){const rs=Math.min(2,Math.max(1,DPR*Z));if(rs!==S
   let c=SPR.get(key);if(c)return c;if(SPR.size>360)SPR.clear();
   const px=Math.ceil(half*2*rs);c=mkCanvas(px,px);const x=c.getContext('2d');x.setTransform(rs,0,0,rs,px/2,px/2);x.lineJoin='round';x.lineCap='round';
   const R0=Math.random;let h=0;for(const ch of key)h=Math.imul(h^ch.charCodeAt(0),16777619);Math.random=artRng(h);try{paint(x);}finally{Math.random=R0;}
-  c.half=half;SPR.set(key,c);return c;}
+  outline(c,rs);c.half=half;SPR.set(key,c);return c;}
+// A dark rim around the whole silhouette (the sprite stamped 8 ways in near-black behind itself), so figures
+// stand out from any floor.
+function outline(c,rs){const w=c.width,h=c.height,o=mkCanvas(w,h),x=o.getContext('2d'),d=Math.max(1,rs*0.9);
+  for(let k=0;k<8;k++){const a=k/8*TAU;x.drawImage(c,Math.cos(a)*d,Math.sin(a)*d);}
+  x.globalCompositeOperation='source-in';x.fillStyle='rgba(6,4,3,.92)';x.fillRect(0,0,w,h);x.globalCompositeOperation='source-over';x.drawImage(c,0,0);
+  const cx=c.getContext('2d');cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,w,h);cx.drawImage(o,0,0);}
 function blit(c,x,y,ang,alpha){ctx.save();ctx.translate(x,y);ctx.rotate(ang);if(alpha!=null)ctx.globalAlpha=alpha;ctx.drawImage(c,-c.half,-c.half,c.half*2,c.half*2);ctx.restore();}
 // ---------- painting helpers (x = the sprite's 2d context) ----------
 const OUT='rgba(8,5,3,.9)';
@@ -185,20 +191,88 @@ function painterFor(e,T){if(e.type==='boss')return BOSS_PAINT[e.kind||0];if(T.sh
 // Walk cycle frame from distance actually moved (stands still when the creature does).
 function animFrame(o,stride){const dx=o.x-(o._ax??o.x),dy=o.y-(o._ay??o.y);o._ax=o.x;o._ay=o.y;o._ap=((o._ap||0)+Math.hypot(dx,dy)/stride)%SPR_F;return o._ap|0;}
 function creatureSprite(e,T){const P=painterFor(e,T);if(!P)return null;const r=Math.round(e.r),f=T.shape==='shard'?0:T.shape==='imp'||T.shape==='wraith'||T.shape==='vine'||e.type==='boss'&&e.kind===2?((G.time*(T.shape==='imp'?14:4)+e.seed)|0)%SPR_F:animFrame(e,Math.max(8,r*0.7));
-  return sprite(`${e.type}|${e.kind||0}|${r}|${f}`,r*(T.shape==='worm'?3.3:2.25),x=>P(x,r,f));}
-// ---------- the player ----------
-const HERO={
-  warden:(x,r,f)=>walker(x,r,f,{skin:'#b89070',torso:'#55524c',sleeve:'#4a4640',hand:'#5e5a54',boot:'#241a12',chest:0.52,wide:0.92,head:0.36,headX:0.12,arms:false,
-    cape:(x,r,s)=>{path(x,[[r*0.05,-r*0.85],[-r*0.8,-r*0.95+s*r*0.08],[-r*1.25,-r*0.4],[-r*1.3,r*0.1],[-r*1.2,r*0.45],[-r*0.8,r*0.95-s*r*0.08],[r*0.05,r*0.85]]);shadeFill(x,-r*0.5,0,r*1.2,'#4a1e1a',1.3);
-      x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;for(const k of [-0.45,0,0.45]){x.beginPath();x.moveTo(-r*0.3,k*r);x.lineTo(-r*1.2,k*r*1.1);x.stroke();}},
-    torsoDeco:(x,r)=>{x.fillStyle='rgba(0,0,0,.18)';for(let i=-3;i<=3;i++)for(let j=-6;j<=6;j++)if((i+j)%2===0){const px=i*r*0.13-r*0.06,py=j*r*0.13;if(px*px/(r*0.5)**2+py*py/(r*0.9)**2<0.85)x.fillRect(px,py,1.1,1.1);}
-      x.fillStyle='#3a2a1a';x.fillRect(-r*0.12,-r*0.8,r*0.1,r*1.6);dot(x,-r*0.07,0,r*0.07,'#9a8452');
-      for(const sd of [-1,1]){oval(x,-r*0.02,sd*r*0.72,r*0.36,r*0.28,'#706c66',1.2);x.strokeStyle='rgba(255,245,230,.25)';x.lineWidth=0.8;x.beginPath();x.arc(-r*0.02,sd*r*0.72,r*0.22,sd>0?-0.6:2.6,sd>0?0.6:3.7);x.stroke();}
-      grit(x,0,0,r*0.8,40,'rgba(0,0,0,.3)','rgba(240,235,225,.12)');},
-    headDeco:(x,r)=>{oval(x,r*0.12,0,r*0.36,r*0.34,'#6a6660',1.2);x.fillStyle='#0a0806';x.fillRect(r*0.36,-r*0.18,r*0.08,r*0.36);x.strokeStyle='rgba(255,245,230,.3)';x.lineWidth=0.8;x.beginPath();x.moveTo(-r*0.15,0);x.lineTo(r*0.4,0);x.stroke();}}),
-  arcanist:(x,r,f)=>walker(x,r,f,{skin:'#a88a70',torso:'#3c2c40',sleeve:'#3a2a3e',hand:'#a88a70',boot:'#1e1620',chest:0.5,wide:0.88,head:0.36,headX:0.1,arms:false,
-    cape:(x,r,s)=>{path(x,[[r*0.1,-r*0.9],[-r*0.8,-r*1.0+s*r*0.1],[-r*1.35,-r*0.4],[-r*1.45+s*r*0.1,0],[-r*1.35,r*0.4],[-r*0.8,r*1.0-s*r*0.1],[r*0.1,r*0.9]]);shadeFill(x,-r*0.5,0,r*1.3,'#2a1e30',1.3);
-      x.strokeStyle='#7a6440';x.lineWidth=1.2;x.beginPath();x.moveTo(-r*1.35,-r*0.4);x.lineTo(-r*1.45,0);x.lineTo(-r*1.35,r*0.4);x.stroke();},
-    torsoDeco:(x,r)=>{x.strokeStyle='#7a6440';x.lineWidth=1.3;for(const sd of [-1,1]){x.beginPath();x.arc(-r*0.06,0,r*0.55,sd*0.9,sd*1.7,sd<0);x.stroke();}x.fillStyle='#2a1e14';x.fillRect(-r*0.12,-r*0.75,r*0.09,r*1.5);grit(x,0,0,r*0.8,30);},
-    headDeco:(x,r)=>{oval(x,r*0.06,0,r*0.4,r*0.38,'#33263a',1.2);x.fillStyle='#08060a';x.beginPath();x.ellipse(r*0.28,0,r*0.17,r*0.22,0,0,TAU);x.fill();dot(x,r*0.32,0,r*0.1,'rgba(168,138,112,.55)');}})};
-function heroSprite(cls,r,f){return sprite(`hero|${cls}|${Math.round(r)}|${f}`,r*2,x=>HERO[cls](x,r,f));}
+  const rr=e.type==='boss'?Math.round(r*BOSS_SCALE):r; // bosses are drawn much bigger than their footprint
+  return sprite(`${e.type}|${e.kind||0}|${rr}|${f}`,rr*(T.shape==='worm'?3.3:2.25),x=>P(x,rr,f));}
+// ---------- hero, layered by what is worn ----------
+// Boots, cape or cloak, the body armour kind (none / robe / leather / chain / plate, tinted by its tier: steel,
+// then frost-blue at Tier IV and blackened red at Tier V), pauldrons and straps, then the head: a helm if one is worn.
+const ARMOR_TINT=[null,null,null,['#7d8c9a','#a8c4dc'],['#3e2622','#c0502a']]; // [plate, trim] by tier
+function heroPaint(x,r,f,cls,body,helm,tier){const W=cls==='warden',s=swing(f),T=ARMOR_TINT[(tier||1)-1];
+  for(const sd of [-1,1]){oval(x,sd*s*r*0.38-r*0.05,sd*r*0.3,r*0.27,r*0.15,'#22180f',1);x.fillStyle='rgba(160,140,110,.35)';x.fillRect(sd*s*r*0.38+r*0.12,sd*r*0.3-r*0.08,1,r*0.16);}
+  // cape (warden: oxblood wool) / cloak (arcanist: dusk cloth with a worn gold hem)
+  path(x,[[r*0.05,-r*0.86],[-r*0.8,-r*0.98+s*r*0.08],[-r*1.3,-r*0.42],[-r*1.4+s*r*0.08,0],[-r*1.3,r*0.42],[-r*0.8,r*0.98-s*r*0.08],[r*0.05,r*0.86]]);
+  shadeFill(x,-r*0.5,0,r*1.3,W?'#4a1c18':'#281c2e',1.3);x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;for(const k of [-0.5,-0.15,0.2,0.55]){x.beginPath();x.moveTo(-r*0.3,k*r);x.lineTo(-r*1.25,k*r*1.12);x.stroke();}
+  if(!W){x.strokeStyle='#7a6440';x.lineWidth=1.3;x.beginPath();x.moveTo(-r*1.3,-r*0.42);x.lineTo(-r*1.4+s*r*0.08,0);x.lineTo(-r*1.3,r*0.42);x.stroke();}
+  const torso=(c)=>{x.beginPath();x.ellipse(-r*0.06,0,r*0.52,r*0.9,0,0,TAU);shadeFill(x,-r*0.06,0,r*0.9,c,1.4);};
+  const pauldron=(sd,c,lames,trim)=>{for(let k=lames-1;k>=0;k--){const cy=sd*r*(0.62+k*0.1),rx=r*(0.38-k*0.06),ry=r*(0.3-k*0.04);oval(x,-r*0.02-k*r*0.04,cy,rx,ry,c,1.1);
+      x.strokeStyle='rgba(255,245,225,.35)';x.lineWidth=0.8;x.beginPath();x.ellipse(-r*0.02-k*r*0.04,cy,rx*0.75,ry*0.7,0,sd>0?3.6:-0.5,sd>0?5.6:1.5);x.stroke();}
+    if(trim){x.strokeStyle=trim;x.lineWidth=1;x.beginPath();x.ellipse(-r*0.02,sd*r*0.62,r*0.38,r*0.3,0,0,TAU);x.stroke();}
+    for(const a of [-0.6,0.6])dot(x,-r*0.02+Math.cos(a)*r*0.26,sd*r*0.62+Math.sin(a)*r*0.2*sd,0.9,'#c8bca0');};
+  const strap=(a,b,c,d,col)=>{x.strokeStyle=col||'#2a1c10';x.lineWidth=r*0.12;x.beginPath();x.moveTo(a,b);x.lineTo(c,d);x.stroke();x.strokeStyle='rgba(255,230,190,.15)';x.lineWidth=0.7;x.stroke();};
+  if(body==='plate'){const P=T?T[0]:'#6c6862',TR=T?T[1]:null;torso(P);
+    x.strokeStyle='rgba(255,248,230,.45)';x.lineWidth=1.2;x.beginPath();x.moveTo(-r*0.5,0);x.lineTo(r*0.38,0);x.stroke(); // ridge
+    x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;for(const k of [-0.3,0.3]){x.beginPath();x.ellipse(-r*0.06,0,r*0.5,r*0.88*Math.abs(k)*2.2,0,-1.2,1.2);x.stroke();}
+    strap(-r*0.4,-r*0.55,r*0.25,r*0.55);dot(x,-r*0.08,0,r*0.07,'#9a8a62');
+    for(const sd of [-1,1])pauldron(sd,P,3,TR);oval(x,r*0.08,0,r*0.28,r*0.3,P,1.1);grit(x,0,0,r*0.8,30,'rgba(40,20,10,.35)','rgba(255,250,235,.18)');}
+  else if(body==='chain'){torso('#5a5853');x.fillStyle='rgba(0,0,0,.28)';for(let i=-4;i<=3;i++)for(let j=-7;j<=7;j++){const px=i*r*0.12,py=j*r*0.12+(i%2?r*0.06:0);if(px*px/(r*0.5)**2+py*py/(r*0.88)**2<0.9)x.fillRect(px-0.5,py-0.5,1.2,1.2);}
+    x.fillStyle='rgba(255,250,235,.12)';for(let i=-4;i<=3;i++)for(let j=-7;j<=7;j++){const px=i*r*0.12+0.6,py=j*r*0.12+(i%2?r*0.06:0)-0.6;if(px*px/(r*0.5)**2+py*py/(r*0.88)**2<0.8)x.fillRect(px,py,0.7,0.7);}
+    strap(-r*0.12,-r*0.85,-r*0.12,r*0.85,'#3a2614');for(const sd of [-1,1])pauldron(sd,'#5a3e26',1,'#8a7048');}
+  else if(body==='leather'){torso('#5a3e28');x.strokeStyle='rgba(20,10,4,.55)';x.lineWidth=0.9;x.setLineDash([1.6,1.4]);for(const k of [-0.45,0.45]){x.beginPath();x.moveTo(-r*0.5,k*r);x.lineTo(r*0.35,k*r*0.8);x.stroke();}x.setLineDash([]);
+    strap(-r*0.42,-r*0.6,r*0.3,r*0.5);strap(-r*0.42,r*0.6,r*0.3,-r*0.5);oval(x,-r*0.06,0,r*0.09,r*0.09,'#8a7a58',0.8);
+    if((tier||1)>=2)for(let k=0;k<10;k++){const a=k/10*TAU;dot(x,-r*0.06+Math.cos(a)*r*0.38,Math.sin(a)*r*0.68,0.9,'#a89878');}
+    for(const sd of [-1,1])pauldron(sd,'#4e3420',1);grit(x,0,0,r*0.8,30);}
+  else if(body==='robe'){torso(W?'#4a4036':'#3e2e44');x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;for(const k of [-0.6,-0.2,0.2,0.6]){x.beginPath();x.moveTo(r*0.3,k*r*0.8);x.quadraticCurveTo(-r*0.1,k*r,-r*0.55,k*r*1.05);x.stroke();}
+    x.strokeStyle='#8a7448';x.lineWidth=1.4;for(const sd of [-1,1]){x.beginPath();x.arc(-r*0.06,0,r*0.56,sd*0.85,sd*1.75,sd<0);x.stroke();}strap(-r*0.12,-r*0.85,-r*0.12,r*0.85,'#5a2a22');grit(x,0,0,r*0.8,24);}
+  else{torso(W?'#5a4a38':'#3a2c3e');strap(-r*0.12,-r*0.85,-r*0.12,r*0.85);grit(x,0,0,r*0.8,24);}
+  // head
+  if(W){if(helm){oval(x,r*0.12,0,r*0.37,r*0.35,T?T[0]:'#6a6660',1.3);x.fillStyle='#070504';x.fillRect(r*0.36,-r*0.2,r*0.08,r*0.4);x.fillRect(r*0.28,-r*0.03,r*0.16,r*0.06);
+      x.strokeStyle='rgba(255,248,230,.5)';x.lineWidth=1.4;x.beginPath();x.moveTo(-r*0.2,0);x.lineTo(r*0.42,0);x.stroke();for(const sd of [-1,1])dot(x,r*0.12,sd*r*0.28,0.9,'#c8bca0');}
+    else{oval(x,r*0.12,0,r*0.33,r*0.31,'#a8805e',1.2);x.fillStyle='#2a1a10';x.beginPath();x.ellipse(-r*0.02,0,r*0.26,r*0.3,0,0,TAU);x.fill();grit(x,-r*0.02,0,r*0.24,12,'rgba(0,0,0,.4)','rgba(120,80,50,.4)');}}
+  else{oval(x,r*0.06,0,r*0.4,r*0.38,'#30243a',1.3);x.fillStyle='#08060a';x.beginPath();x.ellipse(r*0.28,0,r*0.17,r*0.22,0,0,TAU);x.fill();dot(x,r*0.32,0,r*0.1,'rgba(168,138,112,.55)');
+    if(helm){x.strokeStyle='#9a8a62';x.lineWidth=1.6;x.beginPath();x.ellipse(r*0.06,0,r*0.3,r*0.32,0,-1.9,1.9);x.stroke();dot(x,r*0.36,0,1.4,'#7fe0ff');}}}
+function heroSprite(cls,r,f){const c=G.char,b=c&&c.equip.body,h=c&&c.equip.helm,kind=b?b.kind||'chain':'none',tier=b?b.tier||1:1;
+  return sprite(`hero|${cls}|${Math.round(r)}|${f}|${kind}|${tier}|${h?1:0}`,r*2,x=>heroPaint(x,r,f,cls,kind,!!h,tier));}
+// ---------- weapons ----------
+// Each weapon shape (render.js drawWeapon) painted once into a sprite with an outline; glowing variants for casters.
+function weaponSprite(wt,glow){return sprite(`wpn|${wt}|${glow?1:0}`,64,x=>{const o=ctx;ctx=x;try{drawWeapon(wt,glow);}finally{ctx=o;}});}
+// ---------- light from the top of the screen ----------
+// Sprites rotate with their owner, so light can't be baked in: each frame the rotated sprite is copied into a small
+// scratch canvas and a fixed top-lit / bottom-shadowed gradient is laid over exactly its pixels ('source-in').
+let LITC=null,LITX=null;const LIT_G={};
+function litBlit(S,x,y,ang,alpha,sc){sc=sc||1;const h=S.half*sc,rs=S.width/(S.half*2),m=Math.ceil(h*2*1.42*rs);
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);if(alpha!=null)ctx.globalAlpha=alpha;ctx.drawImage(S,-h,-h,h*2,h*2);ctx.restore();
+  if(!LITC){LITC=mkCanvas(m,m);LITX=LITC.getContext('2d');}if(LITC.width<m){LITC.width=m;LITC.height=m;}
+  const X=LITX;X.setTransform(1,0,0,1,0,0);X.globalCompositeOperation='source-over';X.clearRect(0,0,m,m);X.setTransform(rs,0,0,rs,m/2,m/2);X.rotate(ang);X.drawImage(S,-h,-h,h*2,h*2);
+  X.setTransform(1,0,0,1,0,0);X.globalCompositeOperation='source-in';let g=LIT_G[m];if(!g){g=X.createLinearGradient(0,0,0,m);g.addColorStop(0.15,'rgba(255,236,205,.34)');g.addColorStop(0.45,'rgba(255,236,205,0)');g.addColorStop(0.6,'rgba(0,0,0,0)');g.addColorStop(0.9,'rgba(0,0,0,.45)');LIT_G[m]=g;}
+  X.fillStyle=g;X.fillRect(0,0,m,m);X.globalCompositeOperation='source-over';
+  ctx.save();if(alpha!=null)ctx.globalAlpha=alpha;ctx.drawImage(LITC,0,0,m,m,x-m/(2*rs),y-m/(2*rs),m/rs,m/rs);ctx.restore();}
+// ---------- motion: idle, wind-up, strike, recoil, death ----------
+// Offsets and scale for a creature this frame, along its facing: it breathes when still, rears back while winding
+// up, lunges when the blow lands (or a shot leaves), then settles; a hit knocks it back a little.
+function creaturePose(e){const t=G.time,r=e.r;let dx=0,sc=1;
+  if(e._wd>0&&!(e.wind>0))e._lunge=t;e._wd=e.wind||0;
+  if(e.wind>0){const k=Math.min(1,e.wind*4);dx-=r*0.2*k;sc+=0.07*k;dx+=Math.sin(t*40)*0.8;}
+  const u=(t-(e._lunge??-9))/0.28;if(u>=0&&u<1){dx+=r*0.32*Math.sin(Math.min(1,u*2.2)*Math.PI*0.5)*(1-u);sc+=0.04*(1-u);}
+  if(e.flash>0){dx-=r*0.22*(e.flash/0.1);sc*=1-0.05*(e.flash/0.1);}
+  if(!(e.wind>0)&&Math.abs((e._ap||0)-(e._ap0??-1))<1e-6)sc*=1+0.025*Math.sin(t*2.2+(e.seed||0));e._ap0=e._ap||0;
+  return {dx,sc};}
+// Death: the body lurches back, sinks and darkens into the floor where its stain is left.
+function addCorpse(e){const T=ETYPES[e.type];if(!T||e.hidden)return;const S=creatureSprite(e,T);if(!S)return;
+  G.fx.push({type:'corpse',S,x:e.x,y:e.y,a:e.face,dir:e.face+Math.PI,t:0,max:e.type==='boss'?1.6:0.7,sc:e.type==='boss'?BOSS_SCALE:1,boss:e.type==='boss'});}
+function drawCorpses(){for(const f of G.fx){if(f.type!=='corpse')continue;const u=f.t/f.max,k=Math.min(1,u*3);
+  const x=f.x+Math.cos(f.dir)*8*k,y=f.y+Math.sin(f.dir)*8*k;softShadow(x,y+6,f.S.half*0.55*f.sc,f.S.half*0.25*f.sc,1-u);
+  blit(f.S,x,y,f.a+0.35*k,(1-u)*0.95);ctx.save();ctx.globalAlpha=(1-u)*0.55*k;ctx.globalCompositeOperation='source-atop';ctx.restore();}}
+// ---------- bosses: bigger, and an entrance ----------
+const BOSS_SCALE=1.4;
+// The first time a boss comes into view: the screen darkens and shakes, the boss rises out of a dust ring with a roar,
+// its name is carved across the screen, and it can't act or be hurt until it has fully risen.
+function bossIntro(e){e.introT=2.4;G.bossIntro={e,t:0};G.shake=Math.max(G.shake,10);
+  G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r*6,t:0,max:0.9,col:ACTS[e.kind||0].col});burst(e.x,e.y,40,'#8a7a62',260);}
+function drawBossIntro(){const B=G.bossIntro;if(!B)return;B.t=Math.max(B.t,0);const e=B.e,u=(2.4-(e.introT||0))/2.4;if(e.dead||u>=1.25){G.bossIntro=null;return;}
+  const a=u<0.15?u/0.15:u>0.85?Math.max(0,(1.25-u)/0.4):1;
+  ctx.fillStyle=`rgba(0,0,0,${0.35*a})`;ctx.fillRect(0,0,CW,CH);
+  const y=CH*0.3;ctx.textAlign='center';ctx.globalAlpha=a;
+  const g=ctx.createLinearGradient(0,y-40,0,y+30);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(0.5,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,y-40,CW,70);
+  ctx.font=`bold ${Math.round(26*Math.min(1.3,Z))}px Georgia`;ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeText(e.name,CW/2,y);ctx.fillStyle='#d8c8a8';ctx.fillText(e.name,CW/2,y);
+  ctx.font=`italic ${Math.round(13*Math.min(1.3,Z))}px Georgia`;ctx.fillStyle=ACTS[e.kind||0].col;ctx.fillText(ACTS[e.kind||0].sub,CW/2,y+22);
+  ctx.strokeStyle=`rgba(200,180,140,${0.6*a})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(CW/2-160*u,y+8);ctx.lineTo(CW/2+160*u,y+8);ctx.stroke();ctx.globalAlpha=1;}

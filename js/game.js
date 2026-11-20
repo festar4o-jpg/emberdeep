@@ -3,7 +3,7 @@
 // ---------- combat ----------
 function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
-  if(e.dead||e.hidden||e.spawnT>0)return;
+  if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
   const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));e.hp-=r.d;
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
@@ -33,7 +33,7 @@ function demonBlast(e){G.blasting=true;try{aoe(e.x,e.y,80,G.stats.explode/100,{s
   burst(e.x,e.y,16,'#ff3a2a',200);G.fx.push({type:'ring',x:e.x,y:e.y,r0:8,r1:85,t:0,max:0.25,col:'#ff4a2a'});}
 function aggroPack(e){if(e.aggro)return;for(const o of G.enemies)if(o.pack===e.pack)o.aggro=true;e.aggro=true;}
 function killEnemy(e){
-  e.dead=true;stainFloor(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y,e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);
+  e.dead=true;stainFloor(e);addCorpse(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y,e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);
   const T0=ETYPES[e.type];
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
@@ -91,7 +91,8 @@ function addEHaz(x,y,r,t,dps,kind){if(G.ehaz.length>70)G.ehaz.shift();G.ehaz.pus
 function healPlayer(v,silent){const p=G.p;if(p.dead)return;const before=p.hp;p.hp=Math.min(G.stats.life,p.hp+v);if(!silent&&p.hp-before>=1)floatText(p.x,p.y-p.r-20,'+'+Math.round(p.hp-before),'#5f5',false);}
 function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home});}
 function enemyShoot(e,ang,spd,col,dmg,r,extra){G.proj.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r||5,col,life:2.5,from:'e',dmg,src:e},extra));}
-function eShoot(e,ang){const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
+function eShoot(e,ang){e._lunge=G.time; // sprites.js: recoil as the shot leaves
+const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
 function explodeAt(x,y,rad,mult){aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
 
 function gainXp(v){
@@ -203,6 +204,8 @@ function update(dt){
       if(e.burnTick<=0&&e.burnAcc>=1){e.burnTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.burnAcc),'#ff9a4a',false);e.burnAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
     if(e.spawnT>0)e.spawnT-=dt;
+    if(e.type==='boss'&&!e.introDone&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<430){e.introDone=true;bossIntro(e);} // sprites.js: the entrance
+    if(e.introT>0){e.introT-=dt;if(e.introT>1.2&&Math.random()<dt*10)burst(e.x+rand(-e.r,e.r),e.y+e.r*0.6,3,'#8a7a62',90);continue;}
     const T=ETYPES[e.type];
     if(T.regen&&e.hp<e.maxHp&&G.time-(e.lastHit||-9)>2&&!(e.bleedT>0)){ // troll regen; bleeding stops it
       e.hp=Math.min(e.maxHp,e.hp+e.maxHp*T.regen*dt);if(Math.random()<dt*5)G.parts.push({x:e.x+rand(-e.r,e.r)*0.7,y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-35,life:0.6,max:0.6,col:'#7fe060',s:3});}

@@ -1,7 +1,7 @@
 'use strict';
 // Canvas rendering: world, player and weapons, monsters, minimap.
 // ---------- render ----------
-const cv=$('game'),ctx=cv.getContext('2d');
+const cv=$('game');let ctx=cv.getContext('2d'); // let: sprites.js paints weapons into sprites through it
 let DPR=1,CW=0,CH=0,Z=1;
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);CW=innerWidth;CH=innerHeight;cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);Z=clamp(Math.min(CW,CH)/430,0.75,1.5);if(!joy.active)placeJoy(null);}
 addEventListener('resize',resize);
@@ -64,6 +64,7 @@ function render(){
   // entities sorted by y
   const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
+  drawCorpses(); // sprites.js: falling bodies
   for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else drawEnemy(e);}
   // projectiles
   drawProjectiles(); // fx.js
@@ -85,6 +86,7 @@ function render(){
   const Lt=G.inTown?townOf(G.depth).light:ACTS[actIdx(G.depth)].light;
   drawFog(); // fx.js: under the light map, so mist only shows where light falls
   drawLighting(Lt); // light.js
+  drawBossIntro(); // sprites.js
   if(p.hurt>0){ctx.fillStyle=`rgba(160,0,0,${p.hurt})`;ctx.fillRect(0,0,CW,CH);}
   drawLootTip();
 }
@@ -222,19 +224,25 @@ function drawPlayer(){
   if(p.buffT>0){ctx.strokeStyle='#ffcc55';ctx.globalAlpha=0.5+Math.sin(G.time*8)*0.2;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,p.r+6,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
   const C2=G.char,eq=C2.equip,mw=eq.mainhand&&eq.mainhand.slot==='weapon'?eq.mainhand:null,off=eq.offhand,W=mw?WEAPONS[mw.wt]||FIST:null;
   const A=p.atk,u=A?Math.min(1,A.t/A.dur):0,S=Math.sin(u*Math.PI),spin=p.spin>0;
-  ctx.rotate(spin?G.time*20:p.face); // local frame: +x = facing, +y = main-hand side
-  const HS=heroSprite(C2.cls,p.r,heroF);ctx.drawImage(HS,-HS.half,-HS.half,HS.half*2,HS.half*2); // sprites.js
+  // body: follows through on a blow, rocks back when hit, breathes when standing still; lit from the top (sprites.js)
+  const ang=spin?G.time*20:p.face,push=(A?S*4:0)-(p.hurt>0?p.hurt*10:0),bx=p.x+Math.cos(ang)*push,by=p.y-z+Math.sin(ang)*push;
+  const moved=Math.abs((p._ap||0)-(p._ap1??-1))>1e-6;p._ap1=p._ap||0;
+  const HS=heroSprite(C2.cls,p.r,heroF),hb=!moved&&!A&&!spin?1+0.02*Math.sin(G.time*2.2):1;
+  ctx.restore();ctx.save(); // leave the ring overlays' frame
+  litBlit(HS,bx,by,ang,p.dead?0.4:p.dodge?0.55:null,hb*(p.dead?0.92:1));
+  ctx.translate(bx,by);ctx.rotate(ang); // local frame: +x = facing, +y = main-hand side
+  if(p.dead)ctx.globalAlpha=0.4;else if(p.dodge)ctx.globalAlpha=0.55;
   const hand=(x,y)=>{ctx.fillStyle=C2.cls==='warden'?'#5e5a54':'#a88a70';ctx.strokeStyle='#140d08';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,3.4,0,TAU);ctx.fill();ctx.stroke();};
   const at=(x,y,ang,fn)=>{ctx.save();ctx.translate(x,y);ctx.rotate(ang);fn();ctx.restore();};
   if(W&&W.hands===2){ // two-hander: both hands on the grip
     const staff=W.anim==='thrust'; /* staffs and spears: held forward, low grip */let gx=staff?5:6,gy=staff?11:9,ang=staff?0.2:0.7;
     if(spin)ang=1.3;
     else if(A){if(A.style==='heavy'){ang=heavyAng(u);gx+=S*4;}else if(A.style==='thrust')gx+=S*10;else if(A.style==='swing')ang=1.4-(1-(1-u)*(1-u))*2.3;}
-    at(gx,gy,ang,()=>{drawWeapon(mw.wt,!!A&&staff);hand(staff?0:-1,0);hand(staff?-9:-8,0);});
+    at(gx,gy,ang,()=>{const WS=weaponSprite(mw.wt,!!A&&staff);ctx.drawImage(WS,-64,-64,128,128);hand(staff?0:-1,0);hand(staff?-9:-8,0);});
   }else{
     const pose=(side,h)=>spin?[6,12*side,side*1.3]:A&&A.hand===h?handPose(A.style,u,side):[5,12*side,side*0.5];
-    const [x,y,g]=pose(1,'mh');at(x,y,g,()=>{if(W)drawWeapon(mw.wt,!!A&&A.hand==='mh');hand(0,0);});
-    if(off&&off.slot==='weapon'){const [x2,y2,g2]=pose(-1,'oh');at(x2,y2,g2,()=>{ctx.scale(1,-1);drawWeapon(off.wt,false);hand(0,0);});}
+    const [x,y,g]=pose(1,'mh');at(x,y,g,()=>{if(W){const WS=weaponSprite(mw.wt,!!A&&A.hand==='mh');ctx.drawImage(WS,-64,-64,128,128);}hand(0,0);});
+    if(off&&off.slot==='weapon'){const [x2,y2,g2]=pose(-1,'oh');at(x2,y2,g2,()=>{ctx.scale(1,-1);const WS=weaponSprite(off.wt,false);ctx.drawImage(WS,-64,-64,128,128);hand(0,0);});}
     else if(off&&off.slot==='shield'){const lift=A&&A.hand==='mh'?-S*2:0;ctx.fillStyle='#4e3420';ctx.strokeStyle='#7a6a4a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(9,-13+lift,9.5,0,TAU);ctx.fill();ctx.stroke();
       ctx.strokeStyle='#5a3418';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(9,-22.5+lift);ctx.lineTo(9,-3.5+lift);ctx.stroke();ctx.fillStyle='#c9a24a';ctx.beginPath();ctx.arc(9,-13+lift,3,0,TAU);ctx.fill();}
     else if(off&&off.slot==='focus'){hand(6,-12);
@@ -334,11 +342,13 @@ function drawEnemy(e){
   if(e.hidden){ // burrowed sandworm: a moving mound of sand
     ctx.fillStyle='rgba(50,34,18,.6)';ctx.beginPath();ctx.ellipse(e.x,e.y,e.r*1.1,e.r*0.6,0,0,TAU);ctx.fill();
     ctx.fillStyle='#9a7a4a';for(let k=0;k<5;k++){const a=k*1.26+G.time*3+e.seed;ctx.beginPath();ctx.arc(e.x+Math.cos(a)*e.r*0.7,e.y+Math.sin(a)*e.r*0.35,3,0,TAU);ctx.fill();}return;}
-  softShadow(e.x,e.y+e.r*0.55,e.r*1.5,e.r*0.7,T.shape==='wraith'||T.shape==='imp'?0.5:1);
+  const bs=e.type==='boss'?BOSS_SCALE:1;softShadow(e.x,e.y+e.r*0.55*bs,e.r*1.5*bs,e.r*0.7*bs,T.shape==='wraith'||T.shape==='imp'?0.5:1);
   if(e.elite){ctx.strokeStyle=e.affs&&e.affs.length?AFFIXES[e.affs[0]].col:'#6f8fff';ctx.lineWidth=2;ctx.globalAlpha=0.6+Math.sin(G.time*5)*0.3;ctx.beginPath();ctx.arc(e.x,e.y,e.r+5,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
   const S=creatureSprite(e,T); // sprites.js: pre-rendered, only rotated and stamped here
-  if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face;blit(S,e.x,e.y,ang,T.shape==='wraith'?0.9:null);
-    if(e.flash>0){ctx.globalCompositeOperation='lighter';blit(S,e.x,e.y,ang,0.75);ctx.globalCompositeOperation='source-over';}
+  if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face,P=creaturePose(e),ex=e.x+Math.cos(e.face)*P.dx,ey=e.y+Math.sin(e.face)*P.dx;
+    let sc=P.sc;if(e.introT>0){const u=1-e.introT/2.4;sc*=0.55+0.45*Math.min(1,u*1.6);ctx.globalAlpha=Math.min(1,u*2);} // a boss rising for its entrance
+    litBlit(S,ex,ey,ang,T.shape==='wraith'?0.9:null,sc);ctx.globalAlpha=1;
+    if(e.flash>0){ctx.globalCompositeOperation='lighter';blit(S,ex,ey,ang,0.6);ctx.globalCompositeOperation='source-over';}
     if(e.frozen>0){ctx.fillStyle='rgba(150,210,255,.3)';ctx.strokeStyle='rgba(225,245,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.05,0,TAU);ctx.fill();ctx.stroke();}
     if(e.wind>0&&Math.floor(G.time*20)%2===0){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,70,30,.3)';ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.1,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over';}
     if(e.type==='boss'&&e.phase){ctx.globalAlpha=0.35+Math.sin(G.time*6)*0.15;ctx.strokeStyle=`rgb(${BOSS_LIGHT[e.kind||0]})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
