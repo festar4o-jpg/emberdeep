@@ -275,3 +275,8 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .btn.sm.on{border-color:var(--gold);color:var(--gold);box-shadow:0 0 6px rgba(201,164,64,.5);}
 .cell.pick{box-shadow:0 0 0 2px #e0503a inset,0 0 8px #e0503a;}
 .cell.pick::after{content:'✓';position:absolute;bottom:0;left:3px;font:bold 14px sans-serif;color:#ff7a5a;text-shadow:0 0 3px #000;}
+/* stash filters and touch (v1.0.51) */
+.stashf{margin:6px 0;gap:4px;justify-content:flex-start;}
+.stashf select{background:#1a1410;color:var(--text);border:1px solid #5a4a30;border-radius:6px;padding:5px 4px;font-size:12px;max-width:31%;}
+.stashf .btn.sm{padding:5px 8px;font-size:12px;}
+#stashGrid .cell,#stashBag .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;}

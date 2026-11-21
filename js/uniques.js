@@ -100,9 +100,9 @@ const TROPHY_CH=0.35,BOSS_SET_CH=0.3;
 // act/cls work like uniques: the act is also the first base tier it comes in. Sets whose full bonus is a power
 // (the stronger ones) start in act 3 or later. zone:5 = only drops while in act 5 (and from the act 5 boss).
 // act/cls work like uniques. Stat keys are affix keys, or the set-only ones in SET_STAT; {pw:key} grants a power (UPOW).
-const SET_STAT={gold:'+{v}% Gold Found',loot:'+{v}% Item Drop Chance'};
+const SET_STAT={gold:'+{v}% Gold Found',rarity:'+{v}% Item Rarity'};
 const SETS={
-  wanderer:{aura:'255,206,72',name:"Wanderer's Fortune",cls:null,act:1,items:['wfband','wfsash'],bonus:[],full:[{k:'gold',v:20},{k:'loot',v:15}]},
+  wanderer:{aura:'255,206,72',name:"Wanderer's Fortune",cls:null,act:1,items:['wfband','wfsash'],bonus:[],full:[{k:'gold',v:20},{k:'rarity',v:25}]},
   cinderguard:{aura:'255,140,40',name:'Cinderguard Vow',cls:'warden',act:3,items:['cgblade','cgseal','cgplate','cgtreads','cggrips'],
     bonus:[[2,[{k:'dmg',v:15},{k:'loh',v:4}]]],full:[{pw:'cinderCleave'}]},
   hollowking:{aura:'140,255,215',name:'Bulwark of the Hollow King',cls:'warden',act:3,items:['hkcrown','hkpendant','hkaegis'],
@@ -160,8 +160,8 @@ const SET_ITEMS={
 const inSetZone=S=>!S.zone||(!G.inTown&&G.depth>0&&actIdx(G.depth)+1===S.zone);
 const setItemsFor=(type,cls,act)=>Object.keys(SET_ITEMS).filter(k=>{const I=SET_ITEMS[k],S=SETS[I.set];return I.type===type&&S.act<=act&&(!S.cls||S.cls===cls)&&inSetZone(S);});
 // Boss trophies: every act boss can drop its own unique (and only it drops it), and has a good chance at a set piece.
-// Item Drop Chance raises both; the endless depths add 10%.
-function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1+(G.stats.loot||0)/100,plus=G.depth>25?0.1:0;
+// The endless depths add 10%. (Item Rarity doesn't change these: they are extra drops, not the rarity of a drop.)
+function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1,plus=G.depth>25?0.1:0;
   if(U&&Math.random()<Math.min(1,TROPHY_CH*mul+plus)){const it=genItem(G.depth+3,c.cls,0,U.type,3,U.wt,dropAct(G.depth),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
   if(Math.random()<Math.min(1,BOSS_SET_CH*mul+plus)){const act=dropAct(G.depth),ks=Object.keys(SET_ITEMS).filter(si=>{const S=SETS[SET_ITEMS[si].set];return S.act<=act&&(!S.cls||S.cls===c.cls)&&inSetZone(S);});
     if(ks.length)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(G.depth+3,c.cls,0,null,0,null,act,pick(ks)));}}

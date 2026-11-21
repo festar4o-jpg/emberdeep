@@ -43,13 +43,14 @@ function addMats(a,b){for(const k in b)a[k]=(a[k]||0)+b[k];return a;}
 // Act 5 gear costs Act 5 materials. Sized from a full clear of one act (5 depths), salvaging about
 // half of the drops: that pays for roughly 4 Qualities, 5 blue Enchants, 3 Reforges and 1-2 Add Sockets.
 const matCost=(it,m)=>{const mul=salvageMul(it),o={};for(const k in m)o[k]=Math.round(m[k]*mul);return o;};
+// v1.0.51: gold prices lowered about 25-30% (materials unchanged: salvage yields were raised with the drop change).
 const SMITH_OPS={
-  reforge:{name:'Reforge',desc:'Reroll every stat of a rare',cost:it=>({gold:40+it.ilvl*12,...matCost(it,{essence:4,dust:4})})},
-  enchant:{name:'Enchant',desc:'Reroll the chosen stat into a different one',cost:it=>({gold:25+it.ilvl*8,...matCost(it,{dust:5,...(it.rarity===3||it.rarity===5?{primal:1}:it.rarity===2?{essence:2}:{})})})},
-  quality:{name:'Quality',desc:'Superior: +15% base damage or armor',cost:it=>({gold:20+it.ilvl*6,...matCost(it,{scrap:8})})},
-  socket:{name:'Add Socket',desc:'Give an item without sockets one socket',cost:it=>({gold:150+it.ilvl*30,...matCost(it,{scrap:10,dust:10,essence:5})})},
-  add:{name:'Add Stat',desc:it=>it.addOpts&&it.addOpts.length?'Pick the stat you rolled (already paid)':'Roll 3 new stats, pick one to add',cost:it=>it.addOpts&&it.addOpts.length?{gold:0}:({gold:30+it.ilvl*10,...matCost(it,{dust:4,...(statCount(it)>=2?{essence:3}:{})})})},
-  remove:{name:'Remove Stat',desc:'Take off the chosen stat',cost:it=>({gold:20+it.ilvl*6,...matCost(it,{scrap:4,dust:3})})},
+  reforge:{name:'Reforge',desc:'Reroll every stat of a rare',cost:it=>({gold:30+it.ilvl*9,...matCost(it,{essence:4,dust:4})})},
+  enchant:{name:'Enchant',desc:'Reroll the chosen stat into a different one',cost:it=>({gold:20+it.ilvl*6,...matCost(it,{dust:5,...(it.rarity===3||it.rarity===5?{primal:1}:it.rarity===2?{essence:2}:{})})})},
+  quality:{name:'Quality',desc:'Superior: +15% base damage or armor',cost:it=>({gold:15+it.ilvl*4,...matCost(it,{scrap:8})})},
+  socket:{name:'Add Socket',desc:'Give an item without sockets one socket',cost:it=>({gold:100+it.ilvl*20,...matCost(it,{scrap:10,dust:10,essence:5})})},
+  add:{name:'Add Stat',desc:it=>it.addOpts&&it.addOpts.length?'Pick the stat you rolled (already paid)':'Roll 3 new stats, pick one to add',cost:it=>it.addOpts&&it.addOpts.length?{gold:0}:({gold:20+it.ilvl*7,...matCost(it,{dust:4,...(statCount(it)>=2?{essence:3}:{})})})},
+  remove:{name:'Remove Stat',desc:'Take off the chosen stat',cost:it=>({gold:15+it.ilvl*4,...matCost(it,{scrap:4,dust:3})})},
   upbase:{name:'Upgrade Base',desc:it=>it.tier>=1&&it.tier<5?`Same ${baseKindName(it)}, Tier ${TIER_NAME[it.tier-1]} → ${TIER_NAME[it.tier]}: stronger base stats`:'Raise the base one tier',cost:it=>upbaseCost(it)}
 };
 // ---------- stat crafts ----------
@@ -72,7 +73,7 @@ function chooseAdd(it,i){const o=it.addOpts&&it.addOpts[i];if(!o||statCount(it)>
   it.affs.push({k:o.k,v:o.v});delete it.addOpts;restat(it);refreshStats();saveChar();return true;}
 // ---------- Upgrade Base ----------
 // Cost of the step to the next tier; Tier IV and V need Primal Shards. A unique or set item pays 3x gold, 2x materials and 5 more Primal Shards.
-const UPBASE_STEP={2:{gold:250,scrap:15,dust:6},3:{gold:700,scrap:30,dust:12,essence:4},4:{gold:1800,scrap:50,dust:20,essence:8,primal:3},5:{gold:4500,scrap:80,dust:30,essence:12,primal:6}};
+const UPBASE_STEP={2:{gold:175,scrap:15,dust:6},3:{gold:500,scrap:30,dust:12,essence:4},4:{gold:1250,scrap:50,dust:20,essence:8,primal:3},5:{gold:3200,scrap:80,dust:30,essence:12,primal:6}};
 function upbaseCost(it){const S=UPBASE_STEP[Math.min(5,(it.tier||1)+1)],o={...S};
   if(it.rarity===3||it.rarity===5){o.gold*=3;for(const k of MAT_KEYS)if(o[k])o[k]*=2;o.primal=(o.primal||0)+5;}return o;}
 const baseKindName=it=>it.slot==='weapon'?WEAPONS[it.wt].name:it.slot==='body'?BODY[it.kind].name:it.slot==='focus'?FOCUS[it.kind].name:TYPES[it.slot].name;

@@ -49,7 +49,7 @@ function killEnemy(e){
   if(e.noLoot||e.summoned)return;
   if(e.type==='thief'){thiefLoot(e);return;}
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
-  const T=ETYPES[e.type];const c=G.char,lootMul=1+(G.stats.loot||0)/100; // Item Drop Chance (set bonus)
+  const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*G.depth*(e.elite?3:1)));
   if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+(G.depth>25?1:0);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,G.depth+L.ilvl,3,min,{act:dropAct(G.depth),top:true}));}
@@ -62,8 +62,8 @@ function killEnemy(e){
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootMul))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
-  else if(Math.random()<normalDrop(T)*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
+  else if(e.elite){if(Math.random()<Math.min(1,ELITE_DROP+(e.affs.length>=3?0.05:0)))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
+  else if(Math.random()<normalDrop(T))dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
 }
 // Item drop chances (v1.0.50): normal monsters 6.5-13% (tougher kinds more), champion/magic pack members 35%
 // (40% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,

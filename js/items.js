@@ -32,7 +32,8 @@ function baseLvl(t,ilvl){if(t===1)return Math.max(1,Math.min(ilvl,5))+Math.max(0
 const tierOfLvl=l=>Math.min(5,Math.floor((Math.max(1,l)-1)/5)+1);
 const dropAct=d=>d>25?5:actIdx(d)+1;  // the act whose tiers drop at depth d (endless drops Tier V)
 // Drops in act a: 70% Tier a, 20% Tier a-1, 10% any older tier. Bosses always drop their act's tier.
-function rollTier(a,top){if(top||a<=1)return a;const r=Math.random();if(r<0.7)return a;if(r<0.9||a===2)return a-1;return randi(1,a-2);}
+// Item Rarity also makes an older tier a little less likely: +25% turns 70% current tier into 77.5%.
+function rollTier(a,top,rar=0){if(top||a<=1)return a;const r=Math.random();if(r<0.7+0.3*Math.min(0.5,rar/100))return a;if(r<0.9||a===2)return a-1;return randi(1,a-2);}
 const TIER_NAME=['I','II','III','IV','V'];
 // Weapon archetypes. act = the act (and tier) it first drops in; bases = one name per tier from that act on.
 // dmg/spd multiply base damage and attack rate; arc/reach shape Cleave; anim picks the attack animation.
@@ -204,7 +205,9 @@ function pickDropSlot(){let r=Math.random()*DROP_TOT;for(const k of DROP_KEYS){r
 // Item rarity of a monster/boss drop (v1.0.50, Diablo 2 / PoE style): white 50%, magic 30%, rare 10%, set 5%, unique 5%.
 // boost (champions 1, super uniques and zone bosses 2, act bosses 3) moves odds from white to the better rarities.
 const DROP_RAR=[50,30,10,0,0,5],DROP_UQ=5;
-function dropRarity(boost=0){const b=Math.max(0,boost),w=[Math.max(5,DROP_RAR[0]-14*b),DROP_RAR[1]+3*b,DROP_RAR[2]+6*b,DROP_UQ+2.5*b,0,DROP_RAR[5]+2.5*b];
+// Item Rarity (rar %, the Wanderer's Fortune set bonus; like Magic Find) multiplies the weights of magic, rare, set and unique
+// against white: +25% makes every better rarity 25% more likely next to white. It never adds drops.
+function dropRarity(boost=0,rar=0){const b=Math.max(0,boost),m=1+Math.max(0,rar)/100,w=[Math.max(5,DROP_RAR[0]-14*b),(DROP_RAR[1]+3*b)*m,(DROP_RAR[2]+6*b)*m,(DROP_UQ+2.5*b)*m,0,(DROP_RAR[5]+2.5*b)*m];
   let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let i=0;i<6;i++){r-=w[i];if(r<0)return i;}return 0;}
 // Bad-luck protection: after NAMED_PITY kills without a set or unique item, the next item drop is one (c.namedSince counts kills).
 const NAMED_PITY=200;
@@ -229,7 +232,7 @@ let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
   const tier0=opt.act||tierOfLvl(ilvl);
-  const due=(c.namedSince||0)>=NAMED_PITY;let rar=dropRarity(boost);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
+  const due=(c.namedSince||0)>=NAMED_PITY;const rp=G.char===c&&G.stats?G.stats.rarity||0:0;let rar=dropRarity(boost,rp);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
   if(minRarity>=3&&rar!==3)rar=3;else if(rar<minRarity)rar=minRarity;
   // Each slot must appear within its next (PITY+1-misses) drops. Sorted by that deadline, if the j-th slot's deadline is <= j
   // there is no slack left, so the most urgent slot drops now. This forces a slot at 15 misses, and also steps in a little
@@ -243,7 +246,7 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   if(!slot)slot=pickDropSlot();
   let icls=c.cls;if(slot==='weapon'||slot==='offhand')icls=Math.random()<OWN_CLASS_CHANCE?c.cls:OTHER_CLS[c.cls];
   let type=slot==='offhand'?OFF_TYPE[icls]:slot;
-  let tier=TIERED.has(type)?(rar>=2?tier0:rollTier(tier0,opt.top)):undefined;
+  let tier=TIERED.has(type)?(rar>=2?tier0:rollTier(tier0,opt.top,rp)):undefined;
   // a set piece or unique needs a slot that has one: otherwise re-pick among those that do, by drop weight
   const has=(ty,ic,t)=>rar===3?uniquesFor(ty,ic,t).length:setItemsFor(ty,ic,t).length;
   // a forced slot (slot pity) tries the other kind first; only the set/unique guarantee may override the slot pity
@@ -409,7 +412,7 @@ function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
-  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,loot:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
+  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){

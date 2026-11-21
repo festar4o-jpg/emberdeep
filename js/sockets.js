@@ -114,7 +114,7 @@ function insertStone(it,s){const c=G.char;if(freeSockets(it)<=0||it.rarity===4||
     if(c.bag.length<30){c.equip[sl]=null;c.bag.push(it);toast(it.name+' moved to your bag',`You already wear ${o.name}`);}
     else toast('Two '+it.name+' worn',`Take one off: only one of each Runebind works`);}
   refreshStats();saveChar();return true;}
-const unsocketCost=it=>Math.round(15+it.ilvl*6);
+const unsocketCost=it=>Math.round(10+it.ilvl*4); // v1.0.51: was 15+6/ilvl
 // In town, for gold: every gem and rune goes back to the pouch (Runebinds are permanent).
 function unsocket(it){const c=G.char;if(!G.inTown||it.rb||!it.socketed||!it.socketed.length)return false;const cost=unsocketCost(it);if(c.gold<cost)return false;
   c.gold-=cost;for(const s of it.socketed)pouchAdd(c,s);it.socketed=[];refreshStats();saveChar();return true;}
@@ -183,7 +183,7 @@ function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS)
       ${kn?(S.bonus||[]).map(([n,l])=>`<div>(${n}) ${txt(l)}</div>`).join('')+(S.full&&S.full.length?`<div style="color:#3fe05a">Full set: ${txt(S.full)}</div>`:''):''}</div></div>`;}).join('');}
 // Bosses tab: what each act boss drops that nothing else does (farm them through the Waystone).
 function renderBossBook(){const c=G.char;
-  $('bookSub').textContent=`Every act boss can drop its own trophy unique (${Math.round(TROPHY_CH*100)}%) and a set piece (${Math.round(BOSS_SET_CH*100)}%), on top of its usual loot. Item Drop Chance raises both; the Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
+  $('bookSub').textContent=`Every act boss can drop its own trophy unique (${Math.round(TROPHY_CH*100)}%) and a set piece (${Math.round(BOSS_SET_CH*100)}%), on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
   $('bookList').innerHTML=BOSS_UQ.map((k,a)=>{const U=UNIQUES[k],A=ACTS[a],reached=c&&(c.maxDepth||1)>=a*5+5;
     const sets=Object.keys(SETS).filter(s=>SETS[s].act<=a+1&&(!SETS[s].cls||!c||SETS[s].cls===c.cls)).map(s=>SETS[s].name);
     return `<div class="slot rb${reached?'':' unk'}"><div class="info"><b style="color:${A.col}">${esc(A.boss)}</b> <span class="fdim">Act ${a+1} · depth ${a+1}-5${reached?'':' · not reached yet'}</span>

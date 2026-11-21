@@ -141,7 +141,7 @@ function renderInv(){
   [...$('eqgrid').children].forEach((el,i)=>el.onclick=()=>{const sl=EQ_SLOTS[i],it=c.equip[sl];if(sl==='offhand'&&twoH){toast('Off Hand blocked','Your two-handed weapon needs both hands');return;}if(it)openItem(it,sl);});
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
   const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*100);
-  $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],s.loot?[['Item Drops','+'+Math.round(s.loot)+'%']]:[],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
+  $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],[['Item Rarity','+'+Math.round(s.rarity||0)+'%']],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('goldv').textContent=c.gold;$('bagCount').textContent=`${c.bag.length}/30`;
   const cells=[];for(let i=0;i<Math.max(30,c.bag.length);i++)cells.push(cellHtml(c.bag[i]));$('bag').innerHTML=cells.join('');
   [...$('bag').children].forEach((el,i)=>el.onclick=()=>{if(c.bag[i])openItem(c.bag[i],false);});
@@ -155,7 +155,9 @@ function setCell(c,sl){const it=c.equip[sl],g=it?setGlow(it,c):'',h=cellHtml(it,
 const SALV_GOLD=1.5;
 function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)*SALV_GOLD+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
 // Upgrades are cheaper than before (they no longer touch affixes): x1.45 per level.
-function upgradeCost(it,lv){return Math.round((20+it.ilvl*8)*Math.pow(1.45,lv??(it.upg||0)));}
+// v1.0.51: upgrades cost 30% less (x0.7), so normal play pays for about one weapon and one armor upgrade per zone.
+const UPG_PRICE=0.7;
+function upgradeCost(it,lv){return Math.round((20+it.ilvl*8)*Math.pow(1.45,lv??(it.upg||0))*UPG_PRICE);}
 const upgradeSpent=it=>{let g=0;for(let k=0;k<(it.upg||0);k++)g+=upgradeCost(it,k);return g;};
 tap('salvAll',()=>{const c=G.char;let g=0,n=0;const got={};c.bag=c.bag.filter(it=>{if(it.rarity<=1&&!it.sockets&&it.slot!=='charm'&&!it.lock){g+=salvageValue(it);addMats(got,grantSalvage(c,it));n++;return false;}return true;}); /* locked items, socketed bases and charms are kept */c.gold+=g;if(n)toast(`Salvaged ${n} items`,`+${g} gold ${matText(got)}`);renderInv();saveChar();});
 tap('invClose',toggleInv);
@@ -205,7 +207,7 @@ function openItem(it,equipped,price){
     $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
     $('iBuy').onclick=()=>buyItem(it,price);$('iClose').onclick=closeItem;return;}
   const cost=upgradeCost(it);
-  const eqOk=sl=>(is2h(it)||slotOpen(c.equip,sl))&&clashFree(c,it,sl);
+  const eqOk=sl=>canEquipIn(c,it,sl);
   // already wearing the same unique / Runebind: name it, and say how to choose which one to keep
   const clash=!equipped&&fits.length?pwClash(c,it):null;
   if(clash){const o=c.equip[clash],swap=fits.includes(clash);
@@ -221,10 +223,7 @@ function openItem(it,equipped,price){
   $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
   const after=()=>{refreshStats();renderInv();saveChar();};
   if(equipped)$('iUnequip').onclick=()=>{if(c.bag.length>=30){toast('Bag is full');return;}c.equip[equipped]=null;c.bag.push(it);closeItem();after();};
-  else{$('itemPanel').querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{const sl=b.dataset.eq,cur=c.equip[sl];if(!eqOk(sl))return;
-      const drop=sl==='mainhand'&&is2h(it)?c.equip.offhand:null; // a two-hander frees the off hand
-      if(c.bag.length-1+(cur?1:0)+(drop?1:0)>30){toast('Bag is full','Make room for your Off Hand item');return;}
-      c.bag.splice(c.bag.indexOf(it),1);if(cur)c.bag.push(cur);if(drop){c.bag.push(drop);c.equip.offhand=null;}c.equip[sl]=it;closeItem();after();});
+  else{$('itemPanel').querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{const sl=b.dataset.eq;if(!eqOk(sl))return;if(equipFromBag(c,it,sl)){closeItem();after();}});
     $('iSalv').onclick=()=>{const r=salvageItem(c,it);if(!r)return;toast('Salvaged',`+${r.gold} gold ${matText(r.mats)}`);closeItem();after();};}
   $('iLock').onclick=()=>{toggleLock(it);renderInv();openItem(it,equipped);};
   if($('iSock'))$('iSock').onclick=()=>{closeItem();openPouch({it,eq:equipped});};
@@ -232,13 +231,18 @@ function openItem(it,equipped,price){
   $('iUpg').onclick=()=>{if((it.upg||0)>=10||c.gold<cost)return;c.gold-=cost;it.upg=(it.upg||0)+1;after();openItem(it,equipped);};
   $('iClose').onclick=closeItem;
 }
+const canEquipIn=(c,it,sl)=>(is2h(it)||slotOpen(c.equip,sl))&&clashFree(c,it,sl);
+// Wears a bag item in slot sl; what it replaces (and the off hand, for a two-hander) goes to the bag. False if the bag can't hold them.
+function equipFromBag(c,it,sl){const cur=c.equip[sl],drop=sl==='mainhand'&&is2h(it)?c.equip.offhand:null;
+  if(c.bag.length-1+(cur?1:0)+(drop?1:0)>30){toast('Bag is full','Make room for your Off Hand item');return false;}
+  c.bag.splice(c.bag.indexOf(it),1);if(cur)c.bag.push(cur);if(drop){c.bag.push(drop);c.equip.offhand=null;}c.equip[sl]=it;return true;}
 function closeItem(){$('itemOv').classList.add('hidden');setPause();}
 
 // ---------- merchant ----------
-function potionPrice(){return 20+G.depth*4;}
+function potionPrice(){return 15+G.depth*3;} // v1.0.51: was 20+4/depth
 function rollShop(d){
   const c=G.char,out=[];
-  for(const t of typesFor(c.cls).sort(()=>Math.random()-0.5).slice(0,8)){const it=genItem(d,c.cls,1,t,1);out.push({it,price:Math.round(salvageValue(it)*(4/SALV_GOLD)*rand(0.9,1.1))});}
+  for(const t of typesFor(c.cls).sort(()=>Math.random()-0.5).slice(0,8)){const it=genItem(d,c.cls,1,t,1);out.push({it,price:Math.round(salvageValue(it)*(3/SALV_GOLD)*rand(0.9,1.1))});}
   return out.sort((a,b)=>TYPE_KEYS.indexOf(a.it.slot)-TYPE_KEYS.indexOf(b.it.slot)||a.it.rarity-b.it.rarity);
 }
 function openShop(){if(!G.char||G.paused||!G.inTown)return;$('shopOv').classList.remove('hidden');renderShop();setPause();}
