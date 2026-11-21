@@ -14,7 +14,7 @@ function renderWay(){const M=wayMax(),cur=G.depth;
   for(let a=0;a<5;a++){const first=a*5+1;
     h+=`<div class="wayrow"><div class="wayn" style="color:${ACTS[a].col}">${roman(a+1)} · ${esc(ACTS[a].name)}</div><div class="wayb">`+
       `<div class="btn sm${first<=M?'':' dis'}" data-town="${first}">🏠 ${esc(TOWNS[a].name)}</div>`;
-    if(a===0){const c=G.char;for(const z of ACT1_MAIN.concat(ACT1_SIDE)){const Z=ZONES[z],on=z==='a1z5'?M>=5:hasWp(c,z);h+=`<div class="btn sm${on?'':' dis'}${G.zone===z?' here':''}" data-z="${z}">${Z.parent?'↪ ':''}${esc(Z.name)}${z==='a1z5'?' 💀':''}</div>`;}}
+    const AZ=actZones(a+1);if(AZ.length){const c=G.char;for(const z of AZ.concat(actSides(a+1))){const Z=ZONES[z],boss=Z.layout==='boss',on=boss?M>=Z.depth:hasWp(c,z);h+=`<div class="btn sm${on?'':' dis'}${G.zone===z?' here':''}" data-z="${z}">${Z.parent?'↪ ':''}${esc(Z.name)}${boss?' 💀':''}</div>`;}}
     else for(let s=1;s<=5;s++){const d=first+s-1;h+=`<div class="btn sm${d<=M?'':' dis'}${d===cur?' here':''}" data-d="${d}">${s}${s===5?' 💀':''}</div>`;}
     h+='</div></div>';}
   if(M>25){wayEnd=clamp(wayEnd||M,26,M);const d=wayEnd;
@@ -26,15 +26,15 @@ function renderWay(){const M=wayMax(),cur=G.depth;
   $('wayList').innerHTML=h;
   $('wayModes').querySelectorAll('[data-m]').forEach(el=>el.onclick=()=>setWayMode(el.dataset.m));
   $('wayList').querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.d,false));
-  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();startZone(z,z==='a1z5'?wayMode:'fresh');});
+  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();startZone(z,ZONES[z].layout==='boss'?wayMode:'fresh');});
   $('wayList').querySelectorAll('[data-town]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.town,true));
   $('wayList').querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>{wayEnd=clamp(wayEnd+ +el.dataset.e,26,M);renderWay();});}
 // Travel. Returns false for a depth this hero hasn't reached.
 function wayGo(d,town){if(!G.char||d<1||d>wayMax())return false;closeWay();
   if(town){if(!(G.inTown&&actIdx(d)===actIdx(G.depth)&&cycleOf(d)===cycleOf(G.depth)))startTown(d);return true;}
   startDepth(d,d%5===0?wayMode:'all');return true;}
-// From the pause menu, anywhere in the dungeon: back to this act's town; the depth you left is rebuilt when you return.
-function returnToTown(){if(!G.char||G.inTown)return;$('menuOv').classList.add('hidden');startTown(G.depth);}
+// From the pause menu, anywhere outside a boss fight: back to this act's town (zones are kept for the return portal).
+function returnToTown(){if(!G.char||G.inTown)return;$('menuOv').classList.add('hidden');if(bossFightOn()){setPause();toast('No portal now','Not during a boss fight');return;}openPortal();} /* portal.js: same as a portal, without the cast */
 tap('wayBtn',openWay);
 tap('wayClose',closeWay);
 tap('townBtn',returnToTown);

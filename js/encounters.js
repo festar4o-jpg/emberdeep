@@ -138,7 +138,7 @@ function encounterTick(dt){const p=G.p,b=p.shr;
   for(const f of G.feats)if(f.kind==='chest')chestTick(f,dt);
   G.nearFeat=p.dead||G.inTown?null:nearFeat();
   zoneTick(dt);elderTick();
-  const lbl=G.inTown&&G.elderNear?'📜 Elder Maren':G.nearFeat?G.nearFeat.use?G.nearFeat.label:(G.nearFeat.kind==='shrine'?'✦ '+SHRINES[G.nearFeat.type].name:'☠ Open Cursed Chest'):'';
+  const lbl=G.inTown&&G.elderNear?'📜 '+G.elder.who.name:G.nearFeat?G.nearFeat.use?G.nearFeat.label:(G.nearFeat.kind==='shrine'?'✦ '+SHRINES[G.nearFeat.type].name:'☠ Open Cursed Chest'):'';
   if(lbl!==useLabel){useLabel=lbl;$('useBtn').textContent=lbl;$('useBtn').classList.toggle('hidden',!lbl);}
 }
 tap('useBtn',useFeature);

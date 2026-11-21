@@ -90,7 +90,8 @@ $('potBtn').addEventListener('touchstart',ev=>{ev.preventDefault();usePotion();}
 $('dodgeBtn').addEventListener('touchstart',ev=>{ev.preventDefault();tryDodge();},{passive:false});$('dodgeBtn').addEventListener('mousedown',()=>tryDodge());
 tap('descBtn',descend);
 function descend(){if(G.paused)return;if(G.zone&&!G.inTown)return zoneDescend(); /* zones.js */
-  if(!G.portal.active)return;if(G.inTown){if(zoneOfDepth(G.depth)&&G.char.zone&&ZONES[G.char.zone])startZone(G.char.zone);else startDepth(G.depth);}else startTown(G.depth+1);}
+  if(G.inTown&&G.atTp)return takePortalBack(); /* portal.js */
+  if(!G.portal.active)return;if(G.inTown){const z=townGateZone();if(z)startZone(z);else startDepth(G.depth);}else startTown(G.depth+1);}
 tap('shopBtn',openShop);
 tap('bagBtn',toggleInv);tap('skBtn',toggleSkills);tap('menuBtn',toggleMenu);
 tap('resumeBtn',toggleMenu);
@@ -101,7 +102,10 @@ function showVictory(){const c=G.char;
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
-tap('respawnBtn',()=>{$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);if(G.zone)startZone(G.zone,'respawn');else startDepth(G.depth);});
+// Rise again: in a zone, inside the same instance (portal.js); on boss arenas and depth levels, the level is rebuilt.
+function respawnHero(){$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);
+  if(G.zone&&ZONES[G.zone].layout!=='boss')zoneRespawn();else if(G.zone)startZone(G.zone,'respawn');else startDepth(G.depth);}
+tap('respawnBtn',respawnHero);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});
 function anyPanel(){return ['questOv','invOv','skOv','menuOv','itemOv','deathOv','shopOv','stashOv','smithOv','wayOv','smithAsk','pouchOv','bookOv','actOv','winOv'].some(i=>!$(i).classList.contains('hidden'));}
 function setPause(){const panel=anyPanel();G.paused=panel||!G.char;for(let i=0;i<5;i++)held[i]=false;if(panel)G.texts=[];}

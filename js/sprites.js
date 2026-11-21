@@ -192,7 +192,7 @@ function painterFor(e,T){if(e.type==='boss')return BOSS_PAINT[e.kind||0];if(e.ty
 function animFrame(o,stride){const dx=o.x-(o._ax??o.x),dy=o.y-(o._ay??o.y);o._ax=o.x;o._ay=o.y;o._ap=((o._ap||0)+Math.hypot(dx,dy)/stride)%SPR_F;return o._ap|0;}
 function creatureSprite(e,T){const P=painterFor(e,T);if(!P)return null;const r=Math.round(e.r),f=T.shape==='shard'?0:T.shape==='imp'||T.shape==='wraith'||T.shape==='vine'||e.type==='boss'&&e.kind===2?((G.time*(T.shape==='imp'?14:4)+e.seed)|0)%SPR_F:animFrame(e,Math.max(8,r*0.7));
   const rr=e.type==='boss'?Math.round(r*BOSS_SCALE):r; // bosses are drawn much bigger than their footprint
-  return sprite(`${e.type}|${e.kind||0}|${rr}|${f}`,rr*(T.shape==='worm'?3.3:2.25),x=>P(x,rr,f));}
+  return sprite(`${e.type}|${e.kind||0}|${rr}|${f}`,rr*(T.shape==='worm'||e.zb&&ZBOSS[e.zb].wide?3.3:2.25),x=>P(x,rr,f));} /* zones.js: worm-shaped zone bosses need the room */
 // ---------- hero, layered by what is worn ----------
 // Boots, cape or cloak, the body armour kind (none / robe / leather / chain / plate, tinted by its tier: steel,
 // then frost-blue at Tier IV and blackened red at Tier V), pauldrons and straps, then the head: a helm if one is worn.

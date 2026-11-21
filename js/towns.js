@@ -55,7 +55,7 @@ function genTown(){
   lights.push({x:G.waystone.x,y:G.waystone.y-20,r:90,way:1});
   lights.push({x:R.cx*TILE,y:R.cy*TILE,r:T.amb==='snow'||T.amb==='embers'?170:110,big:1});
   // props inside the plaza: around the edges, never near the stalls, the paths or the portal, and never cutting the plaza in two
-  const keep=[[R.x+0.5,R.cy+0.5,2.6],[R.x+R.w-2.5,R.cy+0.5,3],[R.cx,R.y+3,4],[R.x+4,R.y+3.5,2.4],[R.cx+0.5,R.y+R.h-2.5,3],[R.cx,R.cy,3.2],[R.x+R.w-5,R.y+R.h-3,2.4],...doors];
+  const keep=[[R.x+0.5,R.cy+0.5,2.6],[R.x+R.w-2.5,R.cy+0.5,3],[R.cx,R.y+3,4],[R.x+4,R.y+3.5,2.4],[R.cx+0.5,R.y+R.h-2.5,3],[R.cx,R.cy,3.2],[R.x+R.w-5,R.y+R.h-3,2.4],[R.x+4,R.y+6.5,2.4] /* portal.js: the return portal */,...doors];
   const free=(i,j)=>g[k(i,j)]===0&&!keep.some(([x,y,r])=>Math.hypot(i+0.5-x,j+0.5-y)<r);
   const floorN=()=>{let n=0;for(const v of g)if(v===0)n++;return n;};
   const reach=()=>{const s=k(R.x+1,R.cy),seen=new Uint8Array(MW*MH),q=[s];seen[s]=1;let n=1;

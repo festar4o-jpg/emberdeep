@@ -319,7 +319,7 @@ const THEMES={};
         if(!ok)continue;taken.add(j*MW+i);const cx=i*TILE+20+rand(-5,5),cy=j*TILE+(P[2]?26:20)+rand(-5,5);
         if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c);}}};
   // Floor detail across many tiles: roots in the marsh, wind ripples in the sand, long cracks in stone.
-  THEMES._floorDetail=(x,gen,at)=>{const N=gen==='marsh'?60:gen==='desert'?50:35;
+  THEMES._floorDetail=(x,gen,at)=>{gen=THEMES[gen]&&THEMES[gen].detail||gen;const N=gen==='marsh'?60:gen==='desert'?50:35;
     for(let k=0;k<N;k++){const i=randi(1,MW-2),j=randi(1,MH-2);if(at(i,j)!==0)continue;let px=i*TILE+rand(0,TILE),py=j*TILE+rand(0,TILE),a=rand(0,TAU);
       if(gen==='marsh'){x.strokeStyle='rgba(30,22,12,.85)';for(let b=0;b<3;b++){let qx=px,qy=py,aa=a+b*2.1,w=3;x.lineCap='round';for(let s=0;s<6;s++){aa+=rand(-0.5,0.5);const nx=qx+Math.cos(aa)*12,ny=qy+Math.sin(aa)*12;if(at(Math.floor(nx/TILE),Math.floor(ny/TILE))!==0)break;x.lineWidth=w;x.beginPath();x.moveTo(qx,qy);x.lineTo(nx,ny);x.stroke();
           x.strokeStyle='rgba(120,100,70,.18)';x.lineWidth=w*0.35;x.stroke();x.strokeStyle='rgba(30,22,12,.85)';qx=nx;qy=ny;w*=0.82;}}x.lineCap='butt';}
@@ -327,18 +327,19 @@ const THEMES={};
       else{const col=gen==='ember'?'rgba(255,90,20,.5)':gen==='citadel'?'rgba(200,235,255,.15)':'rgba(0,0,0,.45)';x.strokeStyle=col;x.lineWidth=1.2;x.beginPath();x.moveTo(px,py);for(let s=0;s<7;s++){a+=rand(-0.6,0.6);px+=Math.cos(a)*rand(6,12);py+=Math.sin(a)*rand(6,12);if(at(Math.floor(px/TILE),Math.floor(py/TILE))!==0)break;x.lineTo(px,py);}x.stroke();}}};
   // Walls with depth: the rim of a wall's top lit where it meets open floor, a darker inner top, and a soft
   // shadow down the side faces; drawn over the themes' own walls.
-  THEMES._wallDepth=(x,gen,at)=>{if(['desert','marsh','a1fields','a1moor','a1gully','a1ossuary'].includes(gen))return;const lit=gen==='citadel'?'rgba(225,240,255,.22)':gen==='ember'?'rgba(255,110,40,.18)':'rgba(220,210,190,.14)';
+  THEMES._wallDepth=(x,gen,at)=>{if(THEMES[gen]&&THEMES[gen].flat)return;gen=THEMES[gen]&&THEMES[gen].detail||gen;if(['desert','marsh','a1fields','a1moor','a1gully','a1ossuary'].includes(gen))return;const lit=gen==='citadel'?'rgba(225,240,255,.22)':gen==='ember'?'rgba(255,110,40,.18)':'rgba(220,210,190,.14)';
     for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){if(at(i,j)!==1)continue;const px=i*TILE,py=j*TILE,n=at(i,j-1)!==1,s=at(i,j+1)!==1,w=at(i-1,j)!==1,e=at(i+1,j)!==1;if(!(n||s||w||e))continue;
       const top=s?TILE-15:TILE; // the face (if any) is the bottom 15px
       x.fillStyle='rgba(255,255,255,.025)';x.fillRect(px+3,py+3,TILE-6,top-6);
       x.fillStyle=lit;if(s)x.fillRect(px,py+top-2,TILE,2);if(n)x.fillRect(px,py,TILE,2);if(w)x.fillRect(px,py,2,top);if(e)x.fillRect(px+TILE-2,py,2,top);
       if(w){x.fillStyle=lin(x,px,0,px+8,0,'rgba(0,0,0,.45)','rgba(0,0,0,0)');x.fillRect(px-8,py,8,TILE);}if(e){x.fillStyle=lin(x,px+TILE+8,0,px+TILE,0,'rgba(0,0,0,.45)','rgba(0,0,0,0)');x.fillRect(px+TILE,py,8,TILE);}}};
+  THEMES._h={glow,dot,crack,face,slabs,stone,treeWall,rockWall,PR,PROP_SET,PROP_COL,shade,lin}; // acts.js builds the zone themes of Acts 2-5 from these
 }
 // Light sources baked with the map (light.js lights them every frame): {x, y, r, i, rgb, g, fl: flickers, torch: draw a flame}.
 function addLight(x,y,r,i,rgb,g,fl,torch){(G.lights||(G.lights=[])).push({x,y,r,i,rgb,g,fl:!!fl,torch:!!torch});}
 // Wall torches along wall faces in the dungeon, at least 6 tiles apart: iron sconces in stone, wooden stakes in rock and brush.
 const TORCH_RGB={a1fields:'255,170,90',a1gully:'255,170,90',a1ossuary:'255,160,80',a1moor:'255,180,100',crypt:'255,165,85',desert:'255,180,100',marsh:'245,195,105',citadel:'255,160,80',ember:'255,110,40'};
-function placeTorches(x,gen,at,adjFloor){const rgb=TORCH_RGB[gen];if(!rgb)return;const C=[],picked=[];
+function placeTorches(x,gen,at,adjFloor){const TH=THEMES[gen]||{},rgb=TH.torch||TORCH_RGB[gen];if(!rgb||TH.torch===null)return;gen=TH.detail||gen;const C=[],picked=[];
   for(let j=1;j<MH-1;j++)for(let i=1;i<MW-1;i++)if(at(i,j)===1&&at(i,j+1)===0&&adjFloor(i,j))C.push([i,j]);
   C.sort(()=>Math.random()-0.5);
   for(const [i,j] of C){if(picked.length>=46)break;if(picked.some(([a,b])=>Math.max(Math.abs(a-i),Math.abs(b-j))<6))continue;picked.push([i,j]);
@@ -383,12 +384,12 @@ function wearMap(x,at){const W=MW*TILE,H=MH*TILE,A=aoStrips();
 // Pull the colour toward earthy, muted tones: drain some saturation, then a faint tone wash. [desaturate, tone]
 // Each act has its own grade: sickly green crypt ruins, warm dusty desert, cold blue swamp, pale frozen steel, scorched red core.
 const GRADE={a1fields:[0.42,'#c8d0b4'],a1gully:[0.4,'#d0ccb8'],a1ossuary:[0.42,'#c8ccb8'],a1moor:[0.4,'#ccd0b4'],crypt:[0.42,'#c8d0b4'],desert:[0.3,'#ecd2a4'],marsh:[0.4,'#b4c4cc'],citadel:[0.38,'#c4d0e0'],ember:[0.25,'#e4bcac'],town:[0.22,'#ecd8bc']};
-function gradeMap(x,k){const [d,tone]=GRADE[k]||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
+function gradeMap(x,k){const [d,tone]=GRADE[k]||THEMES[k]&&THEMES[k].grade||GRADE.town,W=MW*TILE,H=MH*TILE;x.save();
   x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,W,H);
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
 // Painting uses its own random numbers (seeded by one draw), so art changes never shift gameplay randomness.
 const artRng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-function renderMap(){const R0=Math.random;Math.random=artRng(R0()*4294967296|0);try{paintMap();}finally{Math.random=R0;}}
+function renderMap(seed){const R0=Math.random;G.artSeed=seed??(R0()*4294967296|0);Math.random=artRng(G.artSeed); /* the seed is kept: portal.js repaints a kept zone the same */try{paintMap();}finally{Math.random=R0;}}
 function paintMap(){
   G.lights=[];G.splats=[];sprClear(); // new map, new creatures: drop the old sprites
   const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');

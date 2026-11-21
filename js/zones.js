@@ -1,11 +1,11 @@
 'use strict';
-// Acts as chains of named zones (PoE2 style), built for Act 1 first: town → 4 zones → the act boss's own zone, plus 2
+// Acts as chains of named zones (PoE2 style). Act 1 is defined here, Acts 2-5 in acts.js. Each act: town → 4 zones → the act boss's own zone, plus 2
 // optional side zones. Each zone has one layout style (fields, canyon, caves, ruins, roads), freshly randomised on
 // every visit; a zone boss; 1-2 named champions ("super uniques"); points of interest (shrines, a hidden chest, an
 // event, a waypoint); and a locked exit that opens on an objective (kill the zone boss, find the key, light the seals).
 // Town quests per act give skill points, potion charges and uniques.
 // Scaling still runs on the depth number: Act 1 zone n is depth n (side zones use their parent's), so monster levels,
-// loot tiers and area levels rise zone by zone. Acts 2-5 still use the older depth chain until they are rebuilt.
+// loot tiers and area levels rise zone by zone. Endless depths (26+) keep the older depth chain.
 // Character state: c.zone (last zone), c.wps (unlocked waypoints), c.zst[zone] ({boss, key, seals}), c.q[quest].
 const ZONES={
   a1z1:{act:1,depth:1,name:'The Mourning Fields',sub:'Gravewatch buries here the dead it cannot name',layout:'fields',theme:'a1fields',
@@ -23,12 +23,15 @@ const ZONES={
     gate:'none',boss:'wight',su:['pell'],density:1.3,hoard:1}
 };
 const ACT1_MAIN=['a1z1','a1z2','a1z3','a1z4','a1z5'],ACT1_SIDE=['a1s2','a1s1'];
-const zoneOfDepth=d=>d>=1&&d<=5?ACT1_MAIN[d-1]:null;
+// An act's chain (main zones by depth) and its side zones; acts.js adds Acts 2-5. Acts without zones keep the depth chain.
+const actZones=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&!ZONES[z].parent).sort((x,y)=>ZONES[x].depth-ZONES[y].depth);
+const actSides=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&ZONES[z].parent);
+const zoneOfDepth=d=>d>=1&&d<=25?actZones(actIdx(d)+1)[stageOf(d)-1]||null:null;
 const zst=(c,z)=>{const S=c.zst||(c.zst={});return S[z]||(S[z]={});};
 const hasWp=(c,z)=>(c.wps||[]).includes(z);
 // Old saves: zones up to the deepest depth reached count as waypointed.
 function migrateZones(c){if(!Array.isArray(c.wps))c.wps=[];if(!c.zst||typeof c.zst!=='object')c.zst={};if(!c.q||typeof c.q!=='object')c.q={};
-  for(let d=1;d<=Math.min(5,c.maxDepth||1);d++)if(d<(c.maxDepth||1)&&!c.wps.includes(ACT1_MAIN[d-1]))c.wps.push(ACT1_MAIN[d-1]);}
+  for(let d=1;d<Math.min(26,c.maxDepth||1);d++){const z=zoneOfDepth(d);if(z&&!c.wps.includes(z))c.wps.push(z);}}
 // ---------- zone bosses and champions ----------
 // Zone bosses: a base look, life x hp, damage x dmg, and 2 mechanics (ZB_MOVES) on top of a heavy melee swing.
 const ZBOSS={
@@ -52,7 +55,7 @@ ETYPES.nest={name:'Monster Nest',r:24,hp:70,dmg:0,spd:0,range:0,cd:4,xp:30,col:'
 function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);
   e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;return e;}
 function makeSuper(id,x,y,depth,pack){const S=SUPERU[id],e=makeEnemy(S.base,x,y,depth,true,pack,S.affs.slice());
-  e.su=id;e.name=S.name;e.hp=e.maxHp=e.maxHp*2.2;e.dmg*=1.15;e.r+=2;return e;}
+  e.su=id;e.name=S.name;e.hp=e.maxHp=e.maxHp*(S.hp||2.2);e.dmg*=1.15;e.r+=2;return e;}
 // Zone boss mechanics: telegraphed with the same red/orange markers as act bosses.
 const ZB_MOVES={
   coffin(e){const a=Math.atan2(G.p.y-e.y,G.p.x-e.x);e.busy=1.1;lineStrike(e,e.x,e.y,a,330,52,0.95,e.dmg*2.2,'#c8a878');},
@@ -138,32 +141,22 @@ const LAYOUT={
     for(let k=0;k<pts.length;k+=10)regs.push(regionAt(pts[k][0],pts[k][1]));
     keepConnected();const start=regionAt(pts[0][0]+1,pts[0][1]),exit=regionAt(pts[pts.length-1][0],pts[pts.length-1][1]);return finishLayout([start,...regs,exit],start,exit);}
 };
-// ---------- zone instances ----------
-// The zone you step out of (through a side passage, or to town) is kept as you left it: layout, monsters, loot,
-// objectives. Coming back through the town portal or the side passage within 15 minutes restores it, like a PoE
-// instance; waypoint travel and a death (respawn) build it fresh.
-let ZCACHE=null;
-function saveInstance(){if(!G.zone||G.inTown||!G.grid)return;ZCACHE={zid:G.zone,t:Date.now(),grid:G.grid,terrain:G.terrain,road:G.road,rooms:G.rooms,portal:G.portal,side:G.sidePortal,enemies:G.enemies,zboss:G.zboss,
-  feats:G.feats,loot:G.loot,explored:G.explored,mapCv:G.mapCv,lights:G.lights,theme:G.zoneTheme,splats:G.splats,px:G.p.x,py:G.p.y};}
-function restoreInstance(zid,mode){const C=ZCACHE;if(!C||C.zid!==zid||(mode!==undefined&&mode!=='back')||Date.now()-C.t>15*60e3)return false;ZCACHE=null; /* town portal and side passages only: waypoints, respawns and next-zone walks build fresh */
-  Object.assign(G,{grid:C.grid,terrain:C.terrain,road:C.road,rooms:C.rooms,portal:C.portal,sidePortal:C.side,enemies:C.enemies,zboss:C.zboss,feats:C.feats,loot:C.loot,explored:C.explored,mapCv:C.mapCv,lights:C.lights,zoneTheme:C.theme,splats:C.splats||[]});
-  G.boss=null;for(const e of G.enemies)if(!e.dead){e.aggro=false;e.wind=0;e.busy=0;}
-  const at=mode==='back'&&C.side?{x:C.side.x,y:C.side.y+60}:{x:C.px,y:C.py};G.p.x=at.x;G.p.y=at.y;if(blockedAt(G.p.x,G.p.y,G.p.r)){G.p.x=C.px;G.p.y=C.py;}
-  G.flow=new Int16Array(MW*MH);G.flowTile=-1;return true;}
 // ---------- building a zone ----------
 function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZones(c);
   G.zone=zid;G.depth=Z.depth;c.depth=Z.depth;c.zone=zid;c.maxDepth=Math.max(c.maxDepth||1,Z.depth);
-  resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&mode&&mode!=='side'?mode:'all';
+  resetArea();G.inTown=false;c.town=0;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&(mode==='boss'||mode==='noboss')?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
-  if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;}else if(!restoreInstance(zid,mode))genZone(Z,mode);
+  if(!restoreInstance(zid,mode)){ /* portal.js: kept instances; waypoint travel elsewhere throws them away */
+    if(mode==='fresh'||mode==='all'||mode==='boss'||mode==='noboss')clearInstances();
+    if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;G.zStart={x:p.x,y:p.y};}else genZone(Z,mode);}
   G.cam.x=p.x;G.cam.y=p.y;
-  const newAct=Z.depth===1&&!Z.parent&&(c.actSeen||0)<1;if(newAct)c.actSeen=1;
-  saveChar();setPause();if(newAct)showActTitle(1);else toast(Z.name,Z.sub);}
+  const d0=(Z.act-1)*5+1,newAct=Z.depth===d0&&!Z.parent&&(c.actSeen||0)<d0;if(newAct)c.actSeen=d0;
+  saveChar();setPause();if(newAct)showActTitle(d0);else toast(Z.name,Z.sub);}
 function gateOpen(zid){const Z=ZONES[zid],S=zst(G.char,zid);return Z.gate==='none'||Z.gate==='boss'&&S.boss||Z.gate==='key'&&S.key||Z.gate==='seals'&&S.seals>=3;}
 function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   for(let t=0;t<8&&!L;t++)L=LAYOUT[Z.layout](Z);
   if(!L){for(let t=0;t<5&&!L;t++)L=finishLayout(GEN.crypt(Z.depth),null,null);} // safety net
-  G.zoneTheme=Z.theme;G.rooms=L.regions;const tile=r=>({x:(r.cx+0.5)*TILE,y:(r.cy+0.5)*TILE});
+  G.zoneTheme=Z.theme;G.rooms=L.regions;const tile=r=>({x:(r.cx+0.5)*TILE,y:(r.cy+0.5)*TILE});G.zStart=tile(L.start);
   const ex=tile(L.exit);G.portal={x:ex.x,y:ex.y,active:gateOpen(zid),zone:true};
   G.sidePortal=null;const sideTo=Z.side||Z.parent;if(Z.side&&L.side){const s=tile(L.side);G.sidePortal={x:s.x,y:s.y,active:true,to:Z.side};}
   G.enemies=[];G.boss=null;G.zboss=null;let packId=0;const depth=Z.depth,D=L.dist,far=r=>D[r.cy*MW+r.cx]>14;
@@ -171,7 +164,8 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   const spot=r=>{for(let k=0;k<30;k++){const x=(r.x+rand(1,r.w-1))*TILE,y=(r.y+rand(1,r.h-1))*TILE;if(safe(x,y,26))return {x,y};}return tile(r);};
   const used=new Set([L.start,L.exit]);if(L.side)used.add(L.side);
   // packs: more and denser deeper into the act
-  for(const r of L.regions){if(!far(r)||r===L.start)continue;const n=Math.max(1,Math.round((Math.random()<0.5?1:2)*Z.density));
+  const crowd=Z.act>1?Math.min(1,(Z.crowd||13)/L.regions.length):1; /* Acts 2-5: layouts with many small regions don't get more monsters for it (Act 1 is tuned as is) */
+  for(const r of L.regions){if(!far(r)||r===L.start)continue;let n;if(crowd===1&&Z.act===1)n=Math.max(1,Math.round((Math.random()<0.5?1:2)*Z.density));else{const v=(Math.random()<0.5?1:2)*Z.density*crowd;n=Math.floor(v)+(Math.random()<v%1?1:0);}
     for(let k=0;k<n;k++){const id=++packId,elite=Math.random()<(Z.elite??0.2),affs=elite?rollAffixes(depth):null,c=spot(r);
       rollPack(depth,elite).forEach((type,m)=>{let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(!safe(x,y,ETYPES[type].r)){x=c.x;y=c.y;}G.enemies.push(makeEnemy(type,x,y,depth,elite&&m<4,id,affs));});}}
   const freeRegs=()=>shuffle(L.regions.filter(r=>!used.has(r)&&far(r)));
@@ -205,16 +199,18 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   G.explored=new Uint8Array(MW*MH);G.flow=new Int16Array(MW*MH);G.flowTile=-1;
   renderMap();}
 // ---------- zone features ----------
+// Captives to free (Z.captive): what they are called, what they say, the quest they finish.
+const CAPTIVES={pilgrim:{name:'Captive Pilgrim',who:'Pilgrim',free:'The pilgrim is free!',say:'"Bless you. Tell Elder Maren I live."',quest:'a1q2'}};
 const FEAT_LABEL={wp:'🌀 Waypoint',hchest:'Open the hidden chest',seal:'✦ Light the seal',captive:'Free the captive',key:''};
 function zoneFeat(kind,x,y){return {kind,x,y,r:22,done:false,use:FEAT_USE[kind],label:FEAT_LABEL[kind],zdraw:FEAT_DRAW[kind]};}
 const FEAT_USE={
   wp(f){unlockWp();openWay();},
   hchest(f){f.done=true;const c=G.char,d=G.depth,n=f.hoard?5:2;for(let k=0;k<n;k++)dropItem(f.x+rand(-40,40),f.y+rand(-30,40),rollDrop(c,d+1,f.hoard?2:1,k===0?2:0,{act:dropAct(d)}));
-    for(let k=0;k<(f.hoard?8:4);k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),Math.round(d*randi(4,9)));dropStones({x:f.x,y:f.y},'elite');burst(f.x,f.y,24,'#f2d04a',200);toast(f.hoard?"The Barrow King's hoard!":'A hidden cache!','');},
+    for(let k=0;k<(f.hoard?8:4);k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),Math.round(d*randi(4,9)));dropStones({x:f.x,y:f.y},'elite');burst(f.x,f.y,24,'#f2d04a',200);toast(f.hoard?ZONES[G.zone].hoardName||'A hoard!':'A hidden cache!','');},
   seal(f){f.done=true;const S=zst(G.char,G.zone);S.seals=(S.seals||0)+1;burst(f.x,f.y,30,'#9ab0ff',220);G.fx.push({type:'ring',x:f.x,y:f.y,r0:10,r1:140,t:0,max:0.6,col:'#9ab0ff'});
     if(S.seals>=3){G.portal.active=true;toast('All seals lit','The way on is open');}else toast(`Seal lit (${S.seals}/3)`,'');saveChar();},
   captive(f){if(G.enemies.some(e=>!e.dead&&e.pack==='captive')){toast('Guards nearby','Deal with them first');return;}
-    f.done=true;const c=G.char;burst(f.x,f.y,24,'#f2d04a',160);toast('The pilgrim is free!','"Bless you. Tell Elder Maren I live."');questDone('a1q2');
+    f.done=true;const c=G.char,K=CAPTIVES[ZONES[G.zone].captive]||CAPTIVES.pilgrim;burst(f.x,f.y,24,'#f2d04a',160);toast(K.free,K.say);questDone(K.quest);
     for(let k=0;k<3;k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),G.depth*12);dropItem(f.x,f.y+30,rollDrop(c,G.depth+1,1,2,{act:dropAct(G.depth)}));}
 };
 const FEAT_DRAW={
@@ -229,7 +225,7 @@ const FEAT_DRAW={
   key(f){if(f.done)return;const b=Math.sin(G.time*4)*3;ctx.globalCompositeOperation='lighter';ctx.drawImage(falloff('242,208,74'),f.x-24,f.y-24+b,48,48);ctx.globalCompositeOperation='source-over';
     ctx.strokeStyle='#f2d04a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(f.x-6,f.y+b,5,0,TAU);ctx.moveTo(f.x-1,f.y+b);ctx.lineTo(f.x+12,f.y+b);ctx.moveTo(f.x+8,f.y+b);ctx.lineTo(f.x+8,f.y+5+b);ctx.stroke();lbl(f,ZONES[G.zone].key||'Key','#f2d04a');},
   captive(f){const free=f.done;ctx.strokeStyle='#2a2420';ctx.lineWidth=2;if(!free)for(let k=0;k<7;k++){const a=Math.PI*(0.05+k/6*0.9),x=f.x+Math.cos(a)*14;ctx.beginPath();ctx.moveTo(x,f.y+Math.sin(a)*5);ctx.lineTo(x,f.y-26);ctx.stroke();}
-    ctx.fillStyle='#6a5a48';ctx.beginPath();ctx.arc(f.x,f.y-8,7,0,TAU);ctx.fill();ctx.fillStyle='#d8b890';ctx.beginPath();ctx.arc(f.x,f.y-12,4,0,TAU);ctx.fill();lbl(f,free?'Pilgrim (free)':'Captive Pilgrim',free?'#9fe08a':'#e8c890');}
+    const K=CAPTIVES[ZONES[G.zone].captive]||CAPTIVES.pilgrim;ctx.fillStyle=K.col||'#6a5a48';ctx.beginPath();ctx.arc(f.x,f.y-8,7,0,TAU);ctx.fill();ctx.fillStyle='#d8b890';ctx.beginPath();ctx.arc(f.x,f.y-12,4,0,TAU);ctx.fill();lbl(f,free?K.who+' (free)':K.name,free?'#9fe08a':'#e8c890');}
 };
 function lbl(f,t,col){ctx.font='11px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t,f.x,f.y-34);ctx.fillStyle=col;ctx.fillText(t,f.x,f.y-34);}
 function unlockWp(){const c=G.char;if(G.zone&&!hasWp(c,G.zone)){c.wps.push(G.zone);toast('Waypoint unlocked',ZONES[G.zone].name);saveChar();}}
@@ -249,7 +245,7 @@ function zonePortals(p){const P=G.portal,S=G.sidePortal,Z=ZONES[G.zone];
   else if(nearS)t=`↪ ${ZONES[S.to].name}`;
   const b=$('descBtn');if(b.textContent!==t)b.textContent=t;b.classList.toggle('hidden',!t);b.classList.toggle('dis',nearM&&!P.active);}
 function zoneGoal(){const Z=ZONES[G.zone],S=zst(G.char,G.zone);if(gateOpen(G.zone))return 'Exit open';
-  return Z.gate==='boss'?`Slay ${ZBOSS[Z.boss].name.split(',')[0]}`:Z.gate==='key'?`Find the ${Z.key}`:Z.gate==='seals'?`Light the seals (${S.seals||0}/3)`:Z.gate==='actboss'?'Defeat Varrok':'';}
+  return Z.gate==='boss'?`Slay ${ZBOSS[Z.boss].name.split(',')[0]}`:Z.gate==='key'?`Find the ${Z.key}`:Z.gate==='seals'?`Light the seals (${S.seals||0}/3)`:Z.gate==='actboss'?`Defeat ${ACTS[Z.act-1].boss.split(',')[0]}`:'';}
 function zoneDescend(){const Z=ZONES[G.zone];
   if(G.atSide&&G.sidePortal){saveInstance();return startZone(G.sidePortal.to,'side');}
   if(!G.portal.active)return;
@@ -269,28 +265,33 @@ const QUESTS={
   a1q2:{act:1,name:'The Lost Pilgrim',goal:'Free the pilgrim held on Lantern Road',story:'"A pilgrim went down the old road with a lantern. The lantern came back. She did not."',reward:'pot',rtext:'+1 potion charge'},
   a1q3:{act:1,name:'Bones of the Barrow',goal:'Slay the Barrow Wight in The Sunken Barrow',story:'"Something old woke under the gully. Put it back to sleep."',reward:'uq',rtext:'a unique item'},
   a1q4:{act:1,name:'The Hollow Lord',goal:"Defeat Varrok the Hollow in Varrok's Sepulchre",story:'"Varrok raised every grave in this valley. Without him, they rest."',reward:'sp',rtext:'+1 skill point'}};
-function questDone(id){const c=G.char;migrateZones(c);if(c.q[id])return;c.q[id]='done';toast('Quest complete: '+QUESTS[id].name,'Return to Elder Maren for your reward');saveChar();}
+// Who hands out (and rewards) each act's quests, standing by the stash in that act's town.
+const QGIVER=[{name:'Elder Maren',robe:'#3a3440',staff:'#6a4a2a'}];
+const giverOf=act=>QGIVER[act-1]||QGIVER[0];
+function questDone(id){const c=G.char;migrateZones(c);if(!QUESTS[id]||c.q[id])return;c.q[id]='done';const Q=QUESTS[id];toast('Quest complete: '+Q.name,`Return to ${giverOf(Q.act).name} in ${TOWNS[Q.act-1].name} for your reward`);saveChar();}
 function claimQuest(id){const c=G.char,Q=QUESTS[id];if(c.q[id]!=='done')return false;c.q[id]='claimed';
   if(Q.reward==='sp'){c.skillPts++;$('skDot').classList.remove('hidden');}
   else if(Q.reward==='pot'){c.potUp=(c.potUp||0)+1;refreshStats();G.p.potions=Math.min(potMax(),G.p.potions+1);}
-  else if(Q.reward==='uq'){const it=rollDrop(c,Math.max(5,c.lvl),3,3,{act:1,top:true});if(c.bag.length<30)c.bag.push(it);else dropItem(G.p.x,G.p.y,it);toast('Reward: '+it.name,'');}
+  else if(Q.reward==='uq'){const it=rollDrop(c,Math.max(5*Q.act,c.lvl),3,3,{act:Q.act,top:true});if(c.bag.length<30)c.bag.push(it);else dropItem(G.p.x,G.p.y,it);toast('Reward: '+it.name,'');}
+  else if(Q.reward==='stones'){const e={x:G.p.x,y:G.p.y};for(let k=0;k<3;k++)dropStones(e,'boss');dropGold(G.p.x,G.p.y+30,Q.act*120);}
   toast('Reward claimed',Q.rtext);saveChar();return true;}
 function openQuests(){if(!G.char)return;migrateZones(G.char);$('questOv').classList.remove('hidden');renderQuests();setPause();}
 function closeQuests(){$('questOv').classList.add('hidden');setPause();}
-function renderQuests(){const c=G.char,near=G.inTown&&G.elderNear;
-  $('questList').innerHTML=Object.entries(QUESTS).map(([id,Q])=>{const s=c.q[id];return `<div class="card" style="border-color:${s==='claimed'?'#3a3226':s==='done'?'#9fe08a':'#6a5038'}">
+function renderQuests(){const c=G.char,near=G.inTown&&G.elderNear,act=G.inTown?actIdx(G.depth)+1:ZONES[G.zone]?ZONES[G.zone].act:actIdx(G.depth)+1;
+  /* this act's quests, plus any finished ones still waiting for their reward */
+  $('questList').innerHTML=Object.entries(QUESTS).filter(([id,Q])=>Q.act===act||c.q[id]==='done').map(([id,Q])=>{const s=c.q[id];return `<div class="card" style="border-color:${s==='claimed'?'#3a3226':s==='done'?'#9fe08a':'#6a5038'}">
     <div class="iname" style="color:${s==='claimed'?'var(--dim)':'#e8c878'}">${esc(Q.name)} ${s==='claimed'?'✓':s==='done'?'· complete':''}</div><div class="fdim" style="font-style:italic">${esc(Q.story)}</div>
-    <div>${esc(Q.goal)}</div><div class="fdim">Reward: ${esc(Q.rtext)}</div>${s==='done'?`<div class="btn sm${near?'':' dis'}" data-claim="${id}" style="margin-top:6px">${near?'Claim reward':'Claim from Elder Maren in Gravewatch'}</div>`:''}</div>`;}).join('');
+    <div>${esc(Q.goal)}</div><div class="fdim">Reward: ${esc(Q.rtext)}</div>${s==='done'?`<div class="btn sm${near?'':' dis'}" data-claim="${id}" style="margin-top:6px">${near?'Claim reward':`Claim from ${esc(giverOf(Q.act).name)} in ${esc(TOWNS[Q.act-1].name)}`}</div>`:''}</div>`;}).join('');
   $('questList').querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{if(claimQuest(b.dataset.claim))renderQuests();});}
-// The Elder stands in Act 1's town by the stash.
-function placeElder(){G.elder=actIdx(G.depth)===0&&G.inTown&&G.stash?{x:G.stash.x-70,y:G.stash.y+10}:null;}
-function drawElder(){const E=G.elder;if(!E)return;const t=G.time;softShadow(E.x,E.y+10,16,7,0.9);ctx.fillStyle='#3a3440';ctx.strokeStyle='#0a0705';ctx.lineWidth=2;ctx.beginPath();ctx.arc(E.x,E.y-6,13,0,TAU);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#d8c0a0';ctx.beginPath();ctx.arc(E.x,E.y-10,6,0,TAU);ctx.fill();ctx.fillStyle='#e8e0d0';ctx.fillRect(E.x-4,E.y-6,8,6);ctx.strokeStyle='#6a4a2a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(E.x+12,E.y+10);ctx.lineTo(E.x+14,E.y-30);ctx.stroke();
-  const has=Object.values(G.char.q||{}).some(v=>v==='done');lbl({x:E.x,y:E.y+4},has?'❗ Elder Maren':'Elder Maren',has?'#9fe08a':'#e8c878');}
+// Each act's quest giver stands in its town by the stash (any of them hands out any act's rewards).
+function placeElder(){G.elder=G.inTown&&G.stash&&actIdx(G.depth)<QGIVER.length?{x:G.stash.x-70,y:G.stash.y+10,who:giverOf(actIdx(G.depth)+1)}:null;}
+function drawElder(){const E=G.elder;if(!E)return;const t=G.time,W=E.who;softShadow(E.x,E.y+10,16,7,0.9);ctx.fillStyle=W.robe;ctx.strokeStyle='#0a0705';ctx.lineWidth=2;ctx.beginPath();ctx.arc(E.x,E.y-6,13,0,TAU);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d8c0a0';ctx.beginPath();ctx.arc(E.x,E.y-10,6,0,TAU);ctx.fill();ctx.fillStyle='#e8e0d0';ctx.fillRect(E.x-4,E.y-6,8,6);ctx.strokeStyle=W.staff;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(E.x+12,E.y+10);ctx.lineTo(E.x+14,E.y-30);ctx.stroke();
+  const has=Object.values(G.char.q||{}).some(v=>v==='done');lbl({x:E.x,y:E.y+4},has?'❗ '+W.name:W.name,has?'#9fe08a':'#e8c878');}
 function elderTick(){const p=G.p;G.elderNear=!!(G.inTown&&G.elder&&p&&Math.hypot(p.x-G.elder.x,p.y-G.elder.y)<70);}
 // HUD line: zone name, area level, objective.
 function zoneHud(){const Z=ZONES[G.zone];if(!Z)return null;const left=G.enemies.filter(e=>!e.dead).length;
-  return `Act 1 · ${Z.name} · Lv ${areaLvl(Z.depth)} · ${zoneGoal()} · ${left} foes`;}
+  return `Act ${Z.act} · ${Z.name} · Lv ${areaLvl(Z.depth)} · ${zoneGoal()} · ${left} foes`;}
 // ---------- minimap ----------
 function minimapZone(s){if(!G.zone||G.inTown)return;const S=G.sidePortal;
   if(S&&G.explored[tileIdx(S.x,S.y)]){mctx.fillStyle='#e0c060';mctx.beginPath();mctx.arc(S.x/TILE*s,S.y/TILE*s,5,0,TAU);mctx.fill();}

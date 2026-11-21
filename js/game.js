@@ -55,7 +55,7 @@ function killEnemy(e){
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,G.depth+L.ilvl,3,min,{act:dropAct(G.depth),top:true}));}
     dropGold(e.x,e.y,G.depth*L.gold);dropGold(e.x+20,e.y,G.depth*L.gold*0.5);
     if(actIdx(G.depth)===4)emberCoreDrop(e);
-    if(G.depth===5)questDone('a1q4'); /* zones.js: Act 1 quest */
+    if(G.depth<=25)questDone(`a${actIdx(G.depth)+1}q4`); /* zones.js: each act's last quest */
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
     if(G.depth===25&&!c.won){c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory();},1800);}
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
@@ -85,7 +85,7 @@ function dmgPlayer(raw,src){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
-  const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;
+  const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
   if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
@@ -138,13 +138,14 @@ function startGame(c){
   $('dodgeBtn').firstChild.nodeValue=c.cls==='arcanist'?'💫':'💨'; /* Arcanists Blink, Wardens roll */
   buildSkillBar();
   ['titleOv','createOv'].forEach(i=>$(i).classList.add('hidden'));$('hud').classList.remove('hidden');
-  startDepth(c.depth);
+  instLoad(c); /* portal.js: this hero's kept zones */
+  if(c.town)startTown(c.depth);else startDepth(c.depth);
 }
 // mode (boss depths, from the Waystone): 'all' (default), 'boss' = the boss alone, 'noboss' = the packs only.
 function startDepth(d,mode){
-  if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js: Act 1 is built of zones */
+  if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js / acts.js: acts built of zones */
   G.zone=null;G.sidePortal=null;G.zboss=null;
-  const c=G.char;G.depth=d;c.depth=d;c.maxDepth=Math.max(c.maxDepth,d);
+  const c=G.char;G.depth=d;c.depth=d;c.town=0;c.maxDepth=Math.max(c.maxDepth,d);
   resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   genLevel(d,G.levelMode);G.cam.x=p.x;G.cam.y=p.y;
@@ -155,19 +156,17 @@ function startDepth(d,mode){
 }
 function resetArea(){
   G.areaT=G.time;G.bossIntro=null;G.zoneTheme=null;G.elder=null; // a new area: no boss banner left over from the last one
-  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;
-  const p=G.p;p.dead=false;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
+  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;G.tpField=null;G.tpBack=null;G.atTp=false;
+  const p=G.p;p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
 function startTown(next){
-  if(G.zone&&typeof saveInstance==='function')saveInstance(); /* zones.js: come back to the zone as you left it */
   G.zone=null;G.sidePortal=null;G.zboss=null;
-  const c=G.char;G.depth=next;c.depth=next; // quitting in town resumes at the next depth
+  const c=G.char;G.depth=next;c.depth=next;c.town=1; // quitting in town resumes in town (portal.js: a kept zone waits behind the return portal)
   resetArea();G.inTown=true;
-  genTown();placeElder();G.cam.x=G.p.x;G.cam.y=G.p.y;
+  genTown();placeElder();placeTpBack();G.cam.x=G.p.x;G.cam.y=G.p.y;
   G.shop=rollShop(next);
-  $('descBtn').textContent=`⬇ Enter Depth ${next}`;
   saveChar();setPause();
   const T=townOf(next);toast(T.name,T.sub);
 }
@@ -199,7 +198,7 @@ function update(dt){
       if(lava||t===T_POISON)G.parts.push({x:(i+Math.random())*TILE,y:(j+Math.random())*TILE,vx:rand(-8,8),vy:lava?-rand(30,70):-12,life:lava?0.9:0.7,max:0.9,col:lava?'#ffb040':'#b8ff5a',s:lava?2.5:3});}}
   if(p.spin>0){p.spin-=dt;p.spinTick-=dt;if(p.spinTick<=0){p.spinTick=0.25;if(hasPw('pull'))pullIn(240,45);aoe(p.x,p.y,88,p.spinMult,{});}}
   if(G.stats.pw&&Object.keys(G.stats.pw).length)powerTick(dt);
-  encounterTick(dt);
+  encounterTick(dt);portalTick(dt); /* portal.js */
   for(let i=0;i<5;i++)if(held[i])tryCast(i);
   if(keys.KeyJ||keys.Space||keys.Digit1)tryCast(0);
   for(let i=1;i<5;i++)if(keys['Digit'+(i+1)])tryCast(i);
@@ -289,7 +288,7 @@ function update(dt){
   // portal
   const nearPortal=G.portal.active&&Math.hypot(p.x-G.portal.x,p.y-G.portal.y)<70&&!p.dead;
   if(G.zone&&!G.inTown)zonePortals(p); /* zones.js: locked exits, side passages */
-  else{$('descBtn').classList.toggle('hidden',!nearPortal);$('descBtn').classList.remove('dis');}
+  else{const b=$('descBtn'),t=G.atTp?`🌀 ${ZONES[G.tpBack.zid].name}`:nearPortal?townGateLabel():'';if(b.textContent!==t&&t)b.textContent=t;b.classList.toggle('hidden',!t);b.classList.remove('dis');}
   const nearMerchant=G.inTown&&G.merchant&&!p.dead&&Math.hypot(p.x-G.merchant.x,p.y-G.merchant.y)<85;
   $('shopBtn').classList.toggle('hidden',!nearMerchant);
   const nearStash=G.inTown&&G.stash&&!p.dead&&Math.hypot(p.x-G.stash.x,p.y-G.stash.y)<70;

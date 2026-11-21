@@ -34,6 +34,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #potBtn,#dodgeBtn{right:calc(var(--arc) + 18px + env(safe-area-inset-right));width:56px;height:56px;font-size:25px;}
 #dodgeBtn{bottom:calc(12px + env(safe-area-inset-bottom));}
 #potBtn{bottom:calc(80px + env(safe-area-inset-bottom));}
+#tpBtn{right:calc(var(--arc) + 18px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:50px;height:50px;font-size:22px;} /* town portal: above the potion, far from the joystick */
 #potBtn .cnt{position:absolute;bottom:2px;right:8px;font-size:12px;font-family:sans-serif;font-weight:bold;text-shadow:0 0 3px #000;}
 #descBtn,#shopBtn,#stashBtn,#smithBtn,#wayBtn,#useBtn{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:17px;padding:12px 22px;box-shadow:0 0 18px #9b4dff;white-space:nowrap;}
 #shopBtn{box-shadow:0 0 18px #d9a441;}
@@ -191,6 +192,7 @@ h2{color:var(--gold);text-align:center;font-weight:normal;letter-spacing:2px;mar
   #skills{transform:scale(.82);transform-origin:100% 100%;}
   #potBtn,#dodgeBtn{width:50px;height:50px;font-size:22px;}
   #potBtn{bottom:calc(70px + env(safe-area-inset-bottom));}
+  #tpBtn{bottom:calc(128px + env(safe-area-inset-bottom));width:44px;height:44px;font-size:19px;}
   #descBtn,#shopBtn,#stashBtn,#smithBtn,#wayBtn,#useBtn{padding:10px 20px;font-size:16px;}
   #bossbar{top:calc(10px + env(safe-area-inset-top));}
   .overlay{padding:calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));}
@@ -211,7 +213,7 @@ h2{color:var(--gold);text-align:center;font-weight:normal;letter-spacing:2px;mar
 /* left-handed mode: controls mirrored (joystick right; skill arc, dodge and potion left) */
 body.lefty #skills{right:auto;left:calc(10px + env(safe-area-inset-left));}
 body.lefty #skills .sk.big{right:auto;left:0;}
-body.lefty #potBtn,body.lefty #dodgeBtn{right:auto;left:calc(var(--arc) + 18px + env(safe-area-inset-left));}
+body.lefty #potBtn,body.lefty #dodgeBtn,body.lefty #tpBtn{right:auto;left:calc(var(--arc) + 18px + env(safe-area-inset-left));}
 @media (orientation:landscape) and (max-height:500px){body.lefty #skills{transform-origin:0 100%;}}
 .ver{text-align:center;margin-top:10px;font-family:sans-serif;font-size:12px;}
 

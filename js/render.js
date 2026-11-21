@@ -30,7 +30,7 @@ function render(){
   const P=G.portal;if(onScreen(P.x,P.y,80)){ctx.save();ctx.translate(P.x,P.y);
     const g=ctx.createRadialGradient(0,0,4,0,0,44);g.addColorStop(0,P.active?'#e9d0ff':'#777');g.addColorStop(0.5,P.active?'#8a3dff99':'#44444499');g.addColorStop(1,'#0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,44,0,TAU);ctx.fill();
     ctx.strokeStyle=P.active?'#c79bff':'#666';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,30-k*7,G.time*(2+k)+k,G.time*(2+k)+k+3.5);ctx.stroke();}ctx.restore();}
-  drawSidePortal(onScreen); /* zones.js */
+  drawSidePortal(onScreen); /* zones.js */drawPortals(onScreen); /* portal.js */
   if(!G.inTown)drawFeatures(onScreen);else{drawTownLive(onScreen);drawElder();}
   if(G.inTown&&G.merchant&&onScreen(G.merchant.x,G.merchant.y,120))drawMerchant();
   if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
@@ -385,5 +385,7 @@ function drawMinimap(){
   if(G.inTown&&G.merchant){mctx.fillStyle='#f2d04a';mctx.beginPath();mctx.arc(G.merchant.x/TILE*s,G.merchant.y/TILE*s,5,0,TAU);mctx.fill();}
   mctx.fillStyle='#e33';for(const e of G.enemies){if(e.dead||e.hidden)continue;if(G.explored[Math.floor(e.y/TILE)*MW+Math.floor(e.x/TILE)]&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<400)mctx.fillRect(e.x/TILE*s-2,e.y/TILE*s-2,4,4);}
   if(!G.inTown)minimapFeatures(s);
+  for(const l of G.loot){if(l.taken||l.gold||!G.explored[tileIdx(l.x,l.y)]||l.item&&lootHidden(l.item))continue; /* ground items */
+    mctx.fillStyle=l.item?RCOL[l.item.rarity]:'#c8e8ff';mctx.save();mctx.translate(l.x/TILE*s,l.y/TILE*s);mctx.rotate(Math.PI/4);mctx.fillRect(-2.2,-2.2,4.4,4.4);mctx.restore();}
   mctx.fillStyle='#fff';mctx.beginPath();mctx.arc(G.p.x/TILE*s,G.p.y/TILE*s,4.5,0,TAU);mctx.fill();
 }
