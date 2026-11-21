@@ -274,6 +274,13 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   return it;
 }
 function affVal(a,m){const d=AFF[a.k];let v=a.v*(d&&d.flat?1:m);return d&&d.dec?v.toFixed(1):Math.round(v);}
+// Tier bonus: each base tier above I makes an item's affixes 4% stronger (Tier V: +16%). Worked out when stats are
+// counted, so every item has it; implicits already grow with the base, and flat stats (block, potion charges) don't
+// scale. affMul = the multiplier on an item's affix lines: its upgrade level times its tier bonus.
+const TIER_AFF=0.04;
+const tierAffBonus=it=>it&&it.tier>1?TIER_AFF*(it.tier-1):0;
+const affMul=it=>(1+0.1*(it.upg||0))*(1+tierAffBonus(it));
+const tierBonusText=it=>tierAffBonus(it)?`${tierLabel(it)}: +${Math.round(tierAffBonus(it)*100)}% to its stats`:'';
 function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
@@ -353,7 +360,9 @@ function calcStats(c,swap,at){
     for(const k of itemPowers(it))s.pw[k]=true;
     if(it.arm)s.armor+=it.arm*m;
     if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const a=stoneStat(sg,h);s[a.k]+=a.v;}} // gems and runes: flat, not upgraded
-    for(const a of it.imp?it.affs.concat(it.imp):it.affs){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:m);}
+    const am=affMul(it); /* affixes: upgrades and the tier bonus; implicits: upgrades only */
+    for(const a of it.affs){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:am);}
+    for(const a of it.imp||[]){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:m);}
   }
   addSetStats(EQ_SLOTS.map(sl=>eq[sl]).filter(Boolean),s); // set bonuses
   addCharmStats(c,s); // charm pouch
@@ -386,7 +395,7 @@ function compareLoot(c,it){
   // weapons compare with the main weapon (a one-hander could also fill an empty off hand, but that isn't the useful comparison)
   const sl=it.slot==='weapon'&&fits.includes('mainhand')?'mainhand':bestSlot(c,it)||fits[0],cur=c.equip[sl]||null;
   const same=cur&&(cur.slot==='weapon')===(it.slot==='weapon'),bv=baseValue(it),cv=cur?baseValue(cur):0;
-  return {sl,cur,dt:it.tier-(cur?cur.tier||0:0),pct:same&&bv&&cv?bv/cv-1:null,stat:it.slot==='weapon'?'damage':'armor'};
+  return {sl,cur,dt:it.tier-(cur?cur.tier||0:0),db:tierAffBonus(it)-tierAffBonus(cur),pct:same&&bv&&cv?bv/cv-1:null,stat:it.slot==='weapon'?'damage':'armor'};
 }
 const potFloor=()=>3+(G.stats?G.stats.pot:0);
 const potMax=()=>POT_MAX+(G.stats?G.stats.pot:0);

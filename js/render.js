@@ -121,6 +121,7 @@ function drawLootTip(){
   lines.push([it.name,RCOL[it.rarity],'bold 13px']);
   lines.push([`${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}`,'#9c8b72','11px']);
   if(it.slot==='weapon')lines.push([`Damage ${Math.round(it.dmin)}–${Math.round(it.dmax)}`,'#e8dcc4','12px']);else if(it.arm)lines.push([`Armor ${Math.round(it.arm)}`,'#e8dcc4','12px']);
+  if(tierAffBonus(it))lines.push(['◆ '+tierBonusText(it),'#d8b860','11px']);
   if(it.sockets)lines.push([`${it.sockets} socket${it.sockets>1?'s':''}`,'#9fb8d8','11px']);
   for(const k of itemPowers(it))lines.push(['✦ '+UPOW[k].t,'#ff9a3a','11px']);
   const sv=setView(it,G.char);if(sv){const ON='#3fe05a',OFF='#7a7a7a';
@@ -136,7 +137,8 @@ function drawLootTip(){
       const tierTxt=cmp.dt>0?`▲ ${cmp.dt} tier${cmp.dt>1?'s':''} higher`:cmp.dt<0?`▼ ${-cmp.dt} tier${cmp.dt<-1?'s':''} lower`:'= same tier';
       const pctTxt=cmp.pct==null?'':` · ${cmp.pct>=0?'+':''}${Math.round(cmp.pct*100)}% ${cmp.stat}`;
       const good=cmp.pct==null?cmp.dt:cmp.pct;
-      lines.push([tierTxt+pctTxt,good>0.005?'#6f6':good<-0.005?'#f66':'#cdb68a','12px']);}
+      lines.push([tierTxt+pctTxt,good>0.005?'#6f6':good<-0.005?'#f66':'#cdb68a','12px']);
+      if(cmp.db)lines.push([`${cmp.db>0?'▲ +':'▼ '}${Math.round(cmp.db*100)}% tier bonus`,cmp.db>0?'#6f6':'#f66','11px']);}
   }
   let w=0;for(const [t,,f] of lines){ctx.font=f+' sans-serif';w=Math.max(w,ctx.measureText(t).width);}
   const lh=16,pad=7,bw=w+pad*2,bh=lines.length*lh+pad*2-2;

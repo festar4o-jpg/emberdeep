@@ -175,7 +175,8 @@ function openItem(it,equipped,price){
       if(w.hands===2)h+=`<div class="ibase" style="color:var(--dim)">Two-handed: blocks the Off Hand</div>`;}
     if(x.arm)h+=`<div class="ibase">Armor: ${Math.round(x.arm*mm)}</div>`;
     for(const a of x.imp||[])h+=`<div class="ibase">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
-    for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
+    if(tierAffBonus(x)&&x.affs.some(a=>a.k!=='skill'))h+=`<div class="itierb">◆ ${esc(tierBonusText(x))} below</div>`;
+    for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
     if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="fdim" style="font-size:11px">⚒ ${craftsLeft(x)}/${craftMax(x)} stat crafts left</div>`;
@@ -193,6 +194,7 @@ function openItem(it,equipped,price){
     const lines=[['Damage',x=>(x.dmin+x.dmax)/2*x.levelMul*(1+x.dmg/100)],['Life',x=>x.life],['Armor',x=>x.armor],['Block %',x=>x.block],['Crit %',x=>x.crit],['Crit Dmg %',x=>x.critd],['Atk Rate %',x=>x.wspd*(1+x.aspd/100)*100],['Spell Dmg %',x=>x.spell],['Bleed %',x=>x.bleed],['Stun %',x=>x.stunCh],['Splash %',x=>x.splash],['Pierce',x=>x.pierce],['Slain explode %',x=>x.explode],['Cooldown %',x=>x.cdr],['Move %',x=>x.move],['Life on Hit',x=>x.loh],['Regen',x=>x.regen],['Max '+CLASSES[c.cls].res,x=>x.res],['Potion Charges',x=>x.pot]];
     let cmp='';for(const [n,f] of lines){const d=f(s1)-f(s0);if(Math.abs(d)>=0.1)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${Math.abs(d)<10?d.toFixed(1):Math.round(d)} ${n}</div>`;}
     s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${SKILLS[c.cls][i].name}</div>`;});
+    if(it.tier&&cur&&cur.tier&&tierAffBonus(it)!==tierAffBonus(cur)){const d=Math.round((tierAffBonus(it)-tierAffBonus(cur))*100);cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d}% tier bonus (${tierLabel(it)} vs ${tierLabel(cur)})</div>`;}
     h+=`<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
   if(price!=null){ // shop listing: buy or close only
     h+=`<div class="row"><div class="btn sm${c.gold<price?' dis':''}" id="iBuy">Buy (${price}🪙)</div><div class="btn sm" id="iClose">Close</div></div>`;

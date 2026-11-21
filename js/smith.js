@@ -179,7 +179,7 @@ function renderSmith(){
   let h=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}${it.sup?' · Superior':''}</div>`;
   if(craftLimited(it))h+=`<div class="isub">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}</div>`;
   if(it.slot==='weapon')h+=`<div class="ibase">Damage: ${Math.round(it.dmin)}–${Math.round(it.dmax)}</div>`;else if(it.arm)h+=`<div class="ibase">Armor: ${Math.round(it.arm)}</div>`;
-  h+=it.affs.map((a,i)=>`<div class="iaff sm-aff${i===smithAff?' sel':''}" data-a="${i}">${esc(affText(a,1+0.1*(it.upg||0),it.cls||c.cls))}</div>`).join('');
+  h+=it.affs.map((a,i)=>`<div class="iaff sm-aff${i===smithAff?' sel':''}" data-a="${i}">${esc(affText(a,affMul(it),it.cls||c.cls))}</div>`).join('');
   h+='<div class="smops">'+Object.entries(SMITH_OPS).map(([k,O])=>{const why=smithBlock(k,it,smithAff),cost=O.cost(it),ok=!why&&canPay(c,cost);
     return `<div class="smop"><div class="btn sm${ok?'':' dis'}" data-op="${k}">${O.name}</div><div><div>${esc(typeof O.desc==='function'?O.desc(it):O.desc)}</div><div class="fdim">${why?esc(why):costHtml(cost)}</div></div></div>`;}).join('')+'</div>';
   $('smithInfo').innerHTML=h;
@@ -209,7 +209,7 @@ function askUpbase(it){const c=G.char;if(smithBlock('upbase',it))return;const co
 // Add Stat: pick one of the rolled stats. Already paid, so there is no cancel; closing keeps the options for later.
 function askAdd(it){if(!it.addOpts||!it.addOpts.length)return;const cls=it.cls||G.char.cls;
   askSmith(`<h3>Add a stat to ${esc(it.name)}</h3><p class="fdim">Pick one. ${it.affs.length+1>=3&&it.rarity<2?'It becomes a Rare.':!it.affs.length?'It becomes Magic.':''}</p>
-    <div class="smops">${it.addOpts.map((a,i)=>`<div class="btn sm" data-add="${i}">${esc(affText(a,1+0.1*(it.upg||0),cls))}</div>`).join('')}</div>`,'Later',()=>{});
+    <div class="smops">${it.addOpts.map((a,i)=>`<div class="btn sm" data-add="${i}">${esc(affText(a,affMul(it),cls))}</div>`).join('')}</div>`,'Later',()=>{});
   $('smithAskNo').classList.add('hidden');
   $('smithAskBody').querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{if(chooseAdd(it,+el.dataset.add)){toast('Stat added',it.name);cancelBulk();renderSmith();}});}
 // Confirmation popup for a bulk salvage: what goes and what you get.
