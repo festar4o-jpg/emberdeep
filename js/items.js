@@ -160,16 +160,16 @@ const CLASSES={
 const AFF={
   life:{t:'+{v} Life',pre:'Hale',suf:'of the Bear',roll:l=>rand(6,12)+l*3.5},
   res:{t:'+{v} Max Fury/Mana',pre:'Spirited',suf:'of the Mind',roll:l=>rand(5,10)+l*0.8},
-  dmg:{t:'+{v}% Damage',pre:'Cruel',suf:'of Wrath',roll:l=>rand(6,14)+l*0.6},
+  dmg:{t:'+{v}% Damage',pre:'Cruel',suf:'of Wrath',roll:l=>rand(5,11)+l*0.75},
   armor:{t:'+{v} Armor',pre:'Sturdy',suf:'of Iron',roll:l=>rand(4,8)+l*2.5},
-  crit:{t:'+{v}% Crit Chance',pre:'Keen',suf:'of Precision',roll:l=>rand(2,5)+l*0.08,dec:1},
-  critd:{t:'+{v}% Crit Damage',pre:'Deadly',suf:'of Ruin',roll:l=>rand(12,25)+l*0.8},
-  aspd:{t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(5,12)},
-  cdr:{t:'+{v}% Cooldown Reduction',pre:'Focused',suf:'of Ages',roll:l=>rand(3,8)},
-  move:{t:'+{v}% Move Speed',pre:'Fleet',suf:'of the Wind',roll:l=>rand(4,10)},
+  crit:{t:'+{v}% Crit Chance',pre:'Keen',suf:'of Precision',roll:l=>rand(2,4.5)*(1+0.035*(l-1)),dec:1},
+  critd:{t:'+{v}% Crit Damage',pre:'Deadly',suf:'of Ruin',roll:l=>rand(10,20)+l*1.1},
+  aspd:{t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(4.5,10)*(1+0.03*(l-1))},
+  cdr:{t:'+{v}% Cooldown Reduction',pre:'Focused',suf:'of Ages',roll:l=>rand(3,7)*(1+0.025*(l-1))},
+  move:{t:'+{v}% Move Speed',pre:'Fleet',suf:'of the Wind',roll:l=>rand(4,9)*(1+0.025*(l-1))},
   loh:{t:'+{v} Life on Hit',pre:'Vampiric',suf:'of Leeching',roll:l=>rand(1,3)+l*0.4},
   regen:{t:'+{v} Life per Second',pre:'Mending',suf:'of Renewal',roll:l=>rand(1,2)+l*0.35,dec:1},
-  // flat: not multiplied by item upgrades
+  // flat: never multiplied (upgrades on rings and amulets)
   block:{t:'+{v}% Block Chance',pre:'Warding',suf:'of the Bulwark',roll:l=>rand(3,6)+Math.min(4,l*0.1),flat:1},
   spell:{t:'+{v}% Spell Damage',pre:'Arcane',suf:'of Sorcery',roll:l=>rand(5,10)+l*0.4,cls:'arcanist'},
   pot:{t:'+{v} Potion Charges',pre:"Brewer's",suf:'of Plenty',roll:l=>rand(1,1.6)+(l>=15?0.6:0),flat:1}
@@ -263,7 +263,7 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
   const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].cls===cls);
   const keys=SI?SET_ITEMS[SI].affs.slice():pool.slice().sort(()=>Math.random()-0.5).slice(0,n);
-  for(const k of keys)it.affs.push(rollAff(k,ilvl,rm));
+  for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm));it.uv=UPG_VER;
   if((rarity===2&&Math.random()<0.3)||rarity===3)it.affs.push({k:'skill',s:randi(0,4),v:rarity===3?randi(1,2):1});
   if(U)it.name=UNIQUES[U].name;
   else if(SI)it.name=SET_ITEMS[SI].name;
@@ -274,13 +274,22 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   return it;
 }
 function affVal(a,m){const d=AFF[a.k];let v=a.v*(d&&d.flat?1:m);return d&&d.dec?v.toFixed(1):Math.round(v);}
-// Tier bonus: each base tier above I makes an item's affixes 4% stronger (Tier V: +16%). Worked out when stats are
-// counted, so every item has it; implicits already grow with the base, and flat stats (block, potion charges) don't
-// scale. affMul = the multiplier on an item's affix lines: its upgrade level times its tier bonus.
-const TIER_AFF=0.04;
-const tierAffBonus=it=>it&&it.tier>1?TIER_AFF*(it.tier-1):0;
-const affMul=it=>(1+0.1*(it.upg||0))*(1+tierAffBonus(it));
-const tierBonusText=it=>tierAffBonus(it)?`${tierLabel(it)}: +${Math.round(tierAffBonus(it)*100)}% to its stats`:'';
+// Affixes follow the tier: a tiered item rolls its affixes at an "affix level" inside its tier's act (Tier III: item
+// levels 11-15), so an older tier dropped late still rolls older, smaller numbers (Tier V Life ~4x Tier I, Damage % and
+// Crit Damage ~2-2.5x, Crit, Attack/Move Speed and Cooldown ~1.5-1.8x). Tier V keeps climbing in the endless depths.
+const affLvl=(ilvl,tier)=>!tier?ilvl:clamp(ilvl,TIER_LO[tier-1],tier===5?999:TIER_LO[tier-1]+4);
+// Upgrades (+1..+10, gold): +4% base damage, armor and implicit stats per level (+40% at +10); affixes are not upgraded,
+// so a fresh drop from the current act beats upgraded gear from an act or two back. Rings and amulets have no base:
+// upgrades give their affixes +4% per level instead. Items from before v1.0.48 (upgrades were +10% to everything, and
+// v1.0.47 gave affixes +4% per tier) get that strength baked into their numbers when they load (bakeUpgrades).
+const UPG_STEP=0.04,UPG_VER=2;
+const upgMul=it=>1+UPG_STEP*(it.upg||0);
+const affMul=it=>it.tier?1:upgMul(it);
+function bakeUpgrades(it){if(it.slot==='charm')return it; /* charms are never upgraded */if(it.uv>=UPG_VER){it.uv=UPG_VER;return it;}
+  const u=it.upg||0,old=1+0.1*u,nu=1+UPG_STEP*u,tb=it.tier>1?1+0.04*(it.tier-1):1,flat=a=>a.k==='skill'||AFF[a.k]&&AFF[a.k].flat;
+  if(u>0){const kb=old/nu;if(it.dmin!=null){it.dmin*=kb;it.dmax*=kb;}if(it.arm)it.arm*=kb;for(const a of it.imp||[])if(!flat(a))a.v*=kb;}
+  const ka=it.tier?old*tb:old/nu;if(ka!==1)for(const a of it.affs)if(!flat(a))a.v*=ka;
+  it.uv=UPG_VER;return it;}
 function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
@@ -307,6 +316,7 @@ function migrateItem(it){
   if(it.socketed){it.socketed=(Array.isArray(it.socketed)?it.socketed:[]).filter(s=>s&&(s.r?RUNES[s.r]:GEMS[s.g]&&s.q>=1&&s.q<=5)).slice(0,it.sockets||0);if(!it.socketed.length)delete it.socketed;}
   if(it.rb&&!RUNEBINDS[it.rb]){delete it.rb;if(it.rarity===4)it.rarity=0;}
   if(TIERED.has(it.slot)&&!(it.tier>=1&&it.tier<=5))it.tier=tierOfLvl(it.ilvl); // pre-tier items: their stats already match the tier of their item level
+  bakeUpgrades(it); /* the old upgrade rules' strength stays with the item */
   return it;
 }
 function migrateChar(c){
@@ -353,7 +363,7 @@ function calcStats(c,swap,at){
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
     const it=eq[sl];if(!it)continue;
-    const m=1+0.1*(it.upg||0);
+    const m=upgMul(it);
     if(it.slot==='weapon'){const w=wOf(it);const hand={wt:it.wt,dmin:it.dmin*m,dmax:it.dmax*m,spd:w.spd};if(sl==='mainhand')s.mh=hand;else s.oh=hand;
       s.crit+=w.crit||0;s.critd+=w.critd||0;s.block+=w.block||0;s.bleed+=w.bleed||0;s.spell+=w.spell||0;if(w.stun){s.stunCh+=w.stun;s.stunDur=Math.max(s.stunDur,w.stunDur);}
       s.splash+=w.splash||0;s.pierce=Math.max(s.pierce,w.pierce||0);s.explode=Math.max(s.explode,w.explode||0);}
@@ -386,7 +396,7 @@ function lootHidden(it){const c=G.char;if(!it||!it.tier||!c||it.sockets)return f
   return !(c.filter.rares!==false&&it.rarity>=2);}
 // ---------- ground loot comparison (labels and the tooltip for the nearest item) ----------
 // Effective base value: average weapon damage or armor, including upgrades.
-function baseValue(it){const m=1+0.1*(it.upg||0);return it.slot==='weapon'?(it.dmin+it.dmax)/2*m:it.arm?it.arm*m:0;}
+function baseValue(it){const m=upgMul(it);return it.slot==='weapon'?(it.dmin+it.dmax)/2*m:it.arm?it.arm*m:0;}
 // A tiered item vs what the character wears where it would go:
 // {other} for the other class's gear, else {sl, cur, dt (tier difference), pct (base value change, or null), stat}.
 function compareLoot(c,it){
@@ -395,7 +405,7 @@ function compareLoot(c,it){
   // weapons compare with the main weapon (a one-hander could also fill an empty off hand, but that isn't the useful comparison)
   const sl=it.slot==='weapon'&&fits.includes('mainhand')?'mainhand':bestSlot(c,it)||fits[0],cur=c.equip[sl]||null;
   const same=cur&&(cur.slot==='weapon')===(it.slot==='weapon'),bv=baseValue(it),cv=cur?baseValue(cur):0;
-  return {sl,cur,dt:it.tier-(cur?cur.tier||0:0),db:tierAffBonus(it)-tierAffBonus(cur),pct:same&&bv&&cv?bv/cv-1:null,stat:it.slot==='weapon'?'damage':'armor'};
+  return {sl,cur,dt:it.tier-(cur?cur.tier||0:0),pct:same&&bv&&cv?bv/cv-1:null,stat:it.slot==='weapon'?'damage':'armor'};
 }
 const potFloor=()=>3+(G.stats?G.stats.pot:0);
 const potMax=()=>POT_MAX+(G.stats?G.stats.pot:0);

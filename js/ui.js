@@ -151,8 +151,10 @@ function renderInv(){
 function setCell(c,sl){const it=c.equip[sl],g=it?setGlow(it,c):'',h=cellHtml(it,SLOT_NAME[sl],sl);if(!g)return h;
   const S=SETS[setOf(it)]; // the glow takes the set's aura colour (CSS variable --sg)
   return h.replace('<div class="cell',`<div title="${esc(S.name)}: ${g==='full'?'full set':'set bonus'} active" class="cell sglow${g==='full'?' full':''}`).replace(' style="',` style="--sg:${S.aura||'63,224,90'};`);}
-function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1));}
-function upgradeCost(it){return Math.round((20+it.ilvl*8)*Math.pow(1.6,it.upg||0));}
+function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
+// Upgrades are cheaper than before (they no longer touch affixes): x1.45 per level.
+function upgradeCost(it,lv){return Math.round((20+it.ilvl*8)*Math.pow(1.45,lv??(it.upg||0)));}
+const upgradeSpent=it=>{let g=0;for(let k=0;k<(it.upg||0);k++)g+=upgradeCost(it,k);return g;};
 tap('salvAll',()=>{const c=G.char;let g=0,n=0;const got={};c.bag=c.bag.filter(it=>{if(it.rarity<=1&&!it.sockets&&it.slot!=='charm'&&!it.lock){g+=salvageValue(it);addMats(got,grantSalvage(c,it));n++;return false;}return true;}); /* locked items, socketed bases and charms are kept */c.gold+=g;if(n)toast(`Salvaged ${n} items`,`+${g} gold ${matText(got)}`);renderInv();saveChar();});
 tap('invClose',toggleInv);
 // equipped: the slot key the item is worn in, or false for bag/shop items.
@@ -168,14 +170,14 @@ function powerHtml(k,c){const P=UPOW[k],off=P.cls&&P.cls!==c.cls;return `<div cl
 function openItem(it,equipped,price){
   if(it.slot==='charm'&&price==null)return openCharm(it,equipped==='charm');
   const c=G.char;
-  const card=x=>{const mm=1+0.1*(x.upg||0);let h=`<div class="card" style="border-color:${RCOL[x.rarity]}"><div class="chead"><div class="cicon">${itemIcon(x)}</div><div><div class="iname" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="isub">${RNAME[x.rarity]} ${typeLabel(x)}${x.tier?' · '+tierLabel(x):''} · Item level ${x.ilvl}${(x.slot==='weapon'||x.slot==='shield'||x.slot==='focus')&&x.cls&&x.cls!==c.cls?` · <span style="color:#e07a5a">${CLASSES[x.cls].name} item</span>`:''}</div></div></div>`;
+  const card=x=>{const mm=upgMul(x);let h=`<div class="card" style="border-color:${RCOL[x.rarity]}"><div class="chead"><div class="cicon">${itemIcon(x)}</div><div><div class="iname" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="isub">${RNAME[x.rarity]} ${typeLabel(x)}${x.tier?' · '+tierLabel(x):''} · Item level ${x.ilvl}${(x.slot==='weapon'||x.slot==='shield'||x.slot==='focus')&&x.cls&&x.cls!==c.cls?` · <span style="color:#e07a5a">${CLASSES[x.cls].name} item</span>`:''}</div></div></div>`;
     if(x.slot==='weapon'){const w=wOf(x);h+=`<div class="ibase">Damage: ${Math.round(x.dmin*mm)}–${Math.round(x.dmax*mm)}</div><div class="ibase">Attack Rate: ${w.spd.toFixed(2)}×</div>`;
       for(const t of weaponProps(w))if(!(w.skill&&t.includes('random skill')))h+=`<div class="ibase">${t}</div>`; // the rolled skill shows below as an implicit
       if(w.arc)h+=`<div class="ibase">Cleave arc: ${w.arc>=1.4?'Very wide':w.arc>=1?'Normal':'Narrow'}</div>`;
       if(w.hands===2)h+=`<div class="ibase" style="color:var(--dim)">Two-handed: blocks the Off Hand</div>`;}
     if(x.arm)h+=`<div class="ibase">Armor: ${Math.round(x.arm*mm)}</div>`;
     for(const a of x.imp||[])h+=`<div class="ibase">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
-    if(tierAffBonus(x)&&x.affs.some(a=>a.k!=='skill'))h+=`<div class="itierb">◆ ${esc(tierBonusText(x))} below</div>`;
+    if(x.upg)h+=`<div class="itierb">⚒ Upgraded +${x.upg}: +${Math.round(UPG_STEP*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</div>`;
     for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
@@ -194,7 +196,7 @@ function openItem(it,equipped,price){
     const lines=[['Damage',x=>(x.dmin+x.dmax)/2*x.levelMul*(1+x.dmg/100)],['Life',x=>x.life],['Armor',x=>x.armor],['Block %',x=>x.block],['Crit %',x=>x.crit],['Crit Dmg %',x=>x.critd],['Atk Rate %',x=>x.wspd*(1+x.aspd/100)*100],['Spell Dmg %',x=>x.spell],['Bleed %',x=>x.bleed],['Stun %',x=>x.stunCh],['Splash %',x=>x.splash],['Pierce',x=>x.pierce],['Slain explode %',x=>x.explode],['Cooldown %',x=>x.cdr],['Move %',x=>x.move],['Life on Hit',x=>x.loh],['Regen',x=>x.regen],['Max '+CLASSES[c.cls].res,x=>x.res],['Potion Charges',x=>x.pot]];
     let cmp='';for(const [n,f] of lines){const d=f(s1)-f(s0);if(Math.abs(d)>=0.1)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${Math.abs(d)<10?d.toFixed(1):Math.round(d)} ${n}</div>`;}
     s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${SKILLS[c.cls][i].name}</div>`;});
-    if(it.tier&&cur&&cur.tier&&tierAffBonus(it)!==tierAffBonus(cur)){const d=Math.round((tierAffBonus(it)-tierAffBonus(cur))*100);cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d}% tier bonus (${tierLabel(it)} vs ${tierLabel(cur)})</div>`;}
+    if(it.tier&&cur&&cur.tier&&it.tier!==cur.tier){const d=it.tier-cur.tier;cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${tierLabel(it)} vs ${tierLabel(cur)}${cur.upg?' +'+cur.upg:''}: ${d>0?'bigger':'smaller'} stat rolls</div>`;}
     h+=`<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
   if(price!=null){ // shop listing: buy or close only
     h+=`<div class="row"><div class="btn sm${c.gold<price?' dis':''}" id="iBuy">Buy (${price}🪙)</div><div class="btn sm" id="iClose">Close</div></div>`;

@@ -65,7 +65,7 @@ function checkRunebind(it){
   if(it.rarity!==0||it.rb||freeSockets(it)!==0||!it.socketed||!it.socketed.length)return null;
   const seq=it.socketed.map(s=>s.r||'-').join(',');
   const k=Object.keys(RUNEBINDS).find(k=>RUNEBINDS[k].type===it.slot&&RUNEBINDS[k].runes.join(',')===seq);if(!k)return null;
-  const R=RUNEBINDS[k];it.rarity=4;it.rb=k;it.name=R.name;it.affs=R.bonus.map(([a,m])=>rollAff(a,it.ilvl,m));
+  const R=RUNEBINDS[k];it.rarity=4;it.rb=k;it.name=R.name;it.affs=R.bonus.map(([a,m])=>rollAff(a,affLvl(it.ilvl,it.tier),m));
   BOOK.made[k]=true;storeBook();toast('Runebind forged!',R.name);return k;
 }
 

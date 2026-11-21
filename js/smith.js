@@ -121,12 +121,12 @@ const affPool=it=>(TYPES[it.slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].
 function smith(op,it,affIdx){const c=G.char;if(smithBlock(op,it,affIdx))return false;if(op==='add'&&it.addOpts&&it.addOpts.length)return false;
   const cost=SMITH_OPS[op].cost(it);if(!canPay(c,cost))return false;pay(c,cost);
   const rm=it.rarity===3?1.3:1;if(CRAFT_OPS.has(op)&&craftLimited(it))it.crafts=(it.crafts||0)+1;
-  if(op==='add')it.addOpts=addPool(it).sort(()=>Math.random()-0.5).slice(0,ADD_OPTS).map(k=>rollAff(k,it.ilvl));
+  if(op==='add')it.addOpts=addPool(it).sort(()=>Math.random()-0.5).slice(0,ADD_OPTS).map(k=>rollAff(k,affLvl(it.ilvl,it.tier)));
   else if(op==='remove'){it.affs.splice(affIdx,1);restat(it);}
-  else   if(op==='reforge'){const keys=affPool(it).sort(()=>Math.random()-0.5).slice(0,randi(3,4));it.affs=keys.map(k=>rollAff(k,it.ilvl,rm));
+  else   if(op==='reforge'){const keys=affPool(it).sort(()=>Math.random()-0.5).slice(0,randi(3,4));it.affs=keys.map(k=>rollAff(k,affLvl(it.ilvl,it.tier),rm));
     if(Math.random()<0.3)it.affs.push({k:'skill',s:randi(0,4),v:1});}
   else if(op==='enchant'){const have=new Set(it.affs.map(a=>a.k)),opts=affPool(it).filter(k=>!have.has(k));
-    it.affs[affIdx]=opts.length?rollAff(pick(opts),it.ilvl,rm):rollAff(it.affs[affIdx].k==='skill'?pick(affPool(it)):it.affs[affIdx].k,it.ilvl,rm);
+    it.affs[affIdx]=opts.length?rollAff(pick(opts),affLvl(it.ilvl,it.tier),rm):rollAff(it.affs[affIdx].k==='skill'?pick(affPool(it)):it.affs[affIdx].k,affLvl(it.ilvl,it.tier),rm);
     if(it.rarity===1)restat(it);}
   else if(op==='quality'){it.sup=true;if(it.slot==='weapon'){it.dmin*=1.15;it.dmax*=1.15;}if(it.arm)it.arm*=1.15;it.name='Superior '+it.name;if(it.rarity===0)it.base='Superior '+it.base;}
   else if(op==='socket')it.sockets=1;
