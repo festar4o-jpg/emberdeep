@@ -24,7 +24,7 @@ const BOSSES=[
   { // Act 1: Varrok the Hollow, a crypt lord who raises the dead. Teaches dodging: Grave Cleave.
     hp:0.75,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
     vs:{warden:[1.35,'Old bone shatters under steel'],arcanist:[0.55,'Grave wards blunt your spells']},
-    loot:{n:3,rare:1,unique:0,ilvl:2,gold:60},
+    loot:{n:2,rare:1,unique:0,ilvl:2,gold:60},
     phases:[
       {name:'Bone Ward',enter(e){shieldAdds(e,'grunt',4,'Bone Warden',2);}},
       {name:'Crypt Collapse',tick(e,dt){e.colT=(e.colT||1)-dt;if(e.colT<=0){e.colT=e.enraged?0.8:1.1;for(let i=0;i<2;i++){const [x,y]=i?near(160):[G.p.x+rand(-30,30),G.p.y+rand(-30,30)];groundStrike(e,x,y,50,1,e.dmg*1.1,'#9ab0d8',()=>burst(x,y,10,'#8a7a62',150));}}}}],
@@ -36,7 +36,7 @@ const BOSSES=[
   { // Act 2: The Ash Tyrant, a fast brute of chained charges and falling ash
     hp:1.45,dmg:1.05,pace:0.95,spd:1.2,enrage:'whips up the sandstorm!',
     vs:{warden:[1.3,'Steel finds the cracks in his ash-hardened hide'],arcanist:[0.75,'Keep your distance: his charges are deadly up close']},
-    loot:{n:4,rare:1,unique:0,ilvl:3,gold:75},
+    loot:{n:3,rare:1,unique:0,ilvl:3,gold:75},
     phases:[
       {name:'Sandstorm',tick(e,dt){e.trT=(e.trT||0)-dt;if(e.trT<=0){e.trT=0.4;addEHaz(e.x,e.y,34,4,e.dmg*0.4,'fire');}e.swT=(e.swT??3)-dt;if(e.swT<=0){e.swT=9;bossSummon(e,'scarab',5,12);}}},
       {name:'Closing Storm',enter(e){e.arena={x:e.homeX,y:e.homeY,r:540,min:210,rate:15};toast('The storm closes in','Stay inside the ring');},
@@ -52,7 +52,7 @@ const BOSSES=[
   { // Act 3: Mother of Rot, slow, fills the arena with poison and spawn
     hp:1.37,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
     vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic, but you keep your distance',0.86]},
-    loot:{n:4,rare:2,unique:0,ilvl:3,gold:90},
+    loot:{n:3,rare:1,unique:0,ilvl:3,gold:90},
     phases:[
       {name:'Brood Cocoon',enter(e){shieldAdds(e,'vinelasher',2,'Brood Sac',1.8);bossSummon(e,'sporetoad',2,5);}},
       {name:'Rising Rot',tick(e,dt){e.rotT=(e.rotT??1)-dt;if(e.rotT<=0){e.rotT=e.enraged?3.2:4.3;for(let i=0;i<3;i++){const [x,y]=i?near(280):[G.p.x,G.p.y];groundStrike(e,x,y,75,1.3,e.dmg*0.6,'#9fe04a',()=>addEHaz(x,y,75,6.5,e.dmg*0.32,'poison'));}}}}],
@@ -65,7 +65,7 @@ const BOSSES=[
   { // Act 4: Rimeheart, the Frozen King, ice lances, avalanches, a warded shield and a floor that shatters
     hp:2.7,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
     vs:{warden:[0.95,'Ice armour turns your blades, but your plate holds the cold out',0.95],arcanist:[1.15,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
-    loot:{n:5,rare:2,unique:0,ilvl:4,gold:110},
+    loot:{n:4,rare:2,unique:0,ilvl:4,gold:110},
     phases:[
       {name:'Ice Ward',enter(e){shieldAdds(e,'frostwraith',3,'Rime Warden',2.2);},tick(e,dt){e.snowT=(e.snowT??2)-dt;if(e.snowT<=0){e.snowT=2.6;for(let i=0;i<3;i++)bossLater(e,i*0.2,()=>{const [x,y]=near(220);groundStrike(e,x,y,45,0.8,e.dmg*0.8,'#dff4ff',()=>slowPlayer(0.3,0.8));});}}},
       {name:'Shattering Floor',tick(e,dt){e.shT=(e.shT??1)-dt;if(e.shT<=0){e.shT=e.enraged?1.1:1.6;const [x,y]=Math.random()<0.5?[G.p.x,G.p.y]:near(220);groundStrike(e,x,y,72,1.2,e.dmg*0.9,'#bfe8ff',()=>addEHaz(x,y,72,8,e.dmg*0.35,'frost'));}}}],
@@ -77,7 +77,7 @@ const BOSSES=[
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
     hp:9.0,dmg:0.85,pace:0.8,spd:1,enrage:'ignites the Core!',
     vs:{warden:[1.75,'His molten armour breaks under steel, but your plate burns',1.6],arcanist:[0.75,'Living flame shrugs off your spells, but your wards resist his fire',0.75]},
-    loot:{n:6,rare:2,unique:1,ilvl:5,gold:140},
+    loot:{n:4,rare:1,unique:1,ilvl:5,gold:140},
     phases:[
       {name:'Molten Shield',enter(e){shieldAdds(e,'magmabrute',2,'Molten Warden',1.3);e.jetA=rand(0,TAU);e.jetDir=Math.random()<0.5?1:-1;},tick(e,dt){cinderJets(e,dt,2);}},
       {name:'Core Meltdown',enter(e){e.arena={x:e.homeX,y:e.homeY,r:500,min:190,rate:14};toast('The Core melts down','Stay inside the ring');},tick(e,dt){cinderJets(e,dt,e.enraged?4:3);}}],

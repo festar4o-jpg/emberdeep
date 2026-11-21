@@ -11,8 +11,11 @@ function tone(a,f,t0,dur,vol,type){const o=a.createOscillator(),g=a.createGain()
 // rare: two bright notes · unique: a deep bell with a shimmer · set: a hollow, greener chord · rune: a metallic clink
 const DROP_SFX={
   rare:a=>{const t=a.currentTime;tone(a,988,t,0.35,0.07,'triangle');tone(a,1480,t+0.09,0.5,0.06,'triangle');},
-  unique:a=>{const t=a.currentTime;for(const [f,v,d] of [[196,0.14,1.8],[294,0.08,1.5],[392,0.06,1.2],[784,0.035,0.9],[1176,0.02,0.7]])tone(a,f,t,d,v);tone(a,1568,t+0.15,0.6,0.02,'triangle');},
-  set:a=>{const t=a.currentTime;for(const [f,v,d] of [[233,0.12,1.5],[349,0.07,1.3],[466,0.05,1.1],[698,0.03,0.8]])tone(a,f,t,d,v);tone(a,932,t+0.12,0.5,0.03,'triangle');},
+  // unique: a low gong, then a rising golden arpeggio over a shimmer; set: a deep chord with a green rising call
+  unique:a=>{const t=a.currentTime;for(const [f,v,d] of [[98,0.16,2.4],[196,0.14,2.0],[294,0.08,1.7],[392,0.06,1.4],[784,0.035,1.0]])tone(a,f,t,d,v);
+    [523,659,784,1047,1319].forEach((f,i)=>tone(a,f,t+0.12+i*0.09,0.9,0.05,'triangle'));tone(a,2093,t+0.6,1.2,0.02);},
+  set:a=>{const t=a.currentTime;for(const [f,v,d] of [[117,0.14,2.0],[233,0.12,1.7],[349,0.07,1.4],[466,0.05,1.2]])tone(a,f,t,d,v);
+    [466,587,698,932].forEach((f,i)=>tone(a,f,t+0.15+i*0.11,0.8,0.045,'triangle'));tone(a,1397,t+0.6,1,0.02);},
   // boss cues: a low warning horn before a big attack, a deep boom at a phase change, a crack on a stagger
   warn:a=>{const t=a.currentTime;tone(a,98,t,0.9,0.1,'sawtooth');tone(a,147,t+0.05,0.8,0.05,'sawtooth');tone(a,196,t+0.1,0.6,0.03);},
   phase:a=>{const t=a.currentTime;tone(a,55,t,1.4,0.2);tone(a,82,t,1.1,0.1);tone(a,330,t,0.5,0.03,'triangle');},

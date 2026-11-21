@@ -256,9 +256,9 @@ function zoneDescend(){const Z=ZONES[G.zone];
 function zoneBossDown(e){const zid=G.zone,Z=ZONES[zid],B=ZBOSS[e.zb],c=G.char;if(zid)zst(c,zid).boss=true;
   if(Z&&Z.gate==='boss'){G.portal.active=true;toast(`${B.name} falls`,'The way on is open');}else toast(`${B.name} falls`,'');
   if(B.quest)questDone(B.quest);G.shake=Math.max(G.shake,12);
-  const d=G.depth;for(let k=0;k<3;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+2,2,k===0?2:k===1&&Math.random()<0.3?3:0,{act:dropAct(d)}));
+  const d=G.depth;for(let k=0;k<2;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+2,2,k===0?2:0,{act:dropAct(d)})); // 2 items, the first rare or better
   dropGold(e.x,e.y,d*30);dropGold(e.x+20,e.y,d*20);dropStones(e,'boss');saveChar();}
-function superDown(e){const c=G.char,d=G.depth;for(let k=0;k<2;k++)dropItem(e.x+rand(-30,30),e.y+rand(-30,30),rollDrop(c,d+1,2,k===0?2:0,{act:dropAct(d)}));for(let k=0;k<3;k++)dropGold(e.x+rand(-20,20),e.y,d*8);}
+function superDown(e){const c=G.char,d=G.depth;for(let k=0,n=Math.random()<0.5?2:1;k<n;k++)dropItem(e.x+rand(-30,30),e.y+rand(-30,30),rollDrop(c,d+1,2,k===0?2:0,{act:dropAct(d)}));for(let k=0;k<3;k++)dropGold(e.x+rand(-20,20),e.y,d*8);}
 // ---------- quests (Act 1) ----------
 const QUESTS={
   a1q1:{act:1,name:'The Gravedigger',goal:'Slay Old Grieve in The Mourning Fields',story:'"He digs our dead back up, and sells what he finds. End him."',reward:'sp',rtext:'+1 skill point'},

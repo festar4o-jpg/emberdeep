@@ -22,7 +22,9 @@ const matsOf=c=>{const m=c.mats&&typeof c.mats==='object'?c.mats:(c.mats={});
   if('shard' in m){const e=m.essence,sh=m.shard;delete m.shard;m.dust=(+m.dust||0)+(+e||0);m.essence=+sh||0;}
   for(const k of MAT_KEYS)if(!(m[k]>=0))m[k]=0;return m;};
 const matText=m=>MAT_KEYS.filter(k=>m[k]).map(k=>`${m[k]}${MATS[k].ic}`).join(' ');
-const RARITY_MAT=['scrap','dust','essence','primal','primal','primal'],RARITY_MAT_N=[2,2,2,1,1,1];
+// v1.0.50: about 40% as many items drop as before, so white, blue and yellow items give 2.5x the materials (5 instead of 2),
+// keeping the materials per act (and so the smith's costs) where they were.
+const RARITY_MAT=['scrap','dust','essence','primal','primal','primal'],RARITY_MAT_N=[5,5,5,1,1,1];
 // Act the item comes from (1..5, endless items count as act 5), and the yield multiplier: x1 in Act 1 up to x3 in Act 5.
 const itemAct=it=>clamp(Math.floor(((it.ilvl||1)-1)/5)+1,1,5);
 const salvageMul=it=>1+0.5*(itemAct(it)-1);
@@ -151,12 +153,54 @@ function bulkSalvage(c,r){const {items}=bulkSalvagePreview(c,r),mats={};let gold
   for(const it of items){const g=salvageItem(c,it);gold+=g.gold;addMats(mats,g.mats);}
   if(items.length)saveChar();return {n:items.length,gold,mats};}
 const BULK=[{r:0,label:'white'},{r:1,label:'blue'},{r:2,label:'yellow'}];
+// ---------- multi-select salvage (v1.0.50) ----------
+// The Salvage tab has three tap modes: Inspect (one item, as before), Select (tap items to pick several) and Lock (tap
+// to lock/unlock). Quick buttons add to the selection; they never take locked items, charms, uniques, set items or
+// Runebinds (those can still be tapped in by hand, except locked ones). The rarity buttons leave socketed items out
+// (they have their own button), since a socketed white is a Runebind base.
+let salvMode='one';const salvPick=new Set();
+const autoPickable=it=>it.slot!=='charm'&&!isLocked(it)&&it.rarity<=2;
+const worseThanWorn=(c,it)=>{if(it.slot==='charm')return false;if(!fitsFor(c,it).length)return true;return power(calcStats(c,it))<power(calcStats(c))*0.999;};
+const QUICK=[{k:'r0',label:'Normal',col:RCOL[0],f:(c,it)=>it.rarity===0&&!it.sockets},{k:'r1',label:'Magic',col:RCOL[1],f:(c,it)=>it.rarity===1&&!it.sockets},
+  {k:'r2',label:'Rare',col:RCOL[2],f:(c,it)=>it.rarity===2&&!it.sockets},{k:'sock',label:'With sockets',col:'#9a8a70',f:(c,it)=>!!it.sockets},
+  {k:'worse',label:'Worse than worn',col:'#c06050',f:worseThanWorn}];
+const quickItems=(c,k)=>{const Q=QUICK.find(q=>q.k===k);return Q?c.bag.filter(it=>autoPickable(it)&&Q.f(c,it)):[];};
+function quickPick(c,k){for(const it of quickItems(c,k))salvPick.add(it);}
+function togglePick(it){if(salvPick.has(it))salvPick.delete(it);else if(!isLocked(it))salvPick.add(it);}
+// Drops picks that left the bag or got locked; returns the picked bag items in bag order.
+function pickedItems(c){for(const it of [...salvPick])if(!c.bag.includes(it)||isLocked(it))salvPick.delete(it);return c.bag.filter(it=>salvPick.has(it));}
+function pickPreview(c){const items=pickedItems(c),mats={},by=[0,0,0,0,0,0];let gold=0,stones=0;
+  for(const it of items){gold+=salvageValue(it);addMats(mats,salvageMats(it));by[it.rarity]++;if(!it.rb)stones+=(it.socketed||[]).length;}
+  return {items,gold,mats,by,stones};}
+function salvagePicked(c){const items=pickedItems(c),mats={};let gold=0,n=0;
+  for(const it of items){const g=salvageItem(c,it);if(!g)continue;n++;gold+=g.gold;addMats(mats,g.mats);}
+  salvPick.clear();if(n)saveChar();return {n,gold,mats};}
+function askPicked(){const c=G.char,p=pickPreview(c);if(!p.items.length)return;
+  const parts=p.by.map((n,r)=>n?`<span style="color:${RCOL[r]}">${n} ${RNAME[r].toLowerCase()}</span>`:'').filter(Boolean).join(', ');
+  askSmith(`<h3>Salvage ${p.items.length} item${p.items.length>1?'s':''}?</h3><p>${parts} will be destroyed. You get:</p>
+    <div class="card">${[`<div>🪙 ${p.gold} gold</div>`].concat(MAT_KEYS.filter(k=>p.mats[k]).map(k=>`<div>${MATS[k].ic} ${p.mats[k]} ${MATS[k].name}</div>`)).join('')}</div>
+    ${p.stones?`<p class="fdim">${p.stones} gem${p.stones>1?'s':''}/rune${p.stones>1?'s':''} in their sockets go back to your pouch.</p>`:''}
+    ${p.by[3]||p.by[5]||p.by[4]?'<p style="color:#e0a050">Includes uniques, set items or Runebinds you picked by hand.</p>':''}`,'Salvage',()=>{
+    const r=salvagePicked(G.char);if(r.n)toast(`Salvaged ${r.n} item${r.n>1?'s':''}`,`+${r.gold} gold ${matText(r.mats)}`);smithSel=null;renderSmith();});}
+function setSalvMode(m){salvMode=m;if(m!=='pick')salvPick.clear();smithSel=null;renderSmith();}
+function renderSalvageBar(){const c=G.char,el=$('smithBulk');
+  let h=`<div class="row smmodes">${[['one','👆 Inspect'],['pick','☑ Select'],['lock','🔒 Lock']].map(([k,n])=>`<div class="btn sm${salvMode===k?' on':''}" data-m="${k}">${n}</div>`).join('')}</div>`;
+  if(salvMode==='pick')h+=`<div class="row smquick">${QUICK.map(q=>{const n=quickItems(c,q.k).length;return `<div class="btn sm${n?'':' dis'}" data-q="${q.k}" style="border-color:${q.col}">${q.label} (${n})</div>`;}).join('')}<div class="btn sm${salvPick.size?'':' dis'}" data-q="clear">Clear</div></div>`;
+  el.innerHTML=h;
+  el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setSalvMode(b.dataset.m));
+  el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{if(b.dataset.q==='clear')salvPick.clear();else quickPick(c,b.dataset.q);renderSmith();});}
+function renderPickInfo(){const c=G.char,p=pickPreview(c);
+  if(salvMode==='lock'){$('smithInfo').innerHTML=`<p class="fdim">Tap items to lock 🔒 or unlock them. Locked items are never salvaged and never picked by the quick buttons.</p>`;return;}
+  $('smithInfo').innerHTML=`<p class="fdim">Tap items to pick or unpick them, or use the quick buttons (they skip 🔒 locked items, charms, uniques, set items and Runebinds).</p>
+    <div style="margin:8px 0"><b>${p.items.length}</b> selected${p.items.length?` · ${matLine(p.gold,p.mats)}`:''}${p.stones?` · ${p.stones} gems/runes back`:''}</div>
+    <div class="row"><div class="btn sm red${p.items.length?'':' dis'}" id="smSalvPick">Salvage selected (${p.items.length})</div></div>`;
+  $('smSalvPick').onclick=askPicked;}
 
 // ---------- UI ----------
 let smithSel=null,smithAff=null,smithTab='craft',smithAskFn=null;
-function openSmith(){if(!G.char||G.paused||!G.inTown)return;smithSel=null;smithAff=null;smithTab='craft';smithAskFn=null;$('smithOv').classList.remove('hidden');$('smithAsk').classList.add('hidden');renderSmith();setPause();}
+function openSmith(){if(!G.char||G.paused||!G.inTown)return;salvMode='one';salvPick.clear();smithSel=null;smithAff=null;smithTab='craft';smithAskFn=null;$('smithOv').classList.remove('hidden');$('smithAsk').classList.add('hidden');renderSmith();setPause();}
 function closeSmith(){$('smithOv').classList.add('hidden');$('smithAsk').classList.add('hidden');smithAskFn=null;setPause();}
-function setSmithTab(t){smithTab=t;smithSel=null;smithAff=null;renderSmith();}
+function setSmithTab(t){smithTab=t;salvPick.clear();smithSel=null;smithAff=null;renderSmith();}
 function smithItems(){const c=G.char;return smithTab==='salvage'?c.bag.slice():EQ_SLOTS.map(s=>c.equip[s]).filter(Boolean).concat(c.bag.filter(it=>it.slot!=='charm'));}
 function costHtml(cost){const c=G.char,m=matsOf(c);return `<span class="${c.gold>=cost.gold?'':'no'}">${cost.gold}🪙</span>`+MAT_KEYS.filter(k=>cost[k]).map(k=>` <span class="${m[k]>=cost[k]?'':'no'}">${cost[k]}${MATS[k].ic}</span>`).join('');}
 const matLine=(gold,m)=>`+${gold}🪙`+MAT_KEYS.filter(k=>m[k]).map(k=>` &nbsp;+${m[k]} ${MATS[k].ic} ${MATS[k].name}`).join('');
@@ -167,13 +211,12 @@ function renderSmith(){
   $('smithTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>setSmithTab(el.dataset.t));
   $('smithMats').innerHTML=`🪙 <b style="color:var(--gold);font-weight:normal">${c.gold}</b> &nbsp; `+MAT_KEYS.map(k=>`<span title="${MATS[k].name}">${MATS[k].ic} ${m[k]}</span>`).join(' &nbsp; ');
   if(smithSel&&!items.includes(smithSel)){smithSel=null;smithAff=null;}
-  $('smithGrid').innerHTML=items.length?items.map(it=>cellHtml(it).replace('class="cell','class="cell'+(it===smithSel?' sel':''))).join(''):'<p class="fdim" style="grid-column:1/-1">Your bag is empty.</p>';
-  [...$('smithGrid').children].forEach((el,i)=>{if(items[i])el.onclick=()=>{smithSel=items[i];smithAff=null;renderSmith();};});
+  const multi=smithTab==='salvage'&&salvMode!=='one';if(multi)pickedItems(c);
+  $('smithGrid').innerHTML=items.length?items.map(it=>cellHtml(it).replace('class="cell','class="cell'+(it===smithSel&&!multi?' sel':'')+(multi&&salvPick.has(it)?' pick':''))).join(''):'<p class="fdim" style="grid-column:1/-1">Your bag is empty.</p>';
+  [...$('smithGrid').children].forEach((el,i)=>{if(items[i])el.onclick=()=>{const it=items[i];
+    if(multi&&salvMode==='pick')togglePick(it);else if(multi){toggleLock(it);salvPick.delete(it);}else{smithSel=it;smithAff=null;}renderSmith();};});
   $('smithBulk').classList.toggle('hidden',smithTab!=='salvage');
-  if(smithTab==='salvage'){
-    $('smithBulk').innerHTML=BULK.map(b=>{const n=bulkSalvageItems(c,b.r).length;return `<div class="btn sm${n?'':' dis'}" data-b="${b.r}" style="border-color:${RCOL[b.r]}">Salvage all ${b.label} (${n})</div>`;}).join('');
-    $('smithBulk').querySelectorAll('[data-b]').forEach(el=>el.onclick=()=>askBulk(+el.dataset.b));
-    return renderSalvageInfo();}
+  if(smithTab==='salvage'){renderSalvageBar();return multi?renderPickInfo():renderSalvageInfo();}
   const it=smithSel;
   if(!it){$('smithInfo').innerHTML=`<p class="fdim">Pick an item (worn or in your bag). Salvage items in the Salvage tab for ${MAT_HELP}</p>`;return;}
   let h=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}${it.sup?' · Superior':''}</div>`;
@@ -191,7 +234,7 @@ function renderSmith(){
     if(smith(op,it,smithAff)){toast(SMITH_OPS[op].name,it.name);if(op!=='enchant')smithAff=null;renderSmith();}});
 }
 function renderSalvageInfo(){const c=G.char,it=smithSel;
-  if(!it){$('smithInfo').innerHTML=`<p class="fdim">Tap a bag item to salvage it, or use the buttons above. Salvaging gives gold and ${MAT_HELP}</p>`;return;}
+  if(!it){$('smithInfo').innerHTML=`<p class="fdim">Tap a bag item to salvage it, or switch to ☑ Select to salvage several at once. Salvaging gives gold and ${MAT_HELP}</p>`;return;}
   const g=salvageMats(it),stones=(it.socketed||[]).length&&!it.rb;
   $('smithInfo').innerHTML=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)} · Item level ${it.ilvl} · Act ${itemAct(it)} (x${salvageMul(it)})</div>
     <div style="margin:8px 0">${matLine(salvageValue(it),g)}</div>${stones?'<div class="fdim">Its gems and runes go back to your pouch.</div>':''}

@@ -73,10 +73,22 @@ function beamSprite(rgb){let c=BEAM[rgb];if(c)return c;const W=32,H=256;c=mkCanv
   const h=x.createLinearGradient(0,0,W,0);h.addColorStop(0,`rgba(${rgb},0)`);h.addColorStop(0.5,`rgba(${rgb},1)`);h.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=h;x.fillRect(0,0,W,H);
   x.fillStyle='rgba(255,255,255,.9)';x.fillRect(W/2-1.5,0,3,H); // hot core
   x.globalCompositeOperation='destination-in';const v=x.createLinearGradient(0,0,0,H);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(0.6,'rgba(0,0,0,.45)');v.addColorStop(1,'rgba(0,0,0,1)');x.fillStyle=v;x.fillRect(0,0,W,H);return BEAM[rgb]=c;}
-function drawBeam(l,col,big){const rgb=rgbOf(col),H=big?200:125,W=big?26:18,pu=0.75+0.25*Math.sin(G.time*2.4+l.x);ctx.globalCompositeOperation='lighter';
+function drawBeam(l,col,big){const rgb=rgbOf(col),named=l.item&&(l.item.rarity===3||l.item.rarity===5),H=named?330:big?200:125,W=named?34:big?26:18,pu=0.75+0.25*Math.sin(G.time*2.4+l.x);ctx.globalCompositeOperation='lighter';
   ctx.globalAlpha=(big?0.7:0.55)*pu;ctx.drawImage(beamSprite(rgb),l.x-W/2,l.y-H,W,H);
-  ctx.globalAlpha=0.6*pu;ctx.save();ctx.translate(l.x,l.y+4);ctx.scale(1,0.4);const R=big?34:24;ctx.drawImage(falloff(rgb),-R,-R,R*2,R*2);ctx.restore();
+  if(named){ctx.globalAlpha=0.35*pu;ctx.drawImage(beamSprite('255,255,255'),l.x-W/6,l.y-H*0.9,W/3,H*0.9); // white-hot core
+    // a slowly turning ring of light on the ground, and a bright flare for the first seconds after the drop
+    const age=G.time-(l.born??-9);ctx.save();ctx.translate(l.x,l.y+4);ctx.scale(1,0.4);ctx.strokeStyle=col;ctx.lineWidth=3;
+    for(let k=0;k<3;k++){const a0=G.time*1.6+k*TAU/3;ctx.globalAlpha=0.55*pu;ctx.beginPath();ctx.arc(0,0,30,a0,a0+1.3);ctx.stroke();}
+    if(age<2.5){const f=1-age/2.5;ctx.globalAlpha=0.9*f;ctx.drawImage(falloff(rgb),-110*f-30,-110*f-30,(110*f+30)*2,(110*f+30)*2);}ctx.restore();}
+  ctx.globalAlpha=0.6*pu;ctx.save();ctx.translate(l.x,l.y+4);ctx.scale(1,0.4);const R=named?44:big?34:24;ctx.drawImage(falloff(rgb),-R,-R,R*2,R*2);ctx.restore();
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// The moment a good item hits the ground: rares give a small golden spark; set items and uniques a burst of light,
+// a shockwave, a shake and a call-out over the item (the sound is in sfx.js dropSfx).
+function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=RCOL[it.rarity];l.born=G.time;
+  if(it.rarity===2){burst(l.x,l.y,10,col,120);return;}
+  if(it.rarity===3||it.rarity===5){burst(l.x,l.y,34,col,260);burst(l.x,l.y,14,'#ffffff',180);
+    G.fx.push({type:'ring',x:l.x,y:l.y,r0:10,r1:150,t:0,max:0.6,col});G.fx.push({type:'ring',x:l.x,y:l.y,r0:4,r1:90,t:0,max:0.45,col:'#ffffff'});
+    G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}
 // PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
 // Labels that would overlap one already drawn this frame stack upward instead (LABELS is reset by render()).
 const LABELS=[];

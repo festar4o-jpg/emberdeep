@@ -201,29 +201,61 @@ const OWN_CLASS_CHANCE=0.8; // weapons and off-hands: 80% for your class, 20% fo
 const PITY=15;              // a slot missing from the last 15 drops is guaranteed next
 const dropSlotOf=it=>it.slot==='shield'||it.slot==='focus'?'offhand':it.slot;
 function pickDropSlot(){let r=Math.random()*DROP_TOT;for(const k of DROP_KEYS){r-=DROP_W[k];if(r<0)return k;}return 'weapon';}
-// Every monster/boss drop goes through here: bad-luck protection, then the class roll for weapons and off-hands,
-// then the base tier. opt.act = the act whose tiers drop (default: from item level); opt.top = always that act's tier (bosses).
+// Item rarity of a monster/boss drop (v1.0.50, Diablo 2 / PoE style): white 50%, magic 30%, rare 10%, set 5%, unique 5%.
+// boost (champions 1, super uniques and zone bosses 2, act bosses 3) moves odds from white to the better rarities.
+const DROP_RAR=[50,30,10,0,0,5],DROP_UQ=5;
+function dropRarity(boost=0){const b=Math.max(0,boost),w=[Math.max(5,DROP_RAR[0]-14*b),DROP_RAR[1]+3*b,DROP_RAR[2]+6*b,DROP_UQ+2.5*b,0,DROP_RAR[5]+2.5*b];
+  let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let i=0;i<6;i++){r-=w[i];if(r<0)return i;}return 0;}
+// Bad-luck protection: after NAMED_PITY kills without a set or unique item, the next item drop is one (c.namedSince counts kills).
+const NAMED_PITY=200;
+// Smart loot: this share of set/unique drops is picked from the items made for your class (its own uniques and sets);
+// the rest roll normally (slot first), which mostly also gives items you can wear.
+const SMART_LOOT=0.6;
+// The strongest uniques (two powers, or Act V build-defining ones) drop at this weight next to 1 for the others.
+const STRONG_UQ_W=0.4;
+const uqWeight=k=>UNIQUES[k]&&UNIQUES[k].strong?STRONG_UQ_W:1;
+function pickW(ks,wf){let r=Math.random()*ks.reduce((a,k)=>a+wf(k),0);for(const k of ks){r-=wf(k);if(r<0)return k;}return ks[ks.length-1];}
+// A set piece or unique made for the character's class (falling back to classless ones), weighted by slot.
+function smartNamed(c,rar,act){const slotW=t=>DROP_W[t==='shield'||t==='focus'?'offhand':t]||10;
+  const cand=rar===3?Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==null&&UNIQUES[k].act<=act).map(k=>({uq:k,cls:UNIQUES[k].cls,type:UNIQUES[k].type,w:slotW(UNIQUES[k].type)*uqWeight(k)}))
+    :Object.keys(SET_ITEMS).filter(k=>{const S=SETS[SET_ITEMS[k].set];return S.act<=act&&inSetZone(S);}).map(k=>({si:k,cls:SETS[SET_ITEMS[k].set].cls,type:SET_ITEMS[k].type,w:slotW(SET_ITEMS[k].type)}));
+  let ok=cand.filter(o=>o.cls===c.cls);if(!ok.length)ok=cand.filter(o=>!o.cls);if(!ok.length)return null;
+  return pickW(ok,o=>o.w);}
+let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
+// Every monster/boss drop goes through here: rarity (with bad-luck protection and smart loot), then the slot with its own
+// bad-luck protection, the class roll for weapons and off-hands, and the base tier. opt.act = the act whose tiers drop
+// (default: from item level); opt.top = always that act's tier (bosses). Rare and better items always come in the
+// current act's tier, so a rare from the current act is often an upgrade; whites and blues can come in older tiers.
 function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
+  const tier0=opt.act||tierOfLvl(ilvl);
+  const due=(c.namedSince||0)>=NAMED_PITY;let rar=dropRarity(boost);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
+  if(minRarity>=3&&rar!==3)rar=3;else if(rar<minRarity)rar=minRarity;
   // Each slot must appear within its next (PITY+1-misses) drops. Sorted by that deadline, if the j-th slot's deadline is <= j
   // there is no slack left, so the most urgent slot drops now. This forces a slot at 15 misses, and also steps in a little
   // early when several slots run out together, so no slot ever goes more than PITY drops without appearing.
   const dl=DROP_KEYS.map(k=>[PITY+1-ds[k],k]).sort((a,b)=>a[0]-b[0]);
   let slot=null;for(let j=0;j<dl.length;j++)if(dl[j][0]<=j+1){slot=dl[0][1];break;}
+  const forced=!!slot;
+  if(!forced&&(rar===3||rar===5)&&Math.random()<SMART_LOOT){const o=smartNamed(c,rar,tier0);
+    if(o){const sl=dropSlotOf({slot:o.type});for(const k of DROP_KEYS)ds[k]=k===sl?0:ds[k]+1;
+      const icls=o.cls||c.cls;return genItem(ilvl,icls,boost,o.type,0,undefined,TIERED.has(o.type)?tier0:undefined,o.si,o.uq);}}
   if(!slot)slot=pickDropSlot();
   let icls=c.cls;if(slot==='weapon'||slot==='offhand')icls=Math.random()<OWN_CLASS_CHANCE?c.cls:OTHER_CLS[c.cls];
   let type=slot==='offhand'?OFF_TYPE[icls]:slot;
-  const tier0=opt.act||tierOfLvl(ilvl);
-  let tier=TIERED.has(type)?rollTier(tier0,opt.top):undefined;
-  // a guaranteed unique (boss loot) needs a slot that has one: otherwise re-pick among those that do, by drop weight
-  if(minRarity>=3&&!uniquesFor(type,icls,tier||tier0).length){
+  let tier=TIERED.has(type)?(rar>=2?tier0:rollTier(tier0,opt.top)):undefined;
+  // a set piece or unique needs a slot that has one: otherwise re-pick among those that do, by drop weight
+  const has=(ty,ic,t)=>rar===3?uniquesFor(ty,ic,t).length:setItemsFor(ty,ic,t).length;
+  // a forced slot (slot pity) tries the other kind first; only the set/unique guarantee may override the slot pity
+  if((rar===3||rar===5)&&forced&&minRarity<3&&!has(type,icls,tier||tier0)){const alt=rar===3?5:3,r0=rar;rar=alt;if(!has(type,icls,tier||tier0))rar=r0;}
+  if((rar===3||rar===5)&&!has(type,icls,tier||tier0)&&(!forced||due||minRarity>=3)){
     const ok=[];for(const k of DROP_KEYS){const cs=k==='weapon'||k==='offhand'?[[c.cls,OWN_CLASS_CHANCE],[OTHER_CLS[c.cls],1-OWN_CLASS_CHANCE]]:[[c.cls,1]];
-      for(const [ic,w] of cs){const ty=k==='offhand'?OFF_TYPE[ic]:k;if(uniquesFor(ty,ic,tier0).length)ok.push([k,ic,ty,DROP_W[k]*w]);}}
+      for(const [ic,w] of cs){const ty=k==='offhand'?OFF_TYPE[ic]:k;if(has(ty,ic,tier0))ok.push([k,ic,ty,DROP_W[k]*w]);}}
     if(ok.length){let r=Math.random()*ok.reduce((a,o)=>a+o[3],0);let o=ok[ok.length-1];for(const x of ok){r-=x[3];if(r<0){o=x;break;}}
       [slot,icls,type]=o;tier=TIERED.has(type)?tier0:undefined;}
   }
   for(const k of DROP_KEYS)ds[k]=k===slot?0:ds[k]+1;
-  return genItem(ilvl,icls,boost,type,minRarity,undefined,tier);
+  DROP_R=rar;try{return genItem(ilvl,icls,boost,type,0,undefined,tier);}finally{DROP_R=null;}
 }
 function rollAff(k,ilvl,rm=1){const a=AFF[k];const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
 // tier: base tier 1..5 for tiered types (default: the tier of the item level's act). forceSet: make this set piece.
@@ -232,11 +264,11 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   if(forceSet){forceType=SET_ITEMS[forceSet].type;forceWt=SET_ITEMS[forceSet].wt;}
   if(forceUq){forceType=UNIQUES[forceUq].type;forceWt=UNIQUES[forceUq].wt;}
   const slot=forceType||pickType(cls); // item.slot holds the item TYPE (weapon, shield, body, ring…)
-  const rr=rollRarity(boost);let rarity=forceSet?5:rr===5?(minRarity>=3?3:5):Math.max(minRarity,rr); // a guaranteed unique stays a unique
+  const rr=DROP_R??rollRarity(boost);DROP_R=null;let rarity=forceSet?5:rr===5?(minRarity>=3?3:5):Math.max(minRarity,rr); // a guaranteed unique stays a unique
   // uniques are fixed named items (see uniques.js); with none for this type, class and act the item becomes a rare
   const uact=clamp(Math.round(tier||tierOfLvl(ilvl)),1,5);let U=null;
   if(forceUq){rarity=3;U=forceUq;}
-  else if(rarity===3){const ks=uniquesFor(slot,cls,uact).filter(k=>!forceWt||UNIQUES[k].wt===forceWt);if(ks.length){U=pick(ks);forceWt=UNIQUES[U].wt||forceWt;}else rarity=2;}
+  else if(rarity===3){const ks=uniquesFor(slot,cls,uact).filter(k=>!forceWt||UNIQUES[k].wt===forceWt);if(ks.length){U=pickW(ks,uqWeight);forceWt=UNIQUES[U].wt||forceWt;}else rarity=2;}
   // set pieces: one that can drop for this type, class and act (and zone), or a rare when there is none
   let SI=forceSet||null;if(rarity===5&&!SI){const ks=setItemsFor(slot,cls,uact).filter(k=>!forceWt||SET_ITEMS[k].wt===forceWt);if(ks.length){SI=pick(ks);forceWt=SET_ITEMS[SI].wt||forceWt;}else rarity=2;}
   const FX=U?UNIQUES[U]:SI?SET_ITEMS[SI]:null; // fixed kind (body/focus) for named items

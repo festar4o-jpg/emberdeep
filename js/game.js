@@ -45,12 +45,12 @@ function killEnemy(e){
     const c=makeEnemy(e.type,x,y,G.depth,e.elite,e.pack,e.affs);c.chest=e.chest;c.gen=(e.gen||0)+1;c.r=Math.max(9,e.r*0.72);c.hp=c.maxHp=e.maxHp*0.45;c.dmg=e.dmg*0.7;c.xp=e.xp*0.35;c.spd=e.spd*1.1;
     c.aggro=true;c.spawnT=0.25;c.noLoot=true;c.name=e.name;G.enemies.push(c);burst(x,y,8,'#dff4ff',140);}
   gainXp(Math.round(e.xp*(e.summoned?0.3:1)));
-  if(!e.summoned)trophyKill(e);
+  if(!e.summoned){trophyKill(e);G.char.namedSince=(G.char.namedSince||0)+1;} // kills since the last set/unique (items.js NAMED_PITY)
   if(e.noLoot||e.summoned)return;
   if(e.type==='thief'){thiefLoot(e);return;}
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
   const T=ETYPES[e.type];const c=G.char,lootMul=1+(G.stats.loot||0)/100; // Item Drop Chance (set bonus)
-  if(Math.random()<0.45||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*G.depth*(e.elite?3:1)));
+  if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*G.depth*(e.elite?3:1)));
   if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+(G.depth>25?1:0);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,G.depth+L.ilvl,3,min,{act:dropAct(G.depth),top:true}));}
     dropGold(e.x,e.y,G.depth*L.gold);dropGold(e.x+20,e.y,G.depth*L.gold*0.5);
@@ -62,10 +62,15 @@ function killEnemy(e){
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){const n=(Math.random()<Math.min(1,0.4*lootMul)?2:1)+(e.affs.length>=3&&Math.random()<0.5?1:0);for(let k=0;k<n;k++)dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
-  else if(Math.random()<T.drop*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
+  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootMul))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
+  else if(Math.random()<normalDrop(T)*lootMul)dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
 }
-function dropItem(x,y,it){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it))dropSfx(l);} // sfx.js: a chime for rare and better
+// Item drop chances (v1.0.50): normal monsters 6.5-13% (tougher kinds more), champion/magic pack members 35%
+// (40% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
+// BOSSES[].loot). Gold is separate and more common; gems, runes and charms keep their own rates.
+const ELITE_DROP=0.35,GOLD_CH=0.5;
+const normalDrop=T=>0.06+(T.drop||0)*0.25;
+function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char)G.char.namedSince=0;if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
 function dropGold(x,y,v){G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});}
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.
 // Movement input from the joystick and WASD/arrows, length at most 1.

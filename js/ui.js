@@ -151,7 +151,9 @@ function renderInv(){
 function setCell(c,sl){const it=c.equip[sl],g=it?setGlow(it,c):'',h=cellHtml(it,SLOT_NAME[sl],sl);if(!g)return h;
   const S=SETS[setOf(it)]; // the glow takes the set's aura colour (CSS variable --sg)
   return h.replace('<div class="cell',`<div title="${esc(S.name)}: ${g==='full'?'full set':'set bonus'} active" class="cell sglow${g==='full'?' full':''}`).replace(' style="',` style="--sg:${S.aura||'63,224,90'};`);}
-function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
+// v1.0.50: fewer drops, so each salvaged item gives 1.5x the gold (SALV_GOLD); the shop price formula halves its factor to stay the same.
+const SALV_GOLD=1.5;
+function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)*SALV_GOLD+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
 // Upgrades are cheaper than before (they no longer touch affixes): x1.45 per level.
 function upgradeCost(it,lv){return Math.round((20+it.ilvl*8)*Math.pow(1.45,lv??(it.upg||0)));}
 const upgradeSpent=it=>{let g=0;for(let k=0;k<(it.upg||0);k++)g+=upgradeCost(it,k);return g;};
@@ -236,7 +238,7 @@ function closeItem(){$('itemOv').classList.add('hidden');setPause();}
 function potionPrice(){return 20+G.depth*4;}
 function rollShop(d){
   const c=G.char,out=[];
-  for(const t of typesFor(c.cls).sort(()=>Math.random()-0.5).slice(0,8)){const it=genItem(d,c.cls,1,t,1);out.push({it,price:Math.round(salvageValue(it)*4*rand(0.9,1.1))});}
+  for(const t of typesFor(c.cls).sort(()=>Math.random()-0.5).slice(0,8)){const it=genItem(d,c.cls,1,t,1);out.push({it,price:Math.round(salvageValue(it)*(4/SALV_GOLD)*rand(0.9,1.1))});}
   return out.sort((a,b)=>TYPE_KEYS.indexOf(a.it.slot)-TYPE_KEYS.indexOf(b.it.slot)||a.it.rarity-b.it.rarity);
 }
 function openShop(){if(!G.char||G.paused||!G.inTown)return;$('shopOv').classList.remove('hidden');renderShop();setPause();}
