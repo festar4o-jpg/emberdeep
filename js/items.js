@@ -281,19 +281,38 @@ const affLvl=(ilvl,tier)=>!tier?ilvl:clamp(ilvl,TIER_LO[tier-1],tier===5?999:TIE
 // Upgrades (+1..+10, gold): +4% base damage, armor and implicit stats per level (+40% at +10); affixes are not upgraded,
 // so a fresh drop from the current act beats upgraded gear from an act or two back. Rings and amulets have no base:
 // upgrades give their affixes +4% per level instead. Items from before v1.0.48 (upgrades were +10% to everything, and
-// v1.0.47 gave affixes +4% per tier) get that strength baked into their numbers when they load (bakeUpgrades).
-const UPG_STEP=0.04,UPG_VER=2;
+// v1.0.47 gave affixes +4% per tier) are reset to the current rules when they load (bakeUpgrades, v1.0.49).
+const UPG_STEP=0.04,UPG_VER=3;
 const upgMul=it=>1+UPG_STEP*(it.upg||0);
 const affMul=it=>it.tier?1:upgMul(it);
-function bakeUpgrades(it){if(it.slot==='charm')return it; /* charms are never upgraded */if(it.uv>=UPG_VER){it.uv=UPG_VER;return it;}
-  const u=it.upg||0,old=1+0.1*u,nu=1+UPG_STEP*u,tb=it.tier>1?1+0.04*(it.tier-1):1,flat=a=>a.k==='skill'||AFF[a.k]&&AFF[a.k].flat;
-  if(u>0){const kb=old/nu;if(it.dmin!=null){it.dmin*=kb;it.dmax*=kb;}if(it.arm)it.arm*=kb;for(const a of it.imp||[])if(!flat(a))a.v*=kb;}
-  const ka=it.tier?old*tb:old/nu;if(ka!==1)for(const a of it.affs)if(!flat(a))a.v*=ka;
+// v1.0.49: every item is brought to the current rules, as if it had dropped today; its +level stays (now +4%/level).
+// Each affix keeps its place in its range: a roll at the top of the old range lands at the top of the new one for
+// the item's tier. Items from v1.0.48 (uv 2) either rolled under the new rules already (kept as they are) or had the
+// old upgrade strength baked in (taken back out first). Old saves are backed up by the save version change.
+const OLD_ROLL={dmg:l=>[6+l*0.6,14+l*0.6],crit:l=>[2+l*0.08,5+l*0.08],critd:l=>[12+l*0.8,25+l*0.8],aspd:()=>[5,12],cdr:()=>[3,8],move:()=>[4,10]};
+function rollRange(k,l){const R=Math.random;try{Math.random=()=>0;const a=AFF[k].roll(l);Math.random=()=>1;const b=AFF[k].roll(l);return [Math.min(a,b),Math.max(a,b)];}finally{Math.random=R;}}
+const affRm=(it,k)=>{const R=it.rb&&typeof RUNEBINDS!=='undefined'&&RUNEBINDS[it.rb];const b=R&&R.bonus.find(x=>x[0]===k);return b?b[1]:it.rarity===3?1.3:it.rarity===5?1.2:1;};
+const scaledAff=a=>a.k!=='skill'&&AFF[a.k]&&!AFF[a.k].flat;
+// v1.0.48 items: does the base look like it carries a baked upgrade? (base above what its tier can roll)
+function baseInflated(it){if(!(it.upg>0)||!it.tier)return false;const bl=baseLvl(it.tier,it.ilvl),sup=it.sup?1.15:1;
+  if(it.slot==='weapon'&&WEAPONS[it.wt]){const exp=(5+bl*2.4)*WEAPONS[it.wt].dmg*([1,1,1.1,1.25,1,1.2][it.rarity]||1)*sup;return (it.dmin+it.dmax)/2/exp>1.18;}
+  const A=it.slot==='body'&&BODY[it.kind]?(6+bl*3)*BODY[it.kind].arm:ARM[it.slot]?ARM[it.slot][0]+bl*ARM[it.slot][1]:0;return !!(A&&it.arm)&&it.arm/(A*sup)>1.13;}
+function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='charm')it.uv=UPG_VER;return it;} /* charms are never upgraded */
+  const al=affLvl(it.ilvl,it.tier);
+  if(it.uv===2){const fits=a=>{const [lo,hi]=rollRange(a.k,al),m=affRm(it,a.k);return a.v>=lo*m-1.01&&a.v<=hi*m+1.01;};
+    if(it.affs.filter(scaledAff).every(fits)&&!baseInflated(it)){it.uv=UPG_VER;return it;} // rolled under the new rules
+    const u=it.upg||0,old=1+0.1*u,nu=1+UPG_STEP*u,tb=it.tier>1?1+0.04*(it.tier-1):1,kb=old/nu,ka=it.tier?old*tb:old/nu; // undo v1.0.48's bake
+    if(u>0){if(it.dmin!=null){it.dmin/=kb;it.dmax/=kb;}if(it.arm)it.arm/=kb;for(const a of it.imp||[])if(scaledAff(a))a.v/=kb;}
+    for(const a of it.affs)if(scaledAff(a))a.v/=ka;}
+  for(const a of it.affs){if(!scaledAff(a))continue;const m=affRm(it,a.k),[o0,o1]=OLD_ROLL[a.k]?OLD_ROLL[a.k](it.ilvl):rollRange(a.k,it.ilvl),[n0,n1]=rollRange(a.k,al);
+    const f=clamp((a.v/m-o0)/((o1-o0)||1),0,1),v=(n0+f*(n1-n0))*m;a.v=AFF[a.k].dec?+v.toFixed(1):Math.max(1,Math.round(v));}
+  for(const a of it.imp||[])if(scaledAff(a))a.v=AFF[a.k].dec?+(+a.v).toFixed(1):Math.max(1,Math.round(a.v));
+  if(it.dmin!=null){it.dmin=+it.dmin.toFixed(3);it.dmax=+it.dmax.toFixed(3);}if(it.arm)it.arm=+it.arm.toFixed(3);
   it.uv=UPG_VER;return it;}
 function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=7;
+const SAVE_VER=8; // 8: items reset to the v1.0.48 affix and upgrade rules (the v7 save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -316,7 +335,7 @@ function migrateItem(it){
   if(it.socketed){it.socketed=(Array.isArray(it.socketed)?it.socketed:[]).filter(s=>s&&(s.r?RUNES[s.r]:GEMS[s.g]&&s.q>=1&&s.q<=5)).slice(0,it.sockets||0);if(!it.socketed.length)delete it.socketed;}
   if(it.rb&&!RUNEBINDS[it.rb]){delete it.rb;if(it.rarity===4)it.rarity=0;}
   if(TIERED.has(it.slot)&&!(it.tier>=1&&it.tier<=5))it.tier=tierOfLvl(it.ilvl); // pre-tier items: their stats already match the tier of their item level
-  bakeUpgrades(it); /* the old upgrade rules' strength stays with the item */
+  bakeUpgrades(it); /* brought to the current affix and upgrade rules */
   return it;
 }
 function migrateChar(c){
