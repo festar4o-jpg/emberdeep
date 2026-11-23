@@ -130,6 +130,7 @@ function renderFilter(){
   [...$('filtTier').children].forEach((el,i)=>el.onclick=()=>setFilter({min:FILTER_OPTS[i][0]}));
   $('filtRare').classList.toggle('on',f.rares!==false);$('filtRare').onclick=()=>setFilter({rares:f.rares===false});
   $('filtSalv').classList.toggle('on',!!f.autoSalv);$('filtSalv').onclick=()=>setFilter({autoSalv:!f.autoSalv});
+  $('filtHell').classList.toggle('on',f.hellWhites!==false);$('filtHell').onclick=()=>setFilter({hellWhites:f.hellWhites===false});
   const hidden=G.loot.filter(l=>l.item&&!l.taken&&lootHidden(l.item)).length;
   $('filtInfo').textContent=!f.min?'Showing every item.':min<=1?'Auto hides items more than one tier below the act you are in. Nothing to hide yet.':
     `Hiding Tier ${TIER_NAME.slice(0,min-1).join(', ')} ${f.rares!==false?'white and magic items':'items'}${f.min==='auto'?` (auto: you're in Tier ${TIER_NAME[dropAct(PD())-1]} lands)`:''}. Rings, amulets and socketed items always show.`+(hidden?` ${hidden} hidden here.`:'');
@@ -184,38 +185,16 @@ function powerHtml(k,c){const P=UPOW[k],off=P.cls&&P.cls!==c.cls;return `<div cl
 function openItem(it,equipped,price,full){
   if(it.slot==='charm'&&price==null)return openCharm(it,equipped==='charm');
   const c=G.char;
-  const card=x=>{const mm=upgMul(x);let h=`<div class="card" style="border-color:${RCOL[x.rarity]}"><div class="chead"><div class="cicon">${itemIcon(x)}</div><div><div class="iname" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="isub">${RNAME[x.rarity]} ${typeLabel(x)}${x.tier?' · '+tierLabel(x):''} · Item level ${x.ilvl}${(x.slot==='weapon'||x.slot==='shield'||x.slot==='focus')&&x.cls&&x.cls!==c.cls?` · <span style="color:#e07a5a">${CLASSES[x.cls].name} item</span>`:''}</div></div></div>`;
-    if(x.slot==='weapon'){const w=wOf(x);h+=`<div class="ibase">Damage: ${Math.round(x.dmin*mm)}–${Math.round(x.dmax*mm)}</div><div class="ibase">Attack Rate: ${w.spd.toFixed(2)}×</div>`;
-      for(const t of weaponProps(w))if(!(w.skill&&t.includes('random skill')))h+=`<div class="ibase">${t}</div>`; // the rolled skill shows below as an implicit
-      if(w.arc)h+=`<div class="ibase">Cleave arc: ${w.arc>=1.4?'Very wide':w.arc>=1?'Normal':'Narrow'}</div>`;
-      if(w.hands===2)h+=`<div class="ibase" style="color:var(--dim)">Two-handed: blocks the Off Hand</div>`;}
-    if(x.arm)h+=`<div class="ibase">Armor: ${Math.round(x.arm*mm)}</div>`;
-    for(const a of x.imp||[])h+=`<div class="ibase">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
-    if(x.upg)h+=`<div class="itierb">⚒ Upgraded +${x.upg}: +${Math.round(upgStep(x)*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</div>`;
-    for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}${tierTag(a)}</div>`;
-    for(const k of itemPowers(x))h+=powerHtml(k,c);
-    if(setOf(x))h+=setHtml(x,c);
-    if(x.corrupt)h+=`<div class="ibase" style="color:#e0404a;font-weight:600">Corrupted${x.cpw&&UPOW[x.cpw]?': '+esc(UPOW[x.cpw].t):''}</div>`;
-    if(x.q)h+=`<div class="ibase">Quality +${x.q}%${x.sup?' (and Superior)':''}</div>`;
-    if(x.cat&&CURS[x.cat])h+=`<div class="ibase" style="color:${CURS[x.cat].col}">${CURS[x.cat].ic} ${CURS[x.cat].name}: ${esc(CURS[x.cat].desc.replace('Next craft: ',''))} (next craft)</div>`;
-    if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="fdim" style="font-size:11px">⚒ ${craftsLeft(x)}/${craftMax(x)} stat crafts left</div>`;
-    if(x.sockets){const sk=x.socketed||[],hs=hostOf(x);h+=`<div class="sockrow">${Array.from({length:x.sockets},(_,i)=>sk[i]?`<span class="sock">${stoneSvg(sk[i])}</span>`:'<span class="sock empty"></span>').join('')}<span class="fdim">${sk.length}/${x.sockets} sockets</span></div>`;
-      for(const sg of sk)h+=`<div class="isock"><span style="color:${stoneCol(sg)}">${esc(stoneName(sg))}</span>: ${esc(statText(stoneStat(sg,hs)))}</div>`;}
-    return h+'</div>';};
+  const card=(x,D)=>tipCard(x,c,D); // the PoE2 / Diablo 4 style card (tipCard below)
   const fits=fitsFor(c,it),target=equipped?null:bestSlot(c,it),multi=fits.length>1;
-  const curT=!equipped&&target?c.equip[target]:null,compact=!!curT&&!full&&price==null;
-  let h=compact?compareHtml(c,it,curT,target,multi):(curT&&full?'<div class="cvsum" id="cvBack">◂ Compact compare</div>':'')+card(it);
+  const curT=!equipped&&target?c.equip[target]:null,compact=!!curT&&price==null; // compact: the side-by-side compare (v1.0.75)
+  let h=compact?compareTwo(c,it,curT,target,multi,full):card(it);
   if(!equipped&&!fits.length)h+=`<div class="cmp dn">${CLASSES[c.cls].name}s can't use this. Salvage or sell it.</div>`;
   else if(!equipped&&!target)h+=`<div class="cmp dn">Your two-handed weapon blocks the Off Hand.</div>`;
   if(!equipped&&target&&!compact){const cur=c.equip[target];
     if(cur)h+=`<div class="isub" style="margin:4px 0">Currently equipped${multi?' ('+SLOT_NAME[target]+')':''}:</div>`+card(cur);
     if(is2h(it)&&c.equip.offhand)h+=`<div class="isub" style="margin:4px 0">Also unequips your Off Hand:</div>`+card(c.equip.offhand);
-    const s0=calcStats(c),s1=calcStats(c,it,target);
-    const lines=[['Damage',x=>(x.dmin+x.dmax)/2*x.levelMul*(1+x.dmg/100)],['Life',x=>x.life],['Armor',x=>x.armor],['Block %',x=>x.block],['Crit %',x=>x.crit],['Crit Dmg %',x=>x.critd],['Atk Rate %',x=>x.wspd*(1+x.aspd/100)*100],['Spell Dmg %',x=>x.spell],['Bleed %',x=>x.bleed],['Stun %',x=>x.stunCh],['Splash %',x=>x.splash],['Pierce',x=>x.pierce],['Slain explode %',x=>x.explode],['Cooldown %',x=>x.cdr],['Move %',x=>x.move],['Life on Hit',x=>x.loh],['Regen',x=>x.regen],['Max '+CLASSES[c.cls].res,x=>x.res],['Potion Charges',x=>x.pot]];
-    let cmp='';for(const [n,f] of lines){const d=f(s1)-f(s0);if(Math.abs(d)>=0.1)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${Math.abs(d)<10?d.toFixed(1):Math.round(d)} ${n}</div>`;}
-    s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${SKILLS[c.cls][i].name}</div>`;});
-    if(it.tier&&cur&&cur.tier&&it.tier!==cur.tier){const d=it.tier-cur.tier;cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${tierLabel(it)} vs ${tierLabel(cur)}${cur.upg?' +'+cur.upg:''}: ${d>0?'bigger':'smaller'} stat rolls</div>`;}
-    h+=`<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
+    h+=statDeltaHtml(c,it,target,cur,multi);}
   if(price!=null){ // shop listing: buy or close only
     h+=`<div class="row"><div class="btn sm${c.gold<price?' dis':''}" id="iBuy">Buy (${price}🪙)</div><div class="btn sm" id="iClose">Close</div></div>`;
     $('itemPanel').innerHTML=h;$('itemPanel').classList.remove('cvp');$('itemOv').classList.remove('hidden');setPause();
@@ -236,7 +215,7 @@ function openItem(it,equipped,price,full){
     ${equipped?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}
     <div class="btn sm" id="iClose">Close</div></div>`;
   $('itemPanel').innerHTML=h;$('itemPanel').classList.toggle('cvp',compact);$('itemOv').classList.remove('hidden');setPause();
-  if($('cvFull'))$('cvFull').onclick=()=>openItem(it,equipped,undefined,true);if($('cvBack'))$('cvBack').onclick=()=>openItem(it,equipped);
+  if($('cvFull'))$('cvFull').onclick=()=>openItem(it,equipped,undefined,!full); // the summary opens / closes the full stat list
   const after=()=>{refreshStats();renderInv();saveChar();};
   if($('iCraft'))$('iCraft').onclick=()=>{$('itemOv').classList.add('hidden');openCurrency(it,equipped);}; // currency.js
   if(equipped)$('iUnequip').onclick=()=>{if(c.bag.length>=30){toast('Bag is full');return;}c.equip[equipped]=null;c.bag.push(it);closeItem();after();};
@@ -391,3 +370,53 @@ function compareHtml(c,it,cur,slot,multi){const cls=it.cls||c.cls,A=itemRows(it,
   return `<div class="cvsum" id="cvFull" title="Tap for the full view"><b>If equipped${multi?' ('+SLOT_NAME[slot]+')':''}:</b> ${chips} <span class="fdim">▸ details</span></div>
     <div class="cvgrid"><div class="cvr cvtop"><span class="cvl"></span><span class="cva">${head(it)}</span><span class="cvb">${head(cur)}</span><span class="cvd"></span></div>
     <div class="cvr cvlab"><span class="cvl"></span><span class="cva">New</span><span class="cvb">Equipped</span><span class="cvd">Δ</span></div>${rows}</div>`;}
+// Your character's stats if the item were worn (the list under a comparison).
+function statDeltaHtml(c,it,target,cur,multi){
+  const s0=calcStats(c),s1=calcStats(c,it,target);
+    const lines=[['Damage',x=>(x.dmin+x.dmax)/2*x.levelMul*(1+x.dmg/100)],['Life',x=>x.life],['Armor',x=>x.armor],['Block %',x=>x.block],['Crit %',x=>x.crit],['Crit Dmg %',x=>x.critd],['Atk Rate %',x=>x.wspd*(1+x.aspd/100)*100],['Spell Dmg %',x=>x.spell],['Bleed %',x=>x.bleed],['Stun %',x=>x.stunCh],['Splash %',x=>x.splash],['Pierce',x=>x.pierce],['Slain explode %',x=>x.explode],['Cooldown %',x=>x.cdr],['Move %',x=>x.move],['Life on Hit',x=>x.loh],['Regen',x=>x.regen],['Max '+CLASSES[c.cls].res,x=>x.res],['Potion Charges',x=>x.pot]];
+    let cmp='';for(const [n,f] of lines){const d=f(s1)-f(s0);if(Math.abs(d)>=0.1)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${Math.abs(d)<10?d.toFixed(1):Math.round(d)} ${n}</div>`;}
+    s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${SKILLS[c.cls][i].name}</div>`;});
+    if(it.tier&&cur&&cur.tier&&it.tier!==cur.tier){const d=it.tier-cur.tier;cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${tierLabel(it)} vs ${tierLabel(cur)}${cur.upg?' +'+cur.upg:''}: ${d>0?'bigger':'smaller'} stat rolls</div>`;}
+  return `<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
+
+// ---------- the item card (v1.0.75: PoE2 / Diablo 4 style) ----------
+// A dark banner with the name in its rarity colour and the base type; a meta line (tier, item level, quality, class);
+// then sections split by thin gold rules: base stats, implicits, stats (one per line, full text, a tier badge on the
+// right), powers in full (orange, with their live numbers), set, sockets, corruption, a waiting catalyst. D (a
+// comparison): each line shows how it differs from the equipped item, and what you'd lose is listed at the end.
+// O.pick (the Blacksmith): stat lines can be tapped to choose one (data-a), O.sel is the chosen one.
+function tipCard(x,c,D,O){const mm=upgMul(x),col=RCOL[x.rarity],cls=x.cls||c.cls,seen=new Set();
+  const diff=k=>{if(!D||seen.has(k))return '';seen.add(k);const a=D.A[k],b=D.B[k];if(!a)return '';if(a.pw)return b?'':'<span class="tdf up">new</span>';
+    const d=a.v-(b?b.v:0);if(Math.abs(d)<(k==='wspd'?0.005:0.05))return '';const kk=a.k,t=kk?fmtNum(kk,Math.abs(d)):k==='wspd'?Math.abs(d).toFixed(2):Math.round(Math.abs(d));return `<span class="tdf ${d>0?'up':'dn'}">${d>0?'▲ +':'▼ −'}${t}</span>`;};
+  const line=(text,k,cls2,badge,attr)=>`<div class="tl ${cls2||''}"${attr||''}><span class="tt">${text}</span><span class="tr">${k!=null?diff(k):''}${badge||''}</span></div>`;
+  const rule='<div class="trule"></div>';
+  let h=`<div class="tip" style="--rc:${col}"><div class="thead"><div class="cicon">${itemIcon(x)}</div><div class="tht"><div class="tname">${esc(x.name)}${x.upg?' <span class="tupg">+'+x.upg+'</span>':''}</div><div class="ttype">${RNAME[x.rarity]} ${esc(typeLabel(x))}</div></div></div>`;
+  const meta=[x.tier?tierLabel(x):'',`Item Level ${x.ilvl}`,x.q?`Quality +${x.q}%`:'',x.sup?'Superior':'',(x.slot==='weapon'||x.slot==='shield'||x.slot==='focus')&&x.cls&&x.cls!==c.cls?`<span style="color:#e07a5a">${CLASSES[x.cls].name} item</span>`:''].filter(Boolean);
+  h+=`<div class="tmeta${x.myth?' myth':''}">${meta.join(' · ')}</div>`;
+  // base
+  let b='';if(x.slot==='weapon'){const w=wOf(x),q=1+(x.q||0)/100;b+=line(`Damage <b>${Math.round(x.dmin*mm*q)}–${Math.round(x.dmax*mm*q)}</b>`,'wdmg')+line(`Attacks per second <b>${w.spd.toFixed(2)}</b>${w.hands===2?' · two-handed':''}`,'wspd');
+    for(const t of weaponProps(w))if(!(w.skill&&t.includes('random skill')))b+=line(esc(t),null,'tdim');}
+  if(x.arm)b+=line(`Armor <b>${Math.round(x.arm*mm*(1+(x.q||0)/100))}</b>`,'barm');
+  if(b)h+=rule+b;
+  // implicits
+  if((x.imp||[]).length){h+=rule;for(const a of x.imp)h+=line(esc(affText(a,mm,cls)),a.k==='skill'?'sk'+a.s:a.k,a.corrupt?'tcor':a.myth?'tmyth':'timp');}
+  if(x.upg)h+=`<div class="tl tupgl"><span class="tt">⚒ Upgraded +${x.upg}: +${Math.round(upgStep(x)*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</span></div>`;
+  // stats
+  if(x.affs.length){h+=rule;x.affs.forEach((a,i)=>{const k=a.k==='skill'?'sk'+a.s:a.k;h+=line(esc(affText(a,affMul(x),cls)),k,(a.k==='skill'?'tskl':'taff r'+x.rarity)+(O&&O.pick?' sm-aff'+(O.sel===i?' sel':''):''),a.t?`<span class="tbadge" style="color:${TIER_COL[a.t]};border-color:${TIER_COL[a.t]}">T${a.t}</span>`:'',O&&O.pick?` data-a="${i}"`:'');});}
+  // powers, set
+  const pws=itemPowers(x);if(pws.length){h+=rule;for(const k of pws)h+=powerHtml(k,c)+(D&&!D.B['pw:'+k]?'<div class="tl"><span class="tr"><span class="tdf up">new power</span></span></div>':'');}
+  if(setOf(x))h+=rule+setHtml(x,c);
+  // sockets, corruption, catalyst, crafts
+  if(x.sockets){const sk=x.socketed||[],hs=hostOf(x);h+=rule+`<div class="sockrow">${Array.from({length:x.sockets},(_,i)=>sk[i]?`<span class="sock">${stoneSvg(sk[i])}</span>`:'<span class="sock empty"></span>').join('')}<span class="fdim">${sk.length}/${x.sockets} sockets</span></div>`;
+    for(const sg of sk)h+=line(`<span style="color:${stoneCol(sg)}">${esc(stoneName(sg))}</span>: ${esc(statText(stoneStat(sg,hs)))}`,null,'tsock');}
+  if(x.corrupt)h+=`<div class="tcorrupt">Corrupted</div>`;
+  if(x.cat&&CURS[x.cat])h+=`<div class="tl"><span class="tt" style="color:${CURS[x.cat].col}">${CURS[x.cat].ic} ${CURS[x.cat].name}: ${esc(CURS[x.cat].desc.replace('Next craft: ',''))} (next craft)</span></div>`;
+  if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="tfoot">⚒ ${craftsLeft(x)}/${craftMax(x)} Blacksmith stat crafts left</div>`;
+  // what equipping it would take away
+  if(D){const lost=Object.keys(D.B).filter(k=>!D.A[k]);if(lost.length)h+=rule+'<div class="tlost">You would lose:</div>'+lost.map(k=>{const r=D.B[k];return `<div class="tl dn"><span class="tt">${r.pw?esc(r.label):'−'+(r.k?fmtNum(r.k,r.v):Math.round(r.v))+' '+esc(r.label)}</span></div>`;}).join('');}
+  return h+'</div>';}
+// Side by side: the new item (with its differences) and what it would replace; a summary on top that opens the full list.
+function compareTwo(c,it,cur,slot,multi,full){const D={A:itemRows(it,it.cls||c.cls),B:itemRows(cur,cur.cls||c.cls)},sum=equipSummary(c,it,slot);
+  const chips=sum.length?sum.map(([t,v])=>`<span class="${v>0?'up':'dn'}">${t}</span>`).join(' · '):'<span class="fdim">No change</span>';
+  return `<div class="cvsum" id="cvFull"><b>If equipped${multi?' ('+SLOT_NAME[slot]+')':''}:</b> ${chips} <span class="fdim">${full?'▾ hide':'▸ all changes'}</span></div>${full?statDeltaHtml(c,it,slot,cur,multi):''}
+    <div class="tipcmp"><div class="tipcol"><div class="tiplab">New</div>${tipCard(it,c,D)}</div><div class="tipcol"><div class="tiplab">Equipped</div>${tipCard(cur,c)}</div></div>`;}

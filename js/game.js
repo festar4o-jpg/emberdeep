@@ -71,12 +71,12 @@ function killEnemy(e){
   else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
   else if(Math.random()<normalDrop(T)*lootHere().drop)dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
 }
-// Item drop chances (v1.0.50): normal monsters 6.5-13% (tougher kinds more), champion/magic pack members 35%
-// (40% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
+// Item drop chances (v1.0.74): normal monsters 3.75-5.75% (tougher kinds more), champion/magic pack members 20%
+// (25% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
 // BOSSES[].loot). Gold is separate and more common; gems, runes and charms keep their own rates.
 // Nightmare and Hell: x1.25 / x1.5 item chances, more Item Rarity, gold, gems and boss items (maps.js DIFFS loot).
-const ELITE_DROP=0.35,GOLD_CH=0.5;
-const normalDrop=T=>0.06+(T.drop||0)*0.25;
+const ELITE_DROP=0.2,GOLD_CH=0.5; // v1.0.74: about half the items of before (fewer, better: rarity bonuses unchanged)
+const normalDrop=T=>0.03+(T.drop||0)*0.125;
 function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char&&!namedFound(it))G.char.namedSince=0; /* only one you haven't found resets the guarantee (sockets.js BOOK) */if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
 function dropGold(x,y,v){v=Math.round(v*lootHere().gold);G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});} // maps.js: more gold in Nightmare and Hell
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.

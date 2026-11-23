@@ -71,11 +71,10 @@ function renderCharms(){
 }
 function openCharm(it,inPouch){
   const c=G.char,C=CHARM[it.size];
-  let h=`<div class="card" style="border-color:${RCOL[it.rarity]}"><div class="chead"><div class="cicon">${itemIcon(it)}</div><div><div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${C.name} · ${C.slots} pouch slot${C.slots>1?'s':''} · Item level ${it.ilvl}</div></div></div>`;
-  for(const a of it.affs){const off=a.k==='skill'&&it.cls!==c.cls;h+=`<div class="iaff${a.k==='skill'?' skl':''}${off?' off':''}">${esc(affText(a,1,it.cls||c.cls))}${tierTag(a)}${off?` <small>(${CLASSES[it.cls].name} only)</small>`:''}</div>`;}
-  if(it.cat&&CURS[it.cat])h+=`<div class="ibase" style="color:${CURS[it.cat].col}">${CURS[it.cat].ic} ${CURS[it.cat].name} (next craft)</div>`;
-  if(it.uc)h+=`<div class="ipow" style="color:var(--dim);font-style:italic">${esc(UCHARMS[it.uc].lore)}</div><div class="fdim" style="font-size:11px">Unique charm: only one of each in the pouch</div>`;
-  h+=`<div class="ibase" style="color:var(--dim)">Works while it's in your charm pouch (${charmUsed(c)}/${CHARM_SLOTS} slots used)</div></div>`;
+  let h=tipCard(it,c).replace(/<\/div>$/,''); // ui.js: the same card as gear
+  h+=`<div class="tmeta">${C.slots} pouch slot${C.slots>1?'s':''}</div>`;
+  if(it.uc)h+=`<div class="tlore">${esc(UCHARMS[it.uc].lore)}</div><div class="tfoot">Unique charm: only one of each in the pouch</div>`;
+  h+=`<div class="tfoot">Works while it's in your charm pouch (${charmUsed(c)}/${CHARM_SLOTS} slots used)</div></div>`;
   const clash=!inPouch&&ucharmClash(c,it),fits=charmFits(c,it)&&!clash;
   h+=`<div class="row">${inPouch?'<div class="btn sm" id="cOut">Take out</div>':`<div class="btn sm${fits?'':' dis'}" id="cIn">Put in charm pouch</div>`}
     ${curAny(it)?'<div class="btn sm" id="iCraft">✦ Craft</div>':''}<div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>${inPouch?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}<div class="btn sm" id="iClose">Close</div></div>`;

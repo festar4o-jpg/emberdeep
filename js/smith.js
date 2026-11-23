@@ -223,10 +223,9 @@ function renderSmith(){
   if(smithTab==='salvage'){renderSalvageBar();return multi?renderPickInfo():renderSalvageInfo();}
   const it=smithSel;
   if(!it){$('smithInfo').innerHTML=`<p class="fdim">Pick an item (worn or in your bag). Salvage items in the Salvage tab for ${MAT_HELP}</p>`;return;}
-  let h=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}${it.sup?' · Superior':''}</div>`;
-  if(craftLimited(it))h+=`<div class="isub">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}</div>`;
-  if(it.slot==='weapon')h+=`<div class="ibase">Damage: ${Math.round(it.dmin)}–${Math.round(it.dmax)}</div>`;else if(it.arm)h+=`<div class="ibase">Armor: ${Math.round(it.arm)}</div>`;
-  h+=it.affs.map((a,i)=>`<div class="iaff sm-aff${i===smithAff?' sel':''}" data-a="${i}">${esc(affText(a,affMul(it),it.cls||c.cls))}${tierTag(a)}</div>`).join('');
+  // the item in the same card as everywhere else (ui.js tipCard), its stats tappable to choose one (Remove, Enchant)
+  let h=tipCard(it,c,null,{pick:1,sel:smithAff});
+  if(craftLimited(it))h+=`<div class="isub" style="margin:2px 2px 6px">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}${it.affs.length?' · tap a stat to choose it':''}</div>`;
   h+='<div class="smops">'+Object.entries(SMITH_OPS).map(([k,O])=>{const why=smithBlock(k,it,smithAff),cost=O.cost(it),ok=!why&&canPay(c,cost);
     return `<div class="smop"><div class="btn sm${ok?'':' dis'}" data-op="${k}">${O.name}</div><div><div>${esc(typeof O.desc==='function'?O.desc(it):O.desc)}</div><div class="fdim">${why?esc(why):costHtml(cost)}</div></div></div>`;}).join('')+'</div>';
   $('smithInfo').innerHTML=h;

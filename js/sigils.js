@@ -138,7 +138,7 @@ function mapStats(s){const M=MAPM();if(!M)return;if(M.pregen){s.regen*=1-M.prege
   if(M.pslow)s.move-=M.pslow;if(M.pcd)s.cdr-=M.pcd;}
 const mapResPen=()=>{const M=MAPM();return M&&M.pres||0;};
 // Loot in a map: Hell's, with the Sigil's Item Quantity (items, charms, currency) and Item Rarity on top.
-function mapLoot(){const c=G.char,r=c.mapRun,L=DIFFS[2].loot,QR=runQR(c,r),q=1+QR.q/100,cm=1+(atl(c,'r3')?0.2:0)+(atl(c,'r5')?0.3:0)+(r.eg?r.eg.cur/100:0);return Object.assign({},L,{drop:L.drop*q,cur:L.cur*q*cm,rar:L.rar+QR.r,pity:100});}
+function mapLoot(){const c=G.char,r=c.mapRun,L=DIFFS[2].loot,QR=runQR(c,r),q=1+QR.q/100,cm=1+(atl(c,'r3')?0.2:0)+(atl(c,'r5')?0.3:0)+(r.eg?r.eg.cur/100:0);return Object.assign({},L,{drop:L.drop*(1+QR.q/200),cur:L.cur*q*cm, /* v1.0.74: Item Quantity counts half for items, in full for currency */rar:L.rar+QR.r,pity:100});}
 // ---------- the Map Device window (from the Waystone) ----------
 let mapSel=null;
 function openMapDevice(){const c=G.char;if(!mapsOpen(c))return;mapSel=null;$('mapOv').classList.remove('hidden');renderMapDevice();setPause();}

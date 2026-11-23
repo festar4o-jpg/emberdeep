@@ -585,7 +585,9 @@ function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/
 // 2..5 = hide below that tier. rares (default on) keeps rares and uniques visible. Untiered jewelry is never hidden.
 // Hidden items stay on the ground but aren't drawn and aren't picked up.
 const filterMin=c=>{const f=c&&c.filter;if(!f||!f.min)return 0;return f.min==='auto'?dropAct(PD())-1:f.min;};
-function lootHidden(it){const c=G.char;if(!it||!it.tier||!c||it.sockets)return false; /* socketed bases always show (Runebind material) */const min=filterMin(c);if(!min||it.tier>=min)return false;
+function lootHidden(it){const c=G.char;if(!it||!it.tier||!c||it.sockets)return false; /* socketed bases always show (Runebind material) */
+  if(it.rarity===0&&!it.myth&&diffHere()===2&&!(c.filter&&c.filter.hellWhites===false))return true; // v1.0.74: plain whites hidden in Hell and maps (Mythic bases always show)
+  const min=filterMin(c);if(!min||it.tier>=min)return false;
   return !(c.filter.rares!==false&&it.rarity>=2);}
 // ---------- ground loot comparison (labels and the tooltip for the nearest item) ----------
 // Effective base value: average weapon damage or armor, including upgrades.

@@ -303,3 +303,29 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .atlasview{overflow:auto;max-height:52vh;border:1px solid var(--edge);border-radius:8px;background:radial-gradient(circle at 50% 50%,#1a140e,#060403);touch-action:pan-x pan-y;}
 .aedge{stroke:#5a4a36;stroke-width:2;}.aedge.done{stroke:#7a9a5a;}.anode{cursor:pointer;}
 #mapList .wayb .btn.sm{max-width:150px;}
+/* item card (v1.0.75): PoE2 / Diablo 4 style */
+.tip{border:1px solid #6a5636;border-radius:6px;background:linear-gradient(#120d09f2,#070504f5);box-shadow:inset 0 0 18px #000,0 0 0 1px #000;margin-bottom:8px;overflow:hidden;}
+.thead{display:flex;gap:10px;align-items:center;padding:8px 10px;background:linear-gradient(90deg,color-mix(in srgb,var(--rc) 22%,#0a0705),#0a0705 85%);border-bottom:1px solid color-mix(in srgb,var(--rc) 55%,#000);}
+.tht{min-width:0;}.tname{font-size:18px;font-weight:700;color:var(--rc);line-height:1.2;text-shadow:0 1px 2px #000;}.tupg{color:#e8dcc4;font-size:15px;}
+.ttype{font-size:13px;color:#c8b898;}
+.tmeta{font-size:12px;color:#9c8b72;padding:4px 10px 2px;}.tmeta.myth{color:#ffb347;}
+.trule{height:1px;margin:5px 10px;background:linear-gradient(90deg,transparent,#8a7444,transparent);}
+.tl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:1px 10px;font-size:15px;line-height:1.35;}
+.tl .tt{flex:1;min-width:0;}.tl .tr{flex:none;display:flex;gap:6px;align-items:baseline;}
+.tl b{color:#fff;font-weight:600;}
+.timp{color:#d8d0c0;}.tmyth{color:#ffb347;}.tcor{color:#ff5a5a;}.tdim{color:#9c8b72;font-size:13px;}
+.taff{color:#8fa8ff;}.taff.r2{color:#9ab8ff;}.tskl{color:#f2d04a;}.tsock{font-size:14px;color:#8fc8ff;}
+.tbadge{font-size:10px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;line-height:1.4;}
+.tdf{font-size:12px;font-weight:700;white-space:nowrap;}.tdf.up{color:#5f5;}.tdf.dn{color:#f66;}
+.tip .ipow{margin:3px 10px;font-size:15px;line-height:1.35;}.tip .ipow .pdet,.tip .ipow .pcombo{font-size:13px;}
+.tip .iset,.tip .iown{margin:2px 10px;}.tip .sockrow{margin:4px 10px;}
+.tupgl .tt{font-size:12px;color:#d8b860;}
+.tcorrupt{color:#e0404a;font-weight:700;text-align:center;padding:3px 0;font-size:14px;letter-spacing:1px;text-transform:uppercase;}
+.tlost{font-size:12px;color:#f88;padding:0 10px;}.tl.dn .tt{color:#f88;font-size:14px;}
+.tlore{font-style:italic;color:#a08a6a;font-size:13px;padding:2px 10px;}.tfoot{font-size:11px;color:#8a7a62;padding:2px 10px 6px;}
+.tipcmp{display:flex;gap:8px;align-items:flex-start;}.tipcol{flex:1 1 0;min-width:0;max-height:68vh;overflow-y:auto;}
+.tiplab{font-size:11px;color:#9c8b72;text-transform:uppercase;letter-spacing:1px;margin:0 2px 3px;}
+#itemPanel.cvp{width:min(98vw,940px);}
+@media (max-width:620px){.tipcmp{flex-direction:column;}.tipcol{max-height:none;}}
+.tl.sm-aff{cursor:pointer;margin:1px 4px;border-radius:4px;}.tl.sm-aff.sel{background:#3a2a1488;outline:1px solid var(--gold);}
+#smithInfo .tip{margin-bottom:6px;}

@@ -29,8 +29,8 @@ const actIdx=d=>Math.floor((d-1)/5)%5,cycleOf=d=>Math.floor((d-1)/25)+1,stageOf=
 // loot: drop = item, charm chance x; rar = Item Rarity bonus %; gold x; pity = kills before a set/unique is guaranteed;
 // stone = gem and rune chance x; boss = extra act boss items; zb = extra zone boss items; cur = crafting currency x (currency.js).
 const DIFFS=[{name:'Normal',col:'#d9a441',elite:0,res:0,loot:{drop:1,rar:0,gold:1,pity:200,stone:1,boss:0,zb:0,cur:1}},
-  {name:'Nightmare',col:'#b070ff',elite:0.06,res:20,loot:{drop:1.25,rar:25,gold:1.5,pity:160,stone:1.3,boss:1,zb:1,cur:1.4}},
-  {name:'Hell',col:'#ff4a3a',elite:0.12,res:50,loot:{drop:1.5,rar:50,gold:2,pity:120,stone:1.6,boss:2,zb:2,cur:1.8}}];
+  {name:'Nightmare',col:'#b070ff',elite:0.06,res:20,loot:{drop:1.1,rar:25,gold:1.5,pity:160,stone:1.3,boss:1,zb:1,cur:1.4}},
+  {name:'Hell',col:'#ff4a3a',elite:0.12,res:50,loot:{drop:1.2,rar:50,gold:2,pity:120,stone:1.6,boss:2,zb:2,cur:1.8}}];
 const DIFF_N=DIFFS.length;
 const curDiff=()=>G.char&&G.char.diff||0;
 const powDepth=d=>{const c=G.char;if(!c)return d;if(c.mapRun&&G.zone==='map'&&!G.inTown)return mapPD(c.mapRun); /* sigils.js: maps */return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
