@@ -195,6 +195,7 @@ function openItem(it,equipped,price,full){
     for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}${tierTag(a)}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
+    if(x.corrupt)h+=`<div class="ibase" style="color:#e0404a;font-weight:600">Corrupted${x.cpw&&UPOW[x.cpw]?': '+esc(UPOW[x.cpw].t):''}</div>`;
     if(x.q)h+=`<div class="ibase">Quality +${x.q}%${x.sup?' (and Superior)':''}</div>`;
     if(x.cat&&CURS[x.cat])h+=`<div class="ibase" style="color:${CURS[x.cat].col}">${CURS[x.cat].ic} ${CURS[x.cat].name}: ${esc(CURS[x.cat].desc.replace('Next craft: ',''))} (next craft)</div>`;
     if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="fdim" style="font-size:11px">⚒ ${craftsLeft(x)}/${craftMax(x)} stat crafts left</div>`;

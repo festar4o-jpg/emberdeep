@@ -246,7 +246,7 @@ function setView(it,c){const k=setOf(it);if(!k)return null;const S=SETS[k],eq=EQ
     bonus:(S.bonus||[]).map(([need,l])=>({need,text:txt(l),on:n>=need})).concat(S.full&&S.full.length?[{need:S.items.length,full:true,text:txt(S.full),on:n>=S.items.length}]:[])};}
 // Uniques of this item type that can drop for a character of cls in act/tier `act`.
 const uniquesFor=(type,cls,act)=>Object.keys(UNIQUES).filter(k=>{const U=UNIQUES[k];return U.boss==null&&U.type===type&&U.act<=act&&(!U.cls||U.cls===cls);});
-const itemPowers=it=>!it?[]:it.uq&&UNIQUES[it.uq]?UNIQUES[it.uq].pw:it.rb&&RUNEBINDS[it.rb]&&RUNEBINDS[it.rb].pw||[]; // uniques and Runebinds
+const itemPowers=it=>!it?[]:it.uq&&UNIQUES[it.uq]?(it.cpw&&UPOW[it.cpw]?UNIQUES[it.uq].pw.concat([it.cpw]):UNIQUES[it.uq].pw):it.rb&&RUNEBINDS[it.rb]&&RUNEBINDS[it.rb].pw||[]; // uniques and Runebinds
 const hasPw=k=>!!(G.stats&&G.stats.pw&&G.stats.pw[k]);
 const pwRank=i=>Math.max(1,rk(i)); // powers that cast a skill use its rank (at least 1, even if unlearned)
 

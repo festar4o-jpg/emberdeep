@@ -484,7 +484,7 @@ function migrateItem(it){
   if(it.slot==='weapon'&&!WEAPONS[it.wt])it.wt=BASE_WT[it.base]||(it.cls==='arcanist'?'staff':'sword');
   if(it.slot==='focus'&&!FOCUS[it.kind])it.kind='orb';
   if(KINDS[it.slot]&&!KINDS[it.slot][it.kind])it.kind=kindOfBase(it.slot,it.base); // v1.0.69: base kinds (implicits kept as they were)
-  if(it.myth!==true)delete it.myth;
+  if(it.myth!==true)delete it.myth;if(it.corrupt!==true)delete it.corrupt;if(it.cpw&&!(typeof UPOW!=='undefined'&&UPOW[it.cpw]))delete it.cpw;
   if(it.rarity===3&&!it.uq){const k=Object.keys(UNIQUES).find(k=>UNIQUES[k].name===it.name&&UNIQUES[k].type===it.slot&&(!UNIQUES[k].wt||UNIQUES[k].wt===it.wt));if(k)it.uq=k;}
   if(it.uq&&!UNIQUES[it.uq])delete it.uq;
   if(it.rarity===5&&!SET_ITEMS[it.si])it.rarity=2; // a set piece this version doesn't know stays as a rare

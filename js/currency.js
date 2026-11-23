@@ -29,6 +29,7 @@ const CURS={
   bulwark:{name:'Catalyst of the Bulwark',ic:'⛨',col:'#c8b088',w:2,cat:['life','armor','block'],desc:'Next craft: one new stat is a defence (Life, Armor or Block)'},
   haste:{name:'Catalyst of Haste',ic:'➶',col:'#a8e0c0',w:2,cat:['aspd','move','cdr'],desc:'Next craft: one new stat is a speed (Attack, Move or Cooldown)'},
   fury:{name:'Catalyst of Fury',ic:'⚔',col:'#ff6a5a',w:2,cat:['dmg','crit','critd'],desc:'Next craft: one new stat is an attack stat (Damage, Crit, Crit Damage)'},
+  corrupt:{name:'Abyssal Ember',ic:'✺',col:'#d0303a',w:1.2,desc:'Corrupts an item: a gamble that can make it stronger (or change nothing); a corrupted item can never be changed again'},
   crucible:{name:'Sunfire Crucible',ic:'☀',col:'#ffcc55',w:0,desc:'Burns +1 to All Skills into a white, magic or rare item, once (only the Hollow Sun drops it)'},
   arcana:{name:'Catalyst of Arcana',ic:'✧',col:'#c8a0ff',w:1.5,cat:['spell'],desc:'Next craft: one new stat is Spell Damage (Arcanist gear)'}
 };
@@ -72,7 +73,8 @@ function curBlockBase(k,it){if(!it||it.slot==='charm'||it.rb)return 'Not on char
   const mx=maxSockets(it);if(!mx)return 'This item type cannot hold sockets';
   if(k==='awl')return (it.sockets||0)<mx?null:`Already has ${mx} sockets`;
   if(k==='spindle')return it.socketed&&it.socketed.length?'Unsocket its stones first':mx>1||!it.sockets?null:'Holds only one socket';}
-function curBlock(k,it){if(k==='awl'||k==='spindle'||k==='whet')return curBlockBase(k,it);
+function curBlock(k,it){if(it&&it.corrupt)return 'Corrupted: it can\'t be changed';if(k==='corrupt')return !it||it.slot==='charm'||it.rb?'Not on charms or Runebinds':null;
+  if(k==='awl'||k==='spindle'||k==='whet')return curBlockBase(k,it);
   if(k==='crucible')return !it||it.slot==='charm'||it.rarity>2||it.rb?'Only white, magic and rare gear':it.sunfire?'Already burned by a Crucible':null;
   if(!curEditable(it))return 'Only white, magic and rare gear and charms';
   if(CURS[k]&&CURS[k].cat)return it.cat===k?'Already on this item':null;
@@ -90,6 +92,7 @@ function curBlock(k,it){if(k==='awl'||k==='spindle'||k==='whet')return curBlockB
 // Applies currency k to the item (pays one). Returns a short text of what happened, or null.
 function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';const cat=it.cat;
   if(CURS[k].cat){it.cat=k;CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();playSfx('rune');return 'Ready: the next Spark, Crown, Shard or Cinder on this item uses it';}
+  if(k==='corrupt'){msg=corruptItem(it);CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();playSfx('phase');return msg;}
   if(k==='crucible'){it.sunfire=true;it.imp=(it.imp||[]).concat([{k:'allsk',v:1}]);msg='+1 to All Skills, burned in';}
   else if(k==='awl'){it.sockets=(it.sockets||0)+1;msg=`Now ${it.sockets} socket${it.sockets>1?'s':''}`;}
   else if(k==='spindle'){const mx=maxSockets(it),was=it.sockets||0;let n=randi(1,mx);if(mx>1)while(n===was)n=randi(1,mx);it.sockets=n;msg=`Now ${n} socket${n>1?'s':''}`;}
@@ -108,7 +111,8 @@ function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';co
 // ---------- drops ----------
 // Chance per kill (normal, champion pack member, champion, zone boss, act boss: those always drop some), x DIFFS loot.cur.
 const CUR_DROP={normal:0.03,elite:0.12,su:0.6,zboss:1.5,boss:2.5,chest:0.8};
-function rollCurKey(){const d=PD(),w=k=>CURS[k].w*(k==='star'?1+d/40:1);let r=Math.random()*CUR_KEYS.reduce((a,k)=>a+w(k),0);
+// Abyssal Embers drop only where Hell's rules apply: Hell, the endless depths after Nightmare, maps.
+function rollCurKey(){const d=PD(),w=k=>k==='corrupt'&&diffHere()<2?0:CURS[k].w*(k==='star'?1+d/40:1);let r=Math.random()*CUR_KEYS.reduce((a,k)=>a+w(k),0);
   for(const k of CUR_KEYS){r-=w(k);if(r<0)return k;}return 'spark';}
 function dropCurrency(e,kind){let n=(CUR_DROP[kind]||0)*lootHere().cur;
   for(;n>0;n--)if(n>=1||Math.random()<n){let x=e.x+rand(-30,30),y=e.y+rand(-30,30);if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,cur:rollCurKey(),t:0};G.loot.push(l);if(l.cur==='star')playSfx('rune');}}
@@ -129,3 +133,21 @@ function renderCurrency(){const it=curFor&&curFor.it;
 const curAny=it=>CUR_KEYS.some(k=>curCount(k)>0&&!curBlock(k,it));
 tap('curClose',closeCurrency);
 tap('curBtn',()=>openCurrency(null));
+// ---------- corruption (v1.0.73): the Abyssal Ember ----------
+// One of four outcomes, a quarter each, then the item is corrupted for good (no currency, no Blacksmith crafts; upgrades
+// with gold and socketing stones still work). Magic, rare and white items: a corrupted implicit; one stat a tier up (past
+// what its item level allows); every stat rerolled at T1-T3; or nothing. Uniques and set items: an extra power (uniques);
+// a corrupted implicit; their stats 15-25% stronger; or nothing.
+const CORRUPT_IMP={weapon:[['skd'+0,30],['bossdmg',18],['critd',25],['aspd',10]],focus:[['spell',18],['cdr',8],['bossdmg',15]],shield:[['block',6],['dr',5],['ares',12]],
+  helm:[['maxres',1],['lifepct',8],['evade',6]],body:[['maxres',2],['lifepct',10],['dr',6]],gloves:[['aspd',9],['critd',20],['bossdmg',12]],boots:[['move',8],['evade',6],['ares',12]],
+  belt:[['lifepct',8],['potheal',30],['pot',1]],ring:[['ares',10],['bossdmg',12],['crit',2.5]],amulet:[['allsk',1],['lifepct',8],['ares',12]]};
+function corruptItem(it){it.corrupt=true;const r=Math.random(),uq=it.rarity===3||it.rarity===5;delete it.addOpts;
+  const imp=()=>{const P=CORRUPT_IMP[it.slot]||CORRUPT_IMP.ring,[k0,v]=pick(P),k=k0==='skd0'?'skd'+randi(0,4):k0;it.imp=(it.imp||[]).concat([{k,v,corrupt:1}]);return `Corrupted: ${affText({k,v},1,it.cls||G.char.cls)}`;};
+  if(uq){if(r<0.25&&it.rarity===3){const have=new Set(itemPowers(it)),cls=it.cls||G.char.cls,ks=Object.keys(UPOW).filter(k=>!have.has(k)&&(!UPOW[k].cls||UPOW[k].cls===cls));
+      if(ks.length){it.cpw=pick(ks);return `Corrupted: a new power! ${UPOW[it.cpw].t}`;}}
+    if(r<0.5)return imp();if(r<0.75){for(const a of it.affs)if(a.k!=='skill'&&AFF[a.k]&&!AFF[a.k].flat||AFF[a.k]&&AFF[a.k].flat&&!['pot','block','maxres','allsk'].includes(a.k))a.v=fmtAff(a.k,a.v*rand(1.15,1.25));return 'Corrupted: its stats grew stronger';}
+    return 'Corrupted: nothing happened';}
+  if(r<0.25)return imp();
+  if(r<0.5){const T=it.affs.filter(a=>a.t>1&&tiered(a.k));if(T.length){const a=pick(T);a.t--;a.v=reTier(it,a);return `Corrupted: ${affText(a,1,it.cls)} rose to T${a.t}`;}return 'Corrupted: nothing happened';}
+  if(r<0.75&&it.rarity>=1){const n=Math.max(1,it.affs.filter(a=>a.k!=='skill').length);it.affs=pickAffKeys(affPool(it),n,it.rarity===1?1:MAX_PRE,it.rarity===1?1:MAX_SUF).map(k=>rollAff(k,affLvl(it.ilvl,it.tier),1,{il:it.ilvl,worst:3}));restat(it);return 'Corrupted: every stat rerolled at T1–T3';}
+  return 'Corrupted: nothing happened';}

@@ -106,7 +106,7 @@ function upbasePreview(it){const o=upgradedBase(it),rows=[['Base',`${esc(it.base
   (it.imp||[]).forEach((a,i)=>{if(a.k!=='skill'&&o.imp[i].v!==a.v)rows.push(['',esc(affText(a,1,it.cls)),esc(affText(o.imp[i],1,it.cls))]);});
   return rows;}
 // Why an operation can't be done on this item (or null if it can), ignoring cost.
-function smithBlock(op,it,affIdx){
+function smithBlock(op,it,affIdx){if(it.corrupt)return 'Corrupted: it can\'t be changed';
   if(it.slot==='charm')return 'Charms cannot be smithed';
   if(it.rarity===4)return 'Runebinds cannot be changed';
   if(CRAFT_OPS.has(op)&&craftLimited(it)&&!(op==='add'&&it.addOpts&&it.addOpts.length)&&!craftsLeft(it))return `No crafts left (${craftMax(it)} on ${it.tier?'a Tier '+TIER_NAME[it.tier-1]+' base':'Act '+itemAct(it)+' jewelry'})`;
