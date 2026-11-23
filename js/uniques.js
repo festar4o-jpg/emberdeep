@@ -79,6 +79,18 @@ function pwSource(k){for(const u in UNIQUES)if(UNIQUES[u].pw.includes(k))return 
   if(typeof RUNEBINDS!=='undefined')for(const r in RUNEBINDS)if((RUNEBINDS[r].pw||[]).includes(k))return RUNEBINDS[r].name+' (rune word)';
   for(const s in SETS)if(SETS[s].full.some(f=>f.pw===k))return SETS[s].name+' (full set)';return '?';}
 const UNIQUES={
+  // v1.0.72: map uniques, only from maps (boss 'map': Sigil Tier mt and up) or a Citadel's guardian (boss 'ash'/'frost'/'rot');
+  // each combines two existing powers (like the Hollow Sun's), never dropping anywhere else
+  gravecaller:{name:"Gravecaller's Maul",type:'weapon',wt:'maul',cls:'warden',act:5,boss:'map',mt:6,pw:['quake','bloodrage']},
+  stormguard:{name:'Stormguard Bulwark',type:'shield',cls:'warden',act:5,boss:'map',mt:6,pw:['counter','stormbeat']},
+  riftwalker:{name:'Riftwalker Greaves',type:'boots',cls:null,act:5,boss:'map',mt:11,strong:1,pw:['cometDash','fireTrail']},
+  ashwarden:{name:"The Ashen Warden's Visor",type:'helm',cls:'warden',act:5,boss:'ash',pw:['burnAura','cinderCleave']},
+  voidprism:{name:'Prism of the Void',type:'focus',kind:'orb',cls:'arcanist',act:5,boss:'map',mt:6,pw:['split','homing']},
+  glacierheart:{name:"Glacier's Heart",type:'body',kind:'robe',cls:'arcanist',act:5,boss:'map',mt:11,strong:1,pw:['frostward','shatter']},
+  rimecrown:{name:"The Rime Sentinel's Crown",type:'helm',cls:'arcanist',act:5,boss:'frost',pw:['rimeSkin','skyfall']},
+  endlessnight:{name:'Ring of the Endless Night',type:'ring',cls:null,act:5,boss:'map',mt:6,pw:['veilCrit','ignite']},
+  matrongirdle:{name:"The Matron's Rotting Girdle",type:'belt',cls:null,act:5,boss:'rot',pw:['rotBurst','potionReset']},
+  cartographer:{name:"The Cartographer's Eye",type:'amulet',cls:null,act:5,boss:'map',mt:11,strong:1,pw:['ouroboros','ashChain']},
   // v1.0.71: thirteen more, one new power each
   butcher:{name:"The Butcher's Hook",type:'weapon',wt:'axe',cls:'warden',act:2,pw:['cleaveBleed']},
   warlord:{name:"Warlord's Visage",type:'helm',cls:'warden',act:3,pw:['warcryShield']},

@@ -308,6 +308,9 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   {const r=G.char===c&&typeof inMap==='function'&&inMap()?c.mapRun:null;MYTH_NEXT=!!(r&&r.sig.tier>=5&&Math.random()<0.06+0.01*(r.sig.tier-5));} // Mythic bases from maps of Tier 5+
   const L=lootHere(),due=(c.namedSince||0)>=Math.min(NAMED_PITY,L.pity);const rp=(G.char===c&&G.stats?G.stats.rarity||0:0)+L.rar; /* maps.js: Nightmare and Hell loot */let rar=dropRarity(boost,rp);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
   if(minRarity>=3&&rar!==3)rar=3;else if(rar<minRarity)rar=minRarity;
+  // map uniques (uniques.js boss 'map'): in maps of their Sigil tier, a third of unique drops is one
+  if(rar===3&&!minRarity&&G.char===c&&typeof inMap==='function'&&inMap()&&Math.random()<0.35){const T=c.mapRun.sig.tier,ks=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==='map'&&UNIQUES[k].mt<=T&&(!UNIQUES[k].cls||UNIQUES[k].cls===c.cls));
+    if(ks.length){const k=pickW(ks,uqWeight),U=UNIQUES[k];return genItem(ilvl,c.cls,boost,U.type,3,U.wt,5,null,k);}}
   // Each slot must appear within its next (PITY+1-misses) drops. Sorted by that deadline, if the j-th slot's deadline is <= j
   // there is no slack left, so the most urgent slot drops now. This forces a slot at 15 misses, and also steps in a little
   // early when several slots run out together, so no slot ever goes more than PITY drops without appearing.

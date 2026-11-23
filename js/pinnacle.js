@@ -79,7 +79,8 @@ function archDown(e){const c=G.char,A=ARCH[e.ab],r=c.mapRun;G.portal.active=true
   const at=(dx=60)=>[e.x+rand(-dx,dx),e.y+rand(-dx,dx)],L=A.loot;
   for(let k=0;k<L.n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(...at(),rollDrop(c,PD()+L.ilvl,3,min,{act:5,top:true}));}
   dropGold(e.x,e.y,PD()*L.gold*0.1);dropCurrency(e,'boss');dropCurrency(e,'boss');
-  if(A.frag){const F=fragsOf(c);F[A.frag]++;toast(FRAGS[A.frag].name+'!',`${FRAGS[A.frag].boss} falls · ${FRAG_KEYS.filter(k=>F[k]>0).length}/3 fragments of the Hollow Sun`);}
+  if(A.frag){const gk=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss===A.frag&&(!UNIQUES[k].cls||UNIQUES[k].cls===c.cls));if(gk.length&&Math.random()<0.3){const U=UNIQUES[gk[0]];dropItem(...at(),genItem(PD()+3,c.cls,3,U.type,3,U.wt,5,null,gk[0]));} // its own unique (30%)
+    const F=fragsOf(c);F[A.frag]++;toast(FRAGS[A.frag].name+'!',`${FRAGS[A.frag].boss} falls · ${FRAG_KEYS.filter(k=>F[k]>0).length}/3 fragments of the Hollow Sun`);}
   if(A.pinnacle){const ks=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==='sun'&&(!UNIQUES[k].cls||UNIQUES[k].cls===c.cls)),k=pick(ks);
     if(k){const U=UNIQUES[k];dropItem(...at(),genItem(PD()+3,c.cls,3,U.type,3,U.wt,5,null,k));}
     const [x,y]=at();G.loot.push({x,y,cur:'star',t:0});const [x2,y2]=at();G.loot.push({x:x2,y:y2,cur:'crucible',t:0});
