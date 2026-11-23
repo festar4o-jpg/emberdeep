@@ -442,6 +442,8 @@ function migrateItem(it){
   if(!(it.rarity>=0&&it.rarity<RNAME.length))it.rarity=it.affs.length?2:0;
   if(it.lock!==true)delete it.lock;
   if(it.crafts!=null&&!(it.crafts>=0))delete it.crafts; // stat crafts used (smith.js)
+  if(it.q!=null){it.q=clamp(Math.round(+it.q)||0,0,20);if(!it.q)delete it.q;} // quality (currency.js)
+  if(it.cat!=null&&!(typeof CURS!=='undefined'&&CURS[it.cat]&&CURS[it.cat].cat))delete it.cat; // a catalyst waiting on the item
   if(it.addOpts){it.addOpts=(Array.isArray(it.addOpts)?it.addOpts:[]).filter(a=>a&&AFF[a.k]&&Number.isFinite(a.v)).slice(0,3);if(!it.addOpts.length)delete it.addOpts;}
   if(it.sockets!=null){it.sockets=clamp(Math.floor(+it.sockets)||0,0,4);if(!it.sockets)delete it.sockets;}
   if(it.socketed){it.socketed=(Array.isArray(it.socketed)?it.socketed:[]).filter(s=>s&&(s.r?RUNES[s.r]:GEMS[s.g]&&s.q>=1&&s.q<=5)).slice(0,it.sockets||0);if(!it.socketed.length)delete it.socketed;}
@@ -500,12 +502,12 @@ function calcStats(c,swap,at){
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
     const it=eq[sl];if(!it)continue;
-    const m=upgMul(it);
-    if(it.slot==='weapon'){const w=wOf(it);const hand={wt:it.wt,dmin:it.dmin*m,dmax:it.dmax*m,spd:w.spd};if(sl==='mainhand')s.mh=hand;else s.oh=hand;
+    const m=upgMul(it),qm=1+(it.q||0)/100; // quality (currency.js Whetstone): base damage and armor
+    if(it.slot==='weapon'){const w=wOf(it);const hand={wt:it.wt,dmin:it.dmin*m*qm,dmax:it.dmax*m*qm,spd:w.spd};if(sl==='mainhand')s.mh=hand;else s.oh=hand;
       s.crit+=w.crit||0;s.critd+=w.critd||0;s.block+=w.block||0;s.bleed+=w.bleed||0;s.spell+=w.spell||0;if(w.stun){s.stunCh+=w.stun;s.stunDur=Math.max(s.stunDur,w.stunDur);}
       s.splash+=w.splash||0;s.pierce=Math.max(s.pierce,w.pierce||0);s.explode=Math.max(s.explode,w.explode||0);}
     for(const k of itemPowers(it))s.pw[k]=true;
-    if(it.arm)s.armor+=it.arm*m;
+    if(it.arm)s.armor+=it.arm*m*qm;
     if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const a=stoneStat(sg,h);s[a.k]+=a.v;}} // gems and runes: flat, not upgraded
     const am=affMul(it); /* affixes: upgrades and the tier bonus; implicits: upgrades only */
     for(const a of it.affs){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:am);}
@@ -535,7 +537,7 @@ function lootHidden(it){const c=G.char;if(!it||!it.tier||!c||it.sockets)return f
   return !(c.filter.rares!==false&&it.rarity>=2);}
 // ---------- ground loot comparison (labels and the tooltip for the nearest item) ----------
 // Effective base value: average weapon damage or armor, including upgrades.
-function baseValue(it){const m=upgMul(it);return it.slot==='weapon'?(it.dmin+it.dmax)/2*m:it.arm?it.arm*m:0;}
+function baseValue(it){const m=upgMul(it)*(1+(it.q||0)/100);return it.slot==='weapon'?(it.dmin+it.dmax)/2*m:it.arm?it.arm*m:0;}
 // A tiered item vs what the character wears where it would go:
 // {other} for the other class's gear, else {sl, cur, dt (tier difference), pct (base value change, or null), stat}.
 function compareLoot(c,it){

@@ -193,6 +193,8 @@ function openItem(it,equipped,price){
     for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}${tierTag(a)}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
+    if(x.q)h+=`<div class="ibase">Quality +${x.q}%${x.sup?' (and Superior)':''}</div>`;
+    if(x.cat&&CURS[x.cat])h+=`<div class="ibase" style="color:${CURS[x.cat].col}">${CURS[x.cat].ic} ${CURS[x.cat].name}: ${esc(CURS[x.cat].desc.replace('Next craft: ',''))} (next craft)</div>`;
     if(craftLimited(x)&&x.slot!=='charm')h+=`<div class="fdim" style="font-size:11px">⚒ ${craftsLeft(x)}/${craftMax(x)} stat crafts left</div>`;
     if(x.sockets){const sk=x.socketed||[],hs=hostOf(x);h+=`<div class="sockrow">${Array.from({length:x.sockets},(_,i)=>sk[i]?`<span class="sock">${stoneSvg(sk[i])}</span>`:'<span class="sock empty"></span>').join('')}<span class="fdim">${sk.length}/${x.sockets} sockets</span></div>`;
       for(const sg of sk)h+=`<div class="isock"><span style="color:${stoneCol(sg)}">${esc(stoneName(sg))}</span>: ${esc(statText(stoneStat(sg,hs)))}</div>`;}

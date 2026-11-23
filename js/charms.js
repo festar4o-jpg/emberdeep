@@ -73,6 +73,7 @@ function openCharm(it,inPouch){
   const c=G.char,C=CHARM[it.size];
   let h=`<div class="card" style="border-color:${RCOL[it.rarity]}"><div class="chead"><div class="cicon">${itemIcon(it)}</div><div><div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${C.name} · ${C.slots} pouch slot${C.slots>1?'s':''} · Item level ${it.ilvl}</div></div></div>`;
   for(const a of it.affs){const off=a.k==='skill'&&it.cls!==c.cls;h+=`<div class="iaff${a.k==='skill'?' skl':''}${off?' off':''}">${esc(affText(a,1,it.cls||c.cls))}${tierTag(a)}${off?` <small>(${CLASSES[it.cls].name} only)</small>`:''}</div>`;}
+  if(it.cat&&CURS[it.cat])h+=`<div class="ibase" style="color:${CURS[it.cat].col}">${CURS[it.cat].ic} ${CURS[it.cat].name} (next craft)</div>`;
   if(it.uc)h+=`<div class="ipow" style="color:var(--dim);font-style:italic">${esc(UCHARMS[it.uc].lore)}</div><div class="fdim" style="font-size:11px">Unique charm: only one of each in the pouch</div>`;
   h+=`<div class="ibase" style="color:var(--dim)">Works while it's in your charm pouch (${charmUsed(c)}/${CHARM_SLOTS} slots used)</div></div>`;
   const clash=!inPouch&&ucharmClash(c,it),fits=charmFits(c,it)&&!clash;
