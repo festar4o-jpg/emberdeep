@@ -79,11 +79,14 @@ const pouchCount=(c,s)=>pouchOf(c)[stoneKey(s)]||0;
 const pouchTotal=c=>Object.values(pouchOf(c)).reduce((a,b)=>a+b,0);
 
 // ---------- the book (shared by all characters): runes ever found, recipes forged, set pieces found ----------
-const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{}};
-function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(b&&typeof b==='object')BOOK={runes:b.runes||{},made:b.made||{},sets:b.sets&&typeof b.sets==='object'?b.sets:{}};}catch(e){}
-  if(STASH)noteSetPieces(STASH.tabs.flat());}
-// Records set pieces in the book the first time any character gets one.
-function noteSetPieces(items){let n=0;for(const it of items)if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(n)storeBook();return n;}
+const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{},uqs:{}};
+const isObj=o=>o&&typeof o==='object',BOOK_NOW=()=>BOOK; // (tests: BOOK is a let)
+// uqs (v1.0.59): uniques found, for the set/unique guarantee (items.js newNamed). Seeded from every hero and the stash.
+function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(isObj(b))BOOK={runes:b.runes||{},made:b.made||{},sets:isObj(b.sets)?b.sets:{},uqs:isObj(b.uqs)?b.uqs:{}};}catch(e){}
+  const all=[];if(STASH)all.push(...STASH.tabs.flat());for(const h of SAVES||[])if(isObj(h)){all.push(...Object.values(h.equip||{}),...(h.bag||[]));}noteSetPieces(all);}
+// Records set pieces and uniques in the book the first time any character gets one (returns the new set pieces).
+const namedFound=it=>!!(it&&(it.uq?BOOK.uqs[it.uq]:it.si?BOOK.sets[it.si]:false));
+function noteSetPieces(items){let n=0,u=0;for(const it of items){if(!it)continue;if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(it.uq&&!BOOK.uqs[it.uq]){BOOK.uqs[it.uq]=1;u++;}}if(n||u)storeBook();return n;}
 function noteSetPiece(it){if(noteSetPieces([it]))toast('New set piece!',`${it.name} · ${SETS[setOf(it)].name}`);}
 function storeBook(){try{localStorage.setItem(BOOK_KEY,JSON.stringify(BOOK));}catch(e){}backupSoon();}
 const recipeKnown=k=>!!BOOK.made[k]||RUNEBINDS[k].runes.every(r=>BOOK.runes[r]);

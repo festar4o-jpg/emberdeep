@@ -71,7 +71,7 @@ function killEnemy(e){
 // Nightmare and Hell: x1.25 / x1.5 item chances, more Item Rarity, gold, gems and boss items (maps.js DIFFS loot).
 const ELITE_DROP=0.35,GOLD_CH=0.5;
 const normalDrop=T=>0.06+(T.drop||0)*0.25;
-function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char)G.char.namedSince=0;if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
+function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char&&!namedFound(it))G.char.namedSince=0; /* only one you haven't found resets the guarantee (sockets.js BOOK) */if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
 function dropGold(x,y,v){v=Math.round(v*lootHere().gold);G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});} // maps.js: more gold in Nightmare and Hell
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.
 // Movement input from the joystick and WASD/arrows, length at most 1.

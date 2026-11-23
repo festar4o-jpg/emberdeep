@@ -223,8 +223,9 @@ const DROP_RAR=[50,30,10,0,0,5],DROP_UQ=5;
 // against white: +25% makes every better rarity 25% more likely next to white. It never adds drops.
 function dropRarity(boost=0,rar=0){const b=Math.max(0,boost),m=1+Math.max(0,rar)/100,w=[Math.max(5,DROP_RAR[0]-14*b),(DROP_RAR[1]+3*b)*m,(DROP_RAR[2]+6*b)*m,(DROP_UQ+2.5*b)*m,0,(DROP_RAR[5]+2.5*b)*m];
   let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let i=0;i<6;i++){r-=w[i];if(r<0)return i;}return 0;}
-// Bad-luck protection: after NAMED_PITY kills without a set or unique item, the next item drop is one (c.namedSince counts kills).
-// Nightmare and Hell shorten it (maps.js DIFFS loot.pity: 160, 120).
+// Bad-luck protection: after NAMED_PITY kills without a NEW set piece or unique (one no hero has found yet: sockets.js
+// BOOK), the next item drop is one you haven't found, made for your class when one is left (newNamed). Duplicates
+// neither reset the count nor satisfy it. Nightmare and Hell shorten it (maps.js DIFFS loot.pity: 160, 120).
 const NAMED_PITY=200;
 // Smart loot: this share of set/unique drops is picked from the items made for your class (its own uniques and sets);
 // the rest roll normally (slot first), which mostly also gives items you can wear.
@@ -239,6 +240,11 @@ function smartNamed(c,rar,act){const slotW=t=>DROP_W[t==='shield'||t==='focus'?'
     :Object.keys(SET_ITEMS).filter(k=>{const S=SETS[SET_ITEMS[k].set];return S.act<=act&&inSetZone(S);}).map(k=>({si:k,cls:SETS[SET_ITEMS[k].set].cls,type:SET_ITEMS[k].type,w:slotW(SET_ITEMS[k].type)}));
   let ok=cand.filter(o=>o.cls===c.cls);if(!ok.length)ok=cand.filter(o=>!o.cls);if(!ok.length)return null;
   return pickW(ok,o=>o.w);}
+// A set piece or unique no hero has found yet that can drop here (act tiers, set zones): your class's first, then classless.
+function newNamed(c,act){const slotW=t=>DROP_W[t==='shield'||t==='focus'?'offhand':t]||10;
+  const cand=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==null&&UNIQUES[k].act<=act&&!BOOK.uqs[k]).map(k=>({uq:k,cls:UNIQUES[k].cls,type:UNIQUES[k].type,w:slotW(UNIQUES[k].type)*uqWeight(k)}))
+    .concat(Object.keys(SET_ITEMS).filter(k=>{const S=SETS[SET_ITEMS[k].set];return S.act<=act&&inSetZone(S)&&!BOOK.sets[k];}).map(k=>({si:k,cls:SETS[SET_ITEMS[k].set].cls,type:SET_ITEMS[k].type,w:slotW(SET_ITEMS[k].type)})));
+  let ok=cand.filter(o=>o.cls===c.cls);if(!ok.length)ok=cand.filter(o=>!o.cls);return ok.length?pickW(ok,o=>o.w):null;}
 let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 // Every monster/boss drop goes through here: rarity (with bad-luck protection and smart loot), then the slot with its own
 // bad-luck protection, the class roll for weapons and off-hands, and the base tier. opt.act = the act whose tiers drop
@@ -255,6 +261,9 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   const dl=DROP_KEYS.map(k=>[PITY+1-ds[k],k]).sort((a,b)=>a[0]-b[0]);
   let slot=null;for(let j=0;j<dl.length;j++)if(dl[j][0]<=j+1){slot=dl[0][1];break;}
   const forced=!!slot;
+  if(due){const o=newNamed(c,tier0);if(o){const sl=dropSlotOf({slot:o.type});for(const k of DROP_KEYS)ds[k]=k===sl?0:ds[k]+1; // the guarantee: something new
+    return genItem(ilvl,o.cls||c.cls,boost,o.type,0,undefined,TIERED.has(o.type)?tier0:undefined,o.si,o.uq);}
+    c.namedSince=0;} // nothing new left here: an ordinary set piece or unique, and the count starts over
   if(!forced&&(rar===3||rar===5)&&Math.random()<SMART_LOOT){const o=smartNamed(c,rar,tier0);
     if(o){const sl=dropSlotOf({slot:o.type});for(const k of DROP_KEYS)ds[k]=k===sl?0:ds[k]+1;
       const icls=o.cls||c.cls;return genItem(ilvl,icls,boost,o.type,0,undefined,TIERED.has(o.type)?tier0:undefined,o.si,o.uq);}}
