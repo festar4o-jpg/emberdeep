@@ -107,7 +107,7 @@ function chestTick(f,dt){if(f.state!=='waves')return;
 function openChest(f){f.state='open';const d=PD(),a=actIdx(d)+1,c=G.char,n=3+a+(d>25?1:0),e={x:f.x,y:f.y};
   for(let k=0;k<n;k++)dropItem(f.x+rand(-45,45),f.y+rand(-45,45),rollDrop(c,d+2,2,k===0?2:k===1?1:0,{act:dropAct(d)}));
   for(let k=0;k<4;k++)dropGold(f.x,f.y,Math.round(d*randi(6,10)*(1+0.15*a)));
-  dropStones(e,'elite');dropStones(e,'elite');dropCharms(e,'elite');
+  dropStones(e,'elite');dropStones(e,'elite');dropCharms(e,'elite');dropCurrency(e,'chest');
   toast('The curse is lifted!','The chest spills its treasure');G.shake=12;burst(f.x,f.y,40,'#f2d04a',240);saveChar();}
 
 // ---------- treasure thief: never fights, runs, escapes after a while, drops a fortune ----------
@@ -127,7 +127,7 @@ function thiefHit(e){if(Math.random()<0.3)dropGold(e.x,e.y,Math.round(PD()*randi
 function thiefLoot(e){const d=PD(),a=actIdx(d)+1,c=G.char,n=3+Math.ceil(a/2)+(d>25?1:0);
   for(let k=0;k<12;k++)dropGold(e.x+rand(-40,40),e.y+rand(-40,40),Math.round(d*randi(8,14)*(1+0.1*a)));
   for(let k=0;k<n;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+1,1,k===0?2:0,{act:dropAct(d)}));
-  dropStones(e,'elite');toast('Treasure Thief slain!','Its hoard spills out');G.shake=10;}
+  dropStones(e,'elite');dropCurrency(e,'chest');toast('Treasure Thief slain!','Its hoard spills out');G.shake=10;}
 
 // ---------- per frame: buff timers, walls, chest waves, the use button ----------
 let useLabel='';

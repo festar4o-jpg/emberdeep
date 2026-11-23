@@ -48,7 +48,7 @@ function killEnemy(e){
   if(!e.summoned){trophyKill(e);G.char.namedSince=(G.char.namedSince||0)+1;} // kills since the last set/unique (items.js NAMED_PITY)
   if(e.noLoot||e.summoned)return;
   if(e.type==='thief'){thiefLoot(e);return;}
-  const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
+  const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk);dropCurrency(e,e.type==='boss'?'boss':e.zb?'zboss':e.su?'su':dk); // gems, runes, charms, currency
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
   if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
@@ -285,7 +285,7 @@ function update(dt){
   // loot
   for(const l of G.loot){l.t+=dt;if(p.dead||l.taken||(l.item&&lootHidden(l.item)))continue;const d=Math.hypot(l.x-p.x,l.y-p.y);
     if(l.gold&&d<60){l.x+=(p.x-l.x)*Math.min(1,dt*10);l.y+=(p.y-l.y)*Math.min(1,dt*10);}
-    if(d<32){if(l.gem)pickStone(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
+    if(d<32){if(l.gem)pickStone(l);else if(l.cur)pickCur(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
       else if(autoSalvages(G.char,l.item)){const r=autoSalvage(G.char,l.item);l.taken=true;floatText(l.x,l.y-20,`+${r.gold}🪙 ${matText(r.mats)}`,RCOL[0],false);}
       else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
       else if(G.bagFullT<=0){G.bagFullT=3;toast('Bag is full','Salvage items in 🎒');}}}

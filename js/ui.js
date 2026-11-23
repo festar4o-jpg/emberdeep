@@ -225,11 +225,13 @@ function openItem(it,equipped,price){
     <div class="btn sm${(it.upg||0)>=10||c.gold<cost?' dis':''}" id="iUpg">Upgrade +${(it.upg||0)+1} (${cost}🪙)</div>
     ${freeSockets(it)>0&&it.rarity!==4?`<div class="btn sm" id="iSock">💎 Socket (${freeSockets(it)} free)</div>`:''}
     ${it.socketed&&it.socketed.length&&!it.rb?`<div class="btn sm${G.inTown&&c.gold>=unsocketCost(it)?'':' dis'}" id="iUnsock">Unsocket (${unsocketCost(it)}🪙)</div>`:''}
+    ${curAny(it)?'<div class="btn sm" id="iCraft">✦ Craft</div>':''}
     <div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>
     ${equipped?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}
     <div class="btn sm" id="iClose">Close</div></div>`;
   $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
   const after=()=>{refreshStats();renderInv();saveChar();};
+  if($('iCraft'))$('iCraft').onclick=()=>{$('itemOv').classList.add('hidden');openCurrency(it,equipped);}; // currency.js
   if(equipped)$('iUnequip').onclick=()=>{if(c.bag.length>=30){toast('Bag is full');return;}c.equip[equipped]=null;c.bag.push(it);closeItem();after();};
   else{$('itemPanel').querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{const sl=b.dataset.eq;if(!eqOk(sl))return;if(equipFromBag(c,it,sl)){closeItem();after();}});
     $('iSalv').onclick=()=>{const r=salvageItem(c,it);if(!r)return;toast('Salvaged',`+${r.gold} gold ${matText(r.mats)}`);closeItem();after();};}
