@@ -281,3 +281,4 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .stashf select{background:#1a1410;color:var(--text);border:1px solid #5a4a30;border-radius:6px;padding:5px 4px;font-size:12px;max-width:31%;}
 .stashf .btn.sm{padding:5px 8px;font-size:12px;}
 #stashGrid .cell,#stashBag .cell{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;}
+.atier{font-size:11px;font-weight:600;}

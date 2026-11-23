@@ -54,7 +54,7 @@ const SMITH_OPS={
   upbase:{name:'Upgrade Base',desc:it=>it.tier>=1&&it.tier<5?`Same ${baseKindName(it)}, Tier ${TIER_NAME[it.tier-1]} → ${TIER_NAME[it.tier]}: stronger base stats`:'Raise the base one tier',cost:it=>upbaseCost(it)}
 };
 // ---------- stat crafts ----------
-const MAX_STATS=4,ADD_OPTS=3,CRAFT_OPS=new Set(['add','remove','enchant','reforge']);
+const MAX_STATS=MAX_PRE+MAX_SUF,ADD_OPTS=3,CRAFT_OPS=new Set(['add','remove','enchant','reforge']);
 const craftLimited=it=>it.rarity>=0&&it.rarity<=2&&it.slot!=='charm';
 const craftMax=it=>2*(it.tier||itemAct(it));
 const craftsLeft=it=>Math.max(0,craftMax(it)-(it.crafts||0));
@@ -67,10 +67,12 @@ function restat(it){const was=it.rarity,n=it.affs.length;it.rarity=n>=3?2:n?1:0;
   if(it.rarity===1){const st=it.affs.filter(a=>a.k!=='skill'),a0=st[0]&&AFF[st[0].k],a1=st[1]&&AFF[st[1].k];it.name=sup+(a0?a0.pre+' ':'')+plain+(a1?' '+a1.suf:'');}
   else if(was!==2)it.name=sup+pick(RARE_A)+' '+pick(RARE_B[it.slot]);}
 // Stats Add Stat can roll: the item's pool minus what it already has.
-const addPool=it=>{const have=new Set(it.affs.map(a=>a.k));return affPool(it).filter(k=>!have.has(k));};
+// Stats Add Stat can roll: not already on the item, with an open prefix or suffix slot for the rarity it will have (items.js).
+const addPool=it=>{const have=new Set(it.affs.map(a=>a.k)),r=statCount(it)+1>=3?2:1;return affPool(it).filter(k=>!have.has(k)&&(k==='resist'?!RES_KEYS.every(x=>have.has(x)):true)&&affFits(it,k,r));};
+const smithT=it=>it.rarity<=2?{il:it.ilvl}:null; // tiers on white, magic and rare crafts (uniques keep their old way)
 // Picks one of the rolled options (free: Add Stat already paid). Returns true on success.
 function chooseAdd(it,i){const o=it.addOpts&&it.addOpts[i];if(!o||statCount(it)>=MAX_STATS)return false;
-  it.affs.push({k:o.k,v:o.v});delete it.addOpts;restat(it);refreshStats();saveChar();return true;}
+  it.affs.push(o.t?{k:o.k,v:o.v,t:o.t}:{k:o.k,v:o.v});delete it.addOpts;restat(it);refreshStats();saveChar();return true;}
 // ---------- Upgrade Base ----------
 // Cost of the step to the next tier; Tier IV and V need Primal Shards. A unique or set item pays 3x gold, 2x materials and 5 more Primal Shards.
 const UPBASE_STEP={2:{gold:175,scrap:15,dust:6},3:{gold:500,scrap:30,dust:12,essence:4},4:{gold:1250,scrap:50,dust:20,essence:8,primal:3},5:{gold:3200,scrap:80,dust:30,essence:12,primal:6}};
@@ -124,12 +126,12 @@ const affPool=it=>(TYPES[it.slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].
 function smith(op,it,affIdx){const c=G.char;if(smithBlock(op,it,affIdx))return false;if(op==='add'&&it.addOpts&&it.addOpts.length)return false;
   const cost=SMITH_OPS[op].cost(it);if(!canPay(c,cost))return false;pay(c,cost);
   const rm=it.rarity===3?1.3:1;if(CRAFT_OPS.has(op)&&craftLimited(it))it.crafts=(it.crafts||0)+1;
-  if(op==='add')it.addOpts=addPool(it).sort(()=>Math.random()-0.5).slice(0,ADD_OPTS).map(k=>rollAff(k,affLvl(it.ilvl,it.tier)));
+  if(op==='add')it.addOpts=addPool(it).sort(()=>Math.random()-0.5).slice(0,ADD_OPTS).map(k=>rollAff(k,affLvl(it.ilvl,it.tier),1,{il:it.ilvl}));
   else if(op==='remove'){it.affs.splice(affIdx,1);restat(it);}
-  else   if(op==='reforge'){const keys=affPool(it).sort(()=>Math.random()-0.5).slice(0,randi(3,4));it.affs=keys.map(k=>rollAff(k,affLvl(it.ilvl,it.tier),rm));
+  else   if(op==='reforge'){const keys=pickAffKeys(affPool(it),randi(3,4),MAX_PRE,MAX_SUF);it.affs=keys.map(k=>rollAff(k,affLvl(it.ilvl,it.tier),rm,smithT(it)));
     if(Math.random()<0.3)it.affs.push({k:'skill',s:randi(0,4),v:1});}
-  else if(op==='enchant'){const have=new Set(it.affs.map(a=>a.k)),opts=affPool(it).filter(k=>!have.has(k));
-    it.affs[affIdx]=opts.length?rollAff(pick(opts),affLvl(it.ilvl,it.tier),rm):rollAff(it.affs[affIdx].k==='skill'?pick(affPool(it)):it.affs[affIdx].k,affLvl(it.ilvl,it.tier),rm);
+  else if(op==='enchant'){const have=new Set(it.affs.map(a=>a.k)),old=it.affs[affIdx].k,same=k=>old==='skill'||isPre(k)===isPre(old),opts=affPool(it).filter(k=>!have.has(k)&&same(k)); // a prefix stays a prefix
+    it.affs[affIdx]=opts.length?rollAff(pick(opts),affLvl(it.ilvl,it.tier),rm,smithT(it)):rollAff(old==='skill'?pick(affPool(it)):old,affLvl(it.ilvl,it.tier),rm,smithT(it));
     if(it.rarity===1)restat(it);}
   else if(op==='quality'){it.sup=true;if(it.slot==='weapon'){it.dmin*=1.15;it.dmax*=1.15;}if(it.arm)it.arm*=1.15;it.name='Superior '+it.name;if(it.rarity===0)it.base='Superior '+it.base;}
   else if(op==='socket')it.sockets=1;
@@ -223,7 +225,7 @@ function renderSmith(){
   let h=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}${it.sup?' · Superior':''}</div>`;
   if(craftLimited(it))h+=`<div class="isub">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}</div>`;
   if(it.slot==='weapon')h+=`<div class="ibase">Damage: ${Math.round(it.dmin)}–${Math.round(it.dmax)}</div>`;else if(it.arm)h+=`<div class="ibase">Armor: ${Math.round(it.arm)}</div>`;
-  h+=it.affs.map((a,i)=>`<div class="iaff sm-aff${i===smithAff?' sel':''}" data-a="${i}">${esc(affText(a,affMul(it),it.cls||c.cls))}</div>`).join('');
+  h+=it.affs.map((a,i)=>`<div class="iaff sm-aff${i===smithAff?' sel':''}" data-a="${i}">${esc(affText(a,affMul(it),it.cls||c.cls))}${tierTag(a)}</div>`).join('');
   h+='<div class="smops">'+Object.entries(SMITH_OPS).map(([k,O])=>{const why=smithBlock(k,it,smithAff),cost=O.cost(it),ok=!why&&canPay(c,cost);
     return `<div class="smop"><div class="btn sm${ok?'':' dis'}" data-op="${k}">${O.name}</div><div><div>${esc(typeof O.desc==='function'?O.desc(it):O.desc)}</div><div class="fdim">${why?esc(why):costHtml(cost)}</div></div></div>`;}).join('')+'</div>';
   $('smithInfo').innerHTML=h;
@@ -253,7 +255,7 @@ function askUpbase(it){const c=G.char;if(smithBlock('upbase',it))return;const co
 // Add Stat: pick one of the rolled stats. Already paid, so there is no cancel; closing keeps the options for later.
 function askAdd(it){if(!it.addOpts||!it.addOpts.length)return;const cls=it.cls||G.char.cls;
   askSmith(`<h3>Add a stat to ${esc(it.name)}</h3><p class="fdim">Pick one. ${it.affs.length+1>=3&&it.rarity<2?'It becomes a Rare.':!it.affs.length?'It becomes Magic.':''}</p>
-    <div class="smops">${it.addOpts.map((a,i)=>`<div class="btn sm" data-add="${i}">${esc(affText(a,affMul(it),cls))}</div>`).join('')}</div>`,'Later',()=>{});
+    <div class="smops">${it.addOpts.map((a,i)=>`<div class="btn sm" data-add="${i}">${esc(affText(a,affMul(it),cls))}${tierTag(a)}</div>`).join('')}</div>`,'Later',()=>{});
   $('smithAskNo').classList.add('hidden');
   $('smithAskBody').querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{if(chooseAdd(it,+el.dataset.add)){toast('Stat added',it.name);cancelBulk();renderSmith();}});}
 // Confirmation popup for a bulk salvage: what goes and what you get.

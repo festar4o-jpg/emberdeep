@@ -161,31 +161,31 @@ const CLASSES={
 // One resistance roll at affix level l (see the resistances in AFF).
 const resRoll=l=>rand(3,6)+l*0.25+Math.max(0,l-25)*0.35;
 const AFF={
-  life:{t:'+{v} Life',pre:'Hale',suf:'of the Bear',roll:l=>rand(6,12)+l*3.5},
-  res:{t:'+{v} Max Fury/Mana',pre:'Spirited',suf:'of the Mind',roll:l=>rand(5,10)+l*0.8},
-  dmg:{t:'+{v}% Damage',pre:'Cruel',suf:'of Wrath',roll:l=>rand(5,11)+l*0.75},
-  armor:{t:'+{v} Armor',pre:'Sturdy',suf:'of Iron',roll:l=>rand(4,8)+l*2.5},
-  crit:{t:'+{v}% Crit Chance',pre:'Keen',suf:'of Precision',roll:l=>rand(2,4.5)*(1+0.035*(l-1)),dec:1},
-  critd:{t:'+{v}% Crit Damage',pre:'Deadly',suf:'of Ruin',roll:l=>rand(10,20)+l*1.1},
-  aspd:{t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(4.5,10)*(1+0.03*(l-1))},
-  cdr:{t:'+{v}% Cooldown Reduction',pre:'Focused',suf:'of Ages',roll:l=>rand(3,7)*(1+0.025*(l-1))},
-  move:{t:'+{v}% Move Speed',pre:'Fleet',suf:'of the Wind',roll:l=>rand(4,9)*(1+0.025*(l-1))},
-  loh:{t:'+{v} Life on Hit',pre:'Vampiric',suf:'of Leeching',roll:l=>rand(1,3)+l*0.4},
-  regen:{t:'+{v} Life per Second',pre:'Mending',suf:'of Renewal',roll:l=>rand(1,2)+l*0.35,dec:1},
+  life:{ps:'p',t:'+{v} Life',pre:'Hale',suf:'of the Bear',roll:l=>rand(6,12)+l*3.5},
+  res:{ps:'p',t:'+{v} Max Fury/Mana',pre:'Spirited',suf:'of the Mind',roll:l=>rand(5,10)+l*0.8},
+  dmg:{ps:'p',t:'+{v}% Damage',pre:'Cruel',suf:'of Wrath',roll:l=>rand(5,11)+l*0.75},
+  armor:{ps:'p',t:'+{v} Armor',pre:'Sturdy',suf:'of Iron',roll:l=>rand(4,8)+l*2.5},
+  crit:{ps:'s',t:'+{v}% Crit Chance',pre:'Keen',suf:'of Precision',roll:l=>rand(2,4.5)*(1+0.035*(l-1)),dec:1},
+  critd:{ps:'s',t:'+{v}% Crit Damage',pre:'Deadly',suf:'of Ruin',roll:l=>rand(10,20)+l*1.1},
+  aspd:{ps:'s',t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(4.5,10)*(1+0.03*(l-1))},
+  cdr:{ps:'s',t:'+{v}% Cooldown Reduction',pre:'Focused',suf:'of Ages',roll:l=>rand(3,7)*(1+0.025*(l-1))},
+  move:{ps:'s',t:'+{v}% Move Speed',pre:'Fleet',suf:'of the Wind',roll:l=>rand(4,9)*(1+0.025*(l-1))},
+  loh:{ps:'p',t:'+{v} Life on Hit',pre:'Vampiric',suf:'of Leeching',roll:l=>rand(1,3)+l*0.4},
+  regen:{ps:'s',t:'+{v} Life per Second',pre:'Mending',suf:'of Renewal',roll:l=>rand(1,2)+l*0.35,dec:1},
   // flat: never multiplied (upgrades on rings and amulets)
-  block:{t:'+{v}% Block Chance',pre:'Warding',suf:'of the Bulwark',roll:l=>rand(3,6)+Math.min(4,l*0.1),flat:1},
-  spell:{t:'+{v}% Spell Damage',pre:'Arcane',suf:'of Sorcery',roll:l=>rand(5,10)+l*0.4,cls:'arcanist'},
-  pot:{t:'+{v} Potion Charges',pre:"Brewer's",suf:'of Plenty',roll:l=>rand(1,1.6)+(l>=15?0.6:0),flat:1},
+  block:{ps:'s',t:'+{v}% Block Chance',pre:'Warding',suf:'of the Bulwark',roll:l=>rand(3,6)+Math.min(4,l*0.1),flat:1},
+  spell:{ps:'p',t:'+{v}% Spell Damage',pre:'Arcane',suf:'of Sorcery',roll:l=>rand(5,10)+l*0.4,cls:'arcanist'},
+  pot:{ps:'s',t:'+{v} Potion Charges',pre:"Brewer's",suf:'of Plenty',roll:l=>rand(1,1.6)+(l>=15?0.6:0),flat:1},
   // resistances (v1.0.57): they grow with item level, faster past 25, so Nightmare and Hell gear (item level 26-75+)
   // rolls enough to win back their penalty: Tier I ~4-7%, Tier V ~9-12%, Nightmare up to ~27%, Hell up to ~42%
   // (All Resistances: half). Small in Normal on purpose, so the Normal boss fights keep their tuning.
   // 'resist' is not a stat: a pool entry that rolls one of the four (so armour keeps its old stats as often as before).
-  fres:{t:'+{v}% Fire Resistance',pre:'Tempered',suf:'of the Salamander',roll:resRoll,flat:1,res:1},
-  cres:{t:'+{v}% Cold Resistance',pre:'Furred',suf:'of the Yeti',roll:resRoll,flat:1,res:1},
-  lres:{t:'+{v}% Lightning Resistance',pre:'Grounded',suf:'of the Storm',roll:resRoll,flat:1,res:1},
-  pres:{t:'+{v}% Poison Resistance',pre:'Antidotal',suf:'of the Serpent',roll:resRoll,flat:1,res:1},
-  ares:{t:'+{v}% All Resistances',pre:'Warded',suf:'of the Elements',roll:l=>resRoll(l)*0.5,flat:1,res:1},
-  resist:{t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1}
+  fres:{ps:'s',t:'+{v}% Fire Resistance',pre:'Tempered',suf:'of the Salamander',roll:resRoll,flat:1,res:1},
+  cres:{ps:'s',t:'+{v}% Cold Resistance',pre:'Furred',suf:'of the Yeti',roll:resRoll,flat:1,res:1},
+  lres:{ps:'s',t:'+{v}% Lightning Resistance',pre:'Grounded',suf:'of the Storm',roll:resRoll,flat:1,res:1},
+  pres:{ps:'s',t:'+{v}% Poison Resistance',pre:'Antidotal',suf:'of the Serpent',roll:resRoll,flat:1,res:1},
+  ares:{ps:'s',t:'+{v}% All Resistances',pre:'Warded',suf:'of the Elements',roll:l=>resRoll(l)*0.5,flat:1,res:1},
+  resist:{ps:'s',t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1}
 };
 const RES_KEYS=['fres','cres','lres','pres'],RES_CAP=75;
 const RES_NAME={fres:'Fire',cres:'Cold',lres:'Lightning',pres:'Poison'},RES_COL={fres:'#ff9a3a',cres:'#9fd8ff',lres:'#ffe45a',pres:'#9fe04a'};
@@ -284,7 +284,11 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   for(const k of DROP_KEYS)ds[k]=k===slot?0:ds[k]+1;
   DROP_R=rar;try{return genItem(ilvl,icls,boost,type,0,undefined,tier);}finally{DROP_R=null;}
 }
-function rollAff(k,ilvl,rm=1){if(k==='resist')k=pick(RES_KEYS);const a=AFF[k];const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
+// T (magic, rare and charm stats): {il: item level, boost, best, worst} rolls a tier (see affix tiers); without T the old
+// way (uniques, set items, implicits).
+function rollAff(k,ilvl,rm=1,T){if(k==='resist')k=pick(RES_KEYS);const a=AFF[k];
+  if(T&&tiered(k)){const t=rollAffTier(T.il,T.boost||0,T);return {k,v:tierVal(k,ilvl,t,rm),t};}
+  const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
 // tier: base tier 1..5 for tiered types (default: the tier of the item level's act). forceSet: make this set piece.
 // forceUq: make this unique (boss trophies, which never come from the normal unique pool).
 function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,forceUq){
@@ -321,8 +325,9 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   if(slot==='belt')it.imp=[Math.random()<0.5?{k:'pot',v:bl>=12&&Math.random()<0.35?2:1}:{k:'life',v:Math.round(AFF.life.roll(bl)*0.7)}];
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
   const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].cls===cls);
-  const keys=SI?SET_ITEMS[SI].affs.slice():pool.slice().sort(()=>Math.random()-0.5).slice(0,n);
-  for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm));it.uv=UPG_VER;
+  const keys=SI?SET_ITEMS[SI].affs.slice():U?pool.slice().sort(()=>Math.random()-0.5).slice(0,n):pickAffKeys(pool,n,rarity<=1?1:MAX_PRE,rarity<=1?1:MAX_SUF); // magic 1+1, rare 2+2
+  const TT=!U&&!SI?{il:ilvl,boost}:null; // tiers on magic and rare items only
+  for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm,TT));it.uv=UPG_VER;
   if((rarity===2&&Math.random()<0.3)||rarity===3)it.affs.push({k:'skill',s:randi(0,4),v:rarity===3?randi(1,2):1});
   if(U)it.name=UNIQUES[U].name;
   else if(SI)it.name=SET_ITEMS[SI].name;
@@ -337,6 +342,40 @@ function affVal(a,m){const d=AFF[a.k];let v=a.v*(d&&d.flat?1:m);return d&&d.dec?
 // levels 11-15), so an older tier dropped late still rolls older, smaller numbers (Tier V Life ~4x Tier I, Damage % and
 // Crit Damage ~2-2.5x, Crit, Attack/Move Speed and Cooldown ~1.5-1.8x). Tier V keeps climbing in the endless depths.
 const affLvl=(ilvl,tier)=>!tier?ilvl:clamp(ilvl,TIER_LO[tier-1],tier===5?999:TIER_LO[tier-1]+4);
+// ---------- affix tiers (v1.0.60, PoE2 style) ----------
+// Every random stat on a magic or rare item (and on charms) rolls a tier, T1 best ... T9 worst. The tier says how good the
+// roll is; the size of the numbers still comes from the affix level (affLvl above), so a T1 Hell helm beats a T1 Normal
+// one. Each tier is a band around the stat's middle value at that level (TIER_BAND, times the middle). Weights (TIER_W):
+// T5-T7 common, T1-T2 rare, set so an average drop is as strong as before tiers. Better tiers need item level
+// (TIER_MIN_IL: T1 20+, T2 15+ ...). Harder content raises the floor (tierFloor): item level 26+ (Nightmare, Endless after
+// Normal) T1-T6, 51+ (Hell, Endless after Nightmare) T1-T5, 76+ (Endless after Hell) T1-T3. Item level and the monster's
+// boost (champions, bosses) shift the odds toward better tiers. Uniques, set items, Runebinds and implicits: no tiers.
+// Stats are prefixes or suffixes (AFF[k].ps); rares hold up to MAX_PRE + MAX_SUF of them, magic items 1 + 1.
+const TIER_N=9,MAX_PRE=2,MAX_SUF=2;
+const TIER_BAND0=[null,[1.95,2.25],[1.65,1.95],[1.4,1.65],[1.2,1.4],[1.04,1.2],[0.92,1.04],[0.82,0.92],[0.73,0.82],[0.62,0.73]];
+let TIER_BAND=TIER_BAND0; // scaled below (after tierWeights) so an average Normal drop (item level 15) is as strong as before tiers
+const TIER_W=[0,0.8,2,5.5,11,17,20,18,13,9],TIER_MIN_IL=[0,18,12,7,3,1,1,1,1,1];
+const tierFloor=il=>il>75?3:il>50?5:il>25?6:TIER_N;
+const NO_TIER=new Set(['pot']);
+const tiered=k=>!!AFF[k]&&!AFF[k].meta&&!NO_TIER.has(k);
+// T.best / T.worst (catalysts, v1.0.62) narrow the range further.
+function tierWeights(il,boost=0,T={}){const lo=Math.min(tierFloor(il),T.worst||TIER_N),hi=T.best||1,s=clamp((il-1)/75,0,1),b=Math.max(0,boost);
+  return TIER_W.map((w,t)=>t<hi||t>lo||il<TIER_MIN_IL[t]&&t<lo?0:w*(1+(1.6*s+0.3*b)*(TIER_N-t)/(TIER_N-1)));}
+{const w=tierWeights(15),tot=w.reduce((a,b)=>a+b,0);let m=0;for(let t=1;t<=TIER_N;t++)m+=w[t]/tot*(TIER_BAND0[t][0]+TIER_BAND0[t][1])/2;TIER_BAND=TIER_BAND0.map(B=>B&&B.map(x=>x/m));}
+function rollAffTier(il,boost,T){const w=tierWeights(il,boost,T);let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let t=1;t<=TIER_N;t++){r-=w[t];if(r<0)return t;}return tierFloor(il);}
+const affMid=(k,l)=>{const [a,b]=rollRange(k,l);return (a+b)/2;};
+const fmtAff=(k,v)=>AFF[k].dec?+v.toFixed(1):Math.max(1,Math.round(v));
+// A value for stat k at affix level l in tier t (rm: rarity or charm multiplier).
+const tierVal=(k,l,t,rm=1)=>fmtAff(k,affMid(k,l)*rand(TIER_BAND[t][0],TIER_BAND[t][1])*rm);
+// The tier an existing value fits (old items, v1.0.60): the band that holds it, or the nearest end.
+function tierOf(k,l,v,rm=1){const m=affMid(k,l)*rm;if(!(m>0))return 5;const q=v/m;for(let t=1;t<=TIER_N;t++)if(q>=TIER_BAND[t][0]-1e-9)return t;return TIER_N;}
+const isPre=k=>AFF[k]&&AFF[k].ps==='p';
+const preCount=it=>it.affs.filter(a=>a.k!=='skill'&&isPre(a.k)).length,sufCount=it=>it.affs.filter(a=>a.k!=='skill'&&AFF[a.k]&&!isPre(a.k)).length;
+// Can stat k still go on the item (an open prefix or suffix slot; magic items 1 + 1)?
+function affFits(it,k,rarity=it.rarity){const mp=rarity<=1?1:MAX_PRE,ms=rarity<=1?1:MAX_SUF;return isPre(k)?preCount(it)<mp:sufCount(it)<ms;}
+// n stats from a pool, at most p prefixes and q suffixes ('resist' counts as a suffix).
+function pickAffKeys(pool,n,p,q){const out=[];let np=0,ns=0;for(const k of pool.slice().sort(()=>Math.random()-0.5)){if(out.length>=n)break;
+  if(isPre(k)){if(np<p){out.push(k);np++;}}else if(ns<q){out.push(k);ns++;}}return out;}
 // Upgrades (+1..+10, gold): +2% base damage, armor and implicit stats per level (+20% at +10); affixes are not upgraded,
 // so a fresh rare from the next act beats a +10 rare from the act before (~13-21% more power; the game test checks it).
 // It was +4% until v1.0.52, and +10 gear then out-powered next-act drops. Rings and amulets have no base and no tier:
@@ -371,9 +410,12 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
   if(it.dmin!=null){it.dmin=+it.dmin.toFixed(3);it.dmax=+it.dmax.toFixed(3);}if(it.arm)it.arm=+it.arm.toFixed(3);
   it.uv=UPG_VER;return it;}
 function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
+// The tier tag after a stat line on item cards: T1-T2 gold, T3 bright, the rest dim.
+const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64','#7c6c58','#6c5c4c','#5c4e42'];
+const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=9; // 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
+const SAVE_VER=10; // 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -397,6 +439,10 @@ function migrateItem(it){
   if(it.rb&&!RUNEBINDS[it.rb]){delete it.rb;if(it.rarity===4)it.rarity=0;}
   if(TIERED.has(it.slot)&&!(it.tier>=1&&it.tier<=5))it.tier=tierOfLvl(it.ilvl); // pre-tier items: their stats already match the tier of their item level
   bakeUpgrades(it); /* brought to the current affix and upgrade rules */
+  // v1.0.60: stats on magic and rare items and charms get the tier their value fits (the value itself is kept)
+  if(it.rarity===1||it.rarity===2||it.slot==='charm'){const l=it.slot==='charm'?it.ilvl:affLvl(it.ilvl,it.tier),rmOf=k=>it.slot==='charm'?CHARM[it.size].m:affRm(it,k);
+    for(const a of it.affs)if(a.t==null&&tiered(a.k))a.t=tierOf(a.k,l,a.v,rmOf(a.k));}
+  for(const a of it.affs)if(a.t!=null&&!(a.t>=1&&a.t<=TIER_N&&tiered(a.k)))delete a.t;
   return it;
 }
 function migrateChar(c){

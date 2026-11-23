@@ -18,7 +18,7 @@ function rollCharmSize(boss){let r=Math.random()*100;if(boss&&r<10)return 'grand
 function genCharm(ilvl,cls,size){
   const C=CHARM[size],it={id:++ITEM_ID,slot:'charm',size,ilvl,cls,upg:0,rarity:size==='grand'?2:1,affs:[]};
   const keys=CHARM_POOL.filter(k=>!AFF[k].cls||AFF[k].cls===cls).sort(()=>Math.random()-0.5).slice(0,randi(C.n[0],C.n[1]));
-  for(const k of keys)it.affs.push(rollAff(k,ilvl,C.m));
+  for(const k of keys)it.affs.push(rollAff(k,ilvl,C.m,{il:ilvl})); // items.js: affix tiers
   if(size==='grand')it.affs.unshift({k:'skill',s:randi(0,4),v:1});
   const a=it.affs.find(x=>x.k!=='skill'),b=it.affs.filter(x=>x.k!=='skill')[1];
   it.name=size==='grand'?`${a?AFF[a.k].pre+' ':''}Grand Charm of ${SKILLS[cls][it.affs[0].s].name}`:`${a?AFF[a.k].pre+' ':''}${C.name}${b?' '+AFF[b.k].suf:''}`;
@@ -33,7 +33,7 @@ function charmIn(it){const c=G.char,i=c.bag.indexOf(it);if(i<0||!charmFits(c,it)
 function charmOut(it){const c=G.char,i=charmsOf(c).indexOf(it);if(i<0||c.bag.length>=30)return false;c.charms.splice(i,1);c.bag.push(it);refreshStats();saveChar();return true;}
 // Save cleanup: only valid charms, and never more than 9 slots (the rest go back to the bag).
 function migrateCharms(c){const keep=[];let used=0;
-  for(const it of Array.isArray(c.charms)?c.charms:[]){if(!it||it.slot!=='charm'||!CHARM[it.size])continue;if(used+charmSlots(it)<=CHARM_SLOTS){keep.push(it);used+=charmSlots(it);}else c.bag.push(it);}
+  for(let it of Array.isArray(c.charms)?c.charms:[]){if(!it||it.slot!=='charm'||!CHARM[it.size])continue;it=migrateItem(it);if(!it)continue; /* items.js: stat tiers and the other item rules */if(used+charmSlots(it)<=CHARM_SLOTS){keep.push(it);used+=charmSlots(it);}else c.bag.push(it);}
   c.charms=keep;}
 
 // ---------- UI: the charm row in the inventory, and the charm item card ----------
@@ -47,7 +47,7 @@ function renderCharms(){
 function openCharm(it,inPouch){
   const c=G.char,C=CHARM[it.size];
   let h=`<div class="card" style="border-color:${RCOL[it.rarity]}"><div class="chead"><div class="cicon">${itemIcon(it)}</div><div><div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${C.name} · ${C.slots} pouch slot${C.slots>1?'s':''} · Item level ${it.ilvl}</div></div></div>`;
-  for(const a of it.affs){const off=a.k==='skill'&&it.cls!==c.cls;h+=`<div class="iaff${a.k==='skill'?' skl':''}${off?' off':''}">${esc(affText(a,1,it.cls||c.cls))}${off?` <small>(${CLASSES[it.cls].name} only)</small>`:''}</div>`;}
+  for(const a of it.affs){const off=a.k==='skill'&&it.cls!==c.cls;h+=`<div class="iaff${a.k==='skill'?' skl':''}${off?' off':''}">${esc(affText(a,1,it.cls||c.cls))}${tierTag(a)}${off?` <small>(${CLASSES[it.cls].name} only)</small>`:''}</div>`;}
   h+=`<div class="ibase" style="color:var(--dim)">Works while it's in your charm pouch (${charmUsed(c)}/${CHARM_SLOTS} slots used)</div></div>`;
   const fits=charmFits(c,it);
   h+=`<div class="row">${inPouch?'<div class="btn sm" id="cOut">Take out</div>':`<div class="btn sm${fits?'':' dis'}" id="cIn">Put in charm pouch</div>`}
