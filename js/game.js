@@ -51,7 +51,7 @@ function killEnemy(e){
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
-  if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+(PD()>25?1:0);
+  if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,PD()+L.ilvl,3,min,{act:dropAct(PD()),top:true}));}
     dropGold(e.x,e.y,PD()*L.gold);dropGold(e.x+20,e.y,PD()*L.gold*0.5);
     if(actIdx(G.depth)===4)emberCoreDrop(e);
@@ -62,16 +62,17 @@ function killEnemy(e){
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){if(Math.random()<Math.min(1,ELITE_DROP+(e.affs.length>=3?0.05:0)))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
-  else if(Math.random()<normalDrop(T))dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
+  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
+  else if(Math.random()<normalDrop(T)*lootHere().drop)dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
 }
 // Item drop chances (v1.0.50): normal monsters 6.5-13% (tougher kinds more), champion/magic pack members 35%
 // (40% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
 // BOSSES[].loot). Gold is separate and more common; gems, runes and charms keep their own rates.
+// Nightmare and Hell: x1.25 / x1.5 item chances, more Item Rarity, gold, gems and boss items (maps.js DIFFS loot).
 const ELITE_DROP=0.35,GOLD_CH=0.5;
 const normalDrop=T=>0.06+(T.drop||0)*0.25;
 function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char)G.char.namedSince=0;if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
-function dropGold(x,y,v){G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});}
+function dropGold(x,y,v){v=Math.round(v*lootHere().gold);G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});} // maps.js: more gold in Nightmare and Hell
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.
 // Movement input from the joystick and WASD/arrows, length at most 1.
 function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}

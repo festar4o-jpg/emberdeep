@@ -224,6 +224,7 @@ const DROP_RAR=[50,30,10,0,0,5],DROP_UQ=5;
 function dropRarity(boost=0,rar=0){const b=Math.max(0,boost),m=1+Math.max(0,rar)/100,w=[Math.max(5,DROP_RAR[0]-14*b),(DROP_RAR[1]+3*b)*m,(DROP_RAR[2]+6*b)*m,(DROP_UQ+2.5*b)*m,0,(DROP_RAR[5]+2.5*b)*m];
   let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let i=0;i<6;i++){r-=w[i];if(r<0)return i;}return 0;}
 // Bad-luck protection: after NAMED_PITY kills without a set or unique item, the next item drop is one (c.namedSince counts kills).
+// Nightmare and Hell shorten it (maps.js DIFFS loot.pity: 160, 120).
 const NAMED_PITY=200;
 // Smart loot: this share of set/unique drops is picked from the items made for your class (its own uniques and sets);
 // the rest roll normally (slot first), which mostly also gives items you can wear.
@@ -246,7 +247,7 @@ let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
   const tier0=opt.act||tierOfLvl(ilvl);
-  const due=(c.namedSince||0)>=NAMED_PITY;const rp=G.char===c&&G.stats?G.stats.rarity||0:0;let rar=dropRarity(boost,rp);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
+  const L=lootHere(),due=(c.namedSince||0)>=Math.min(NAMED_PITY,L.pity);const rp=(G.char===c&&G.stats?G.stats.rarity||0:0)+L.rar; /* maps.js: Nightmare and Hell loot */let rar=dropRarity(boost,rp);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
   if(minRarity>=3&&rar!==3)rar=3;else if(rar<minRarity)rar=minRarity;
   // Each slot must appear within its next (PITY+1-misses) drops. Sorted by that deadline, if the j-th slot's deadline is <= j
   // there is no slack left, so the most urgent slot drops now. This forces a slot at 15 misses, and also steps in a little

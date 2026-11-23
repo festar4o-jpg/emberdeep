@@ -95,7 +95,7 @@ function rollGem(depth){const a=dropAct(depth);return {g:pick(GEM_KEYS),q:clamp(
 function rollRune(depth){const mx=Math.min(RUNE_KEYS.length-1,dropAct(depth)*2-1+(depth>25?1:0));
   let r=Math.random()*(mx+1)*(mx+2)/2;for(let i=0;i<=mx;i++){r-=mx-i+1;if(r<0)return {r:RUNE_KEYS[i]};}return {r:RUNE_KEYS[0]};}
 const STONE_DROP={normal:[0.04,0.006],elite:[0.2,0.04],boss:[1,0.6]}; // [gem chance, rune chance]; bosses drop 2 gems
-function dropStones(e,kind){const d=PD(),[gc,rc]=STONE_DROP[kind];
+function dropStones(e,kind){const d=PD(),S=lootHere().stone,[gc,rc]=STONE_DROP[kind].map(v=>Math.min(1,v*S));
   const n=kind==='boss'?2:Math.random()<gc?1:0;for(let k=0;k<n;k++)dropStone(e.x+rand(-30,30),e.y+rand(-30,30),rollGem(d));
   if(Math.random()<rc)dropStone(e.x+rand(-20,20),e.y+rand(-20,20),rollRune(d));}
 function dropStone(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,gem:s,t:0};G.loot.push(l);dropSfx(l);}
