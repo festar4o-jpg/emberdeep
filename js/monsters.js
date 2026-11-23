@@ -210,6 +210,7 @@ function makeEnemy(type,x,y,depth,elite,pack,affs){
     xp:T.xp*(1+0.15*(depth-1))*(elite?3*(1+0.2*Math.max(0,af.length-1)):1),name:T.name,dash:0,act:null,stateT:rand(2,3.5)};
   if(T.ai==='burrow'){e.hidden=true;e.under=true;}
   const EL=ELEM_OF[type];if(EL){e.elem=EL[0];e.elemS=EL[1];}
+  if(typeof mapEnemy==='function')mapEnemy(e); // sigils.js: map modifiers
   if(type==='boss'){e.hp=T.hp*hpM;e.dmg=T.dmg*dM;e.name=A.boss+(cyc>1?' '+roman(cyc):'');e.col=A.bossCol;e.phase=0;e.kind=actIdx(depth);const B=BOSSES[e.kind];if(B.elem){e.elem=B.elem[0];e.elemS=B.elem[1];}e.hp*=B.hp;e.dmg*=B.dmg;e.spd*=B.spd;e.dr=B.dr||0;e.cd=1.5;e.maxHp=e.hp;bossInit(e);} /* js/bossfight.js: phases, stagger, life x BOSS_HP_K */
   e.maxHp=e.hp;return e;
 }

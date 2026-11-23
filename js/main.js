@@ -10,7 +10,7 @@ function frame(now){
   if(G.char&&G.p){updateHud();G.mmT-=dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}
   requestAnimationFrame(frame);
 }
-migrateSaves();loadStash();loadCur();loadBook();loadSettings();setupBackupUi();
+migrateSaves();loadStash();loadCur();loadSigils();loadBook();loadSettings();setupBackupUi();
 resize();showTitle();requestAnimationFrame(frame);
 $('verTxt').textContent='Emberdeep v'+GAME_VERSION;
 // Debug autotest (a bot that plays and reports; see debug/autotest.js): only with ?autotest=1 in the URL. The file is not in

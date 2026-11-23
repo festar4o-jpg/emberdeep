@@ -52,6 +52,7 @@ function render(){
   for(const l of G.loot){if(!onScreen(l.x,l.y,40)||(l.item&&lootHidden(l.item)))continue;const bob=Math.sin(G.time*4+l.x)*2;
     if(l.gem){drawStoneLoot(l,bob);continue;}
     if(l.cur){drawCurLoot(l,bob);continue;} // currency.js
+    if(l.sig){drawSigilLoot(l,bob);continue;} // sigils.js
     if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}
       lootLabel(l.x,l.y-14,`${l.gold} Gold`,CURRENCY_COL,'rgba(200,180,138,.55)',null,null,true);continue;}
     const col=RCOL[l.item.rarity];
@@ -387,6 +388,6 @@ function drawMinimap(){
   mctx.fillStyle='#e33';for(const e of G.enemies){if(e.dead||e.hidden)continue;if(G.explored[Math.floor(e.y/TILE)*MW+Math.floor(e.x/TILE)]&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<400)mctx.fillRect(e.x/TILE*s-2,e.y/TILE*s-2,4,4);}
   if(!G.inTown)minimapFeatures(s);
   for(const l of G.loot){if(l.taken||l.gold||!G.explored[tileIdx(l.x,l.y)]||l.item&&lootHidden(l.item))continue; /* ground items */
-    mctx.fillStyle=l.item?RCOL[l.item.rarity]:l.cur?CURS[l.cur].col:'#c8e8ff';mctx.save();mctx.translate(l.x/TILE*s,l.y/TILE*s);mctx.rotate(Math.PI/4);mctx.fillRect(-2.2,-2.2,4.4,4.4);mctx.restore();}
+    mctx.fillStyle=l.item?RCOL[l.item.rarity]:l.cur?CURS[l.cur].col:l.sig?SIG_COL[l.sig.rarity]:'#c8e8ff';mctx.save();mctx.translate(l.x/TILE*s,l.y/TILE*s);mctx.rotate(Math.PI/4);mctx.fillRect(-2.2,-2.2,4.4,4.4);mctx.restore();}
   mctx.fillStyle='#fff';mctx.beginPath();mctx.arc(G.p.x/TILE*s,G.p.y/TILE*s,4.5,0,TAU);mctx.fill();
 }

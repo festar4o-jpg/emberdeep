@@ -521,6 +521,7 @@ function calcStats(c,swap,at){
   const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
   shrineStats(s);
+  if(typeof mapStats==='function')mapStats(s); // sigils.js: a map's modifiers on you
   return s;
 }
 // Resistance to one element after the difficulty's penalty (maps.js resPenalty), at most 75%; can go below 0.

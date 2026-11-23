@@ -33,13 +33,13 @@ const DIFFS=[{name:'Normal',col:'#d9a441',elite:0,res:0,loot:{drop:1,rar:0,gold:
   {name:'Hell',col:'#ff4a3a',elite:0.12,res:50,loot:{drop:1.5,rar:50,gold:2,pity:120,stone:1.6,boss:2,zb:2,cur:1.8}}];
 const DIFF_N=DIFFS.length;
 const curDiff=()=>G.char&&G.char.diff||0;
-const powDepth=d=>{const c=G.char;if(!c)return d;return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
+const powDepth=d=>{const c=G.char;if(!c)return d;if(c.mapRun&&G.zone==='map'&&!G.inTown)return 75+2*c.mapRun.sig.tier; /* sigils.js: maps */return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
 const PD=()=>powDepth(G.depth||1);
 // Resistance penalty where you are: the difficulty's (Nightmare 20, Hell 50); the endless depths take the highest beaten.
 // The difficulty whose rules apply where you are: the one you play in the story; the highest beaten in the endless depths.
-const diffHere=()=>{const c=G.char;if(!c)return 0;return (G.depth||1)<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1);};
-const resPenalty=()=>DIFFS[diffHere()].res||0;
-const lootHere=()=>DIFFS[diffHere()].loot;
+const diffHere=()=>{const c=G.char;if(!c)return 0;if(c.mapRun&&G.zone==='map'&&!G.inTown)return 2; /* maps play by Hell's rules */return (G.depth||1)<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1);};
+const resPenalty=()=>(DIFFS[diffHere()].res||0)+(typeof mapResPen==='function'?mapResPen():0);
+const lootHere=()=>typeof inMap==='function'&&inMap()?mapLoot():DIFFS[diffHere()].loot; // sigils.js: a map's Item Quantity and Rarity
 const roman=n=>['I','II','III','IV','V','VI','VII','VIII','IX','X'][n-1]||String(n);
 const depthLabel=d=>d>25?`Endless ${d-25}`:`${actIdx(d)+1}-${stageOf(d)}`;
 // grid: 0 floor, 1 wall, 2 void (chasm / lava lake: blocks walking, not projectiles). terrain: 1 poison, 2 lava, 3 bridge.

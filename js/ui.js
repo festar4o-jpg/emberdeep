@@ -109,6 +109,7 @@ tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
 // Rise again: in a zone, inside the same instance (portal.js); on boss arenas and depth levels, the level is rebuilt.
 function respawnHero(){$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);
+  if(G.zone==='map'&&G.char.mapRun){const r=G.char.mapRun;r.lives--;if(r.lives<=0&&!r.done){const town=r.town;endMap('fail');G.p.dead=false;G.p.hp=G.stats.life;startTown(town);return;}toast(`${r.lives} ${r.lives===1?'life':'lives'} left in this map`,'');} // sigils.js
   if(G.zone&&ZONES[G.zone].layout!=='boss')zoneRespawn();else if(G.zone)startZone(G.zone,'respawn');else startDepth(G.depth);}
 tap('respawnBtn',respawnHero);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});

@@ -76,7 +76,7 @@ function portalInterrupt(){const p=G.p;if(p&&p.tpCast){p.tpCast=null;floatText(p
 // Off to town. Zones are kept for the return portal; the older depth levels are rebuilt on the way back.
 function openPortal(){const p=G.p,c=G.char;playSfx('portal');burst(p.x,p.y,30,'#7ab8ff',220);
   if(G.zone&&ZONES[G.zone]){c.tp={zid:G.zone,x:Math.round(p.x),y:Math.round(p.y)};saveInstance();}else c.tp=null;
-  startTown(G.depth);}
+  startTown(G.zone==='map'&&c.mapRun?c.mapRun.town:G.depth);} // sigils.js: from a map, back to the town it was opened in
 // Through the return portal in town.
 function takePortalBack(){const c=G.char;if(!c.tp||!ZONES[c.tp.zid])return;playSfx('portal');startZone(c.tp.zid,'tp');}
 function portalTick(dt){const p=G.p,C=p.tpCast;

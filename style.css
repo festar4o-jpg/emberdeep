@@ -299,3 +299,4 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .plegend{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;margin-top:4px;color:#cdd6ff;}
 .pc .pcap{position:absolute;left:0;right:0;bottom:1px;font-size:8.5px;line-height:1;text-align:center;color:#e8dcc4;text-shadow:0 0 2px #000,0 0 2px #000;white-space:nowrap;overflow:hidden;}
 .pinfo .up{color:#6f6;}
+.smod{font-size:12px;line-height:1.35;}.smod.mp{color:#ff9a7a;}.smod.ms{color:#c8a0ff;}#mapList .slot{cursor:pointer}#mapList .slot.cur-ok{border-color:#ffb347}#mapList .ic small{font-size:11px;display:block;line-height:1;}

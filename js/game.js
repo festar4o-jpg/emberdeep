@@ -49,7 +49,7 @@ function killEnemy(e){
   if(!e.summoned){trophyKill(e);G.char.namedSince=(G.char.namedSince||0)+1;} // kills since the last set/unique (items.js NAMED_PITY)
   if(e.noLoot||e.summoned)return;
   if(e.type==='thief'){thiefLoot(e);return;}
-  const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk);dropCurrency(e,e.type==='boss'?'boss':e.zb?'zboss':e.su?'su':dk); // gems, runes, charms, currency
+  const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk);{const kd=e.type==='boss'?'boss':e.zb?'zboss':e.su?'su':dk;dropCurrency(e,kd);sigilDrops(e,kd);} // gems, runes, charms, currency, Sigils (sigils.js)
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
   if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
@@ -58,7 +58,7 @@ function killEnemy(e){
     if(actIdx(G.depth)===4)emberCoreDrop(e);
     if(G.depth<=25)questDone(`a${actIdx(G.depth)+1}q4`); /* zones.js: each act's last quest */
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
-    if(G.depth===25&&(c.diffDone||0)<=(c.diff||0)){const d=c.diff||0;c.diffDone=d+1;c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory(d);},1800);} // maps.js: the next difficulty opens
+    if(G.depth===25&&(c.diffDone||0)<=(c.diff||0)){const d=c.diff||0;c.diffDone=d+1;c.won=true;toast(e.name+' falls!',c.diffDone>=3?'Maps are open: the Map Device is at every Waystone':'');if(c.diffDone>=3&&!c.sigGift){c.sigGift=1;for(let i=0;i<3;i++)sigAdd(genSigil(1,0));}setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory(d);},1800);} // maps.js: the next difficulty opens
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);dropUCharm(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
@@ -150,14 +150,16 @@ function startGame(c){
   $('dodgeBtn').firstChild.nodeValue=c.cls==='arcanist'?'💫':'💨'; /* Arcanists Blink, Wardens roll */
   buildSkillBar();
   ['titleOv','createOv'].forEach(i=>$(i).classList.add('hidden'));$('hud').classList.remove('hidden');
+  if(c.mapRun&&c.mapRun.sig&&ZONES[c.mapRun.src])regMapZone(c.mapRun);else c.mapRun=null; // sigils.js: the open map, before its kept instance loads
+  if(mapsOpen(c)&&!c.sigGift){c.sigGift=1;for(let i=0;i<3;i++)SIGILS.length<SIG_CAP&&SIGILS.push(genSigil(1,0));storeSigils();} // first maps: three Tier 1 Sigils
   instLoad(c); /* portal.js: this hero's kept zones */
-  if(c.town)startTown(c.depth);else startDepth(c.depth);
+  if(c.town)startTown(c.depth);else if(c.zone==='map'&&c.mapRun)startZone('map','resume');else startDepth(c.depth); // an open map: back into it
 }
 // mode (boss depths, from the Waystone): 'all' (default), 'boss' = the boss alone, 'noboss' = the packs only.
 function startDepth(d,mode){
   if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js / acts.js: acts built of zones */
   G.zone=null;G.sidePortal=null;G.zboss=null;
-  const c=G.char;G.depth=d;c.depth=d;c.town=0;if(d>25)c.endMax=Math.max(c.endMax||0,d);else c.maxDepth=Math.max(c.maxDepth,d); // endless reach: one for all difficulties
+  const c=G.char;if(c.mapRun)endMap('abandon'); /* sigils.js */G.depth=d;c.depth=d;c.town=0;if(d>25)c.endMax=Math.max(c.endMax||0,d);else c.maxDepth=Math.max(c.maxDepth,d); // endless reach: one for all difficulties
   resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   genLevel(d,G.levelMode);G.cam.x=p.x;G.cam.y=p.y;
@@ -286,7 +288,7 @@ function update(dt){
   // loot
   for(const l of G.loot){l.t+=dt;if(p.dead||l.taken||(l.item&&lootHidden(l.item)))continue;const d=Math.hypot(l.x-p.x,l.y-p.y);
     if(l.gold&&d<60){l.x+=(p.x-l.x)*Math.min(1,dt*10);l.y+=(p.y-l.y)*Math.min(1,dt*10);}
-    if(d<32){if(l.gem)pickStone(l);else if(l.cur)pickCur(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
+    if(d<32){if(l.gem)pickStone(l);else if(l.cur)pickCur(l);else if(l.sig)pickSigil(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
       else if(autoSalvages(G.char,l.item)){const r=autoSalvage(G.char,l.item);l.taken=true;floatText(l.x,l.y-20,`+${r.gold}🪙 ${matText(r.mats)}`,RCOL[0],false);}
       else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
       else if(G.bagFullT<=0){G.bagFullT=3;toast('Bag is full','Salvage items in 🎒');}}}

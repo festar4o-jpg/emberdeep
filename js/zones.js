@@ -24,8 +24,8 @@ const ZONES={
 };
 const ACT1_MAIN=['a1z1','a1z2','a1z3','a1z4','a1z5'],ACT1_SIDE=['a1s2','a1s1'];
 // An act's chain (main zones by depth) and its side zones; acts.js adds Acts 2-5. Acts without zones keep the depth chain.
-const actZones=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&!ZONES[z].parent).sort((x,y)=>ZONES[x].depth-ZONES[y].depth);
-const actSides=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&ZONES[z].parent);
+const actZones=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&!ZONES[z].parent&&!ZONES[z].map).sort((x,y)=>ZONES[x].depth-ZONES[y].depth);
+const actSides=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&ZONES[z].parent&&!ZONES[z].map);
 const zoneOfDepth=d=>d>=1&&d<=25?actZones(actIdx(d)+1)[stageOf(d)-1]||null:null;
 const zst=(c,z)=>{const S=c.zst||(c.zst={});return S[z]||(S[z]={});};
 const hasWp=(c,z)=>(c.wps||[]).includes(z);
@@ -70,6 +70,7 @@ const ZB_ELEM={weaver:['pres',0.5],abbess:['fres',0.6],lamplighter:['fres',0.6],
   bog:['pres',0.6],thornfather:['pres',0.5],gloomhag:['lres',0.6],silt:['cres',0.5],leechking:['pres',0.6],frostjaw:['cres',0.5],avwitch:['cres',0.7],matriarch:['cres',0.6],
   vosk:['lres',0.5],ymra:['cres',0.6],pyrrhus:['fres',0.7],overseer:['fres',0.5],coil:['fres',0.7],ixa:['fres',0.7],slavemaster:['fres',0.5]};
 function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);if(ZB_ELEM[id]){e.elem=ZB_ELEM[id][0];e.elemS=ZB_ELEM[id][1];}
+  if(G.zone==='map'&&ZONES.map&&ZONES.map.map){e.hp=e.maxHp=e.maxHp*1.6;e.dmg*=1.25;const o=pick(Object.keys(ZBOSS).filter(k=>k!==id)),x=ZBOSS[o].moves.find(m=>!B.moves.includes(m));e.moves=B.moves.concat(x?[x]:[]);} // a map boss: tougher, a third mechanic
   e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;return e;}
 function makeSuper(id,x,y,depth,pack){const S=SUPERU[id],e=makeEnemy(S.base,x,y,depth,true,pack,S.affs.slice());
   e.su=id;e.name=S.name;e.hp=e.maxHp=e.maxHp*(S.hp||2.2);e.dmg*=1.15;e.r+=2;return e;}
@@ -90,7 +91,7 @@ const ZB_MOVES={
   chill(e){e.busy=0.7;ring(e,16,190,'#bfe8ff',e.dmg*0.6,6,rand(0,TAU),0,{slow:0.4});}
 };
 AI.zboss=(e,T,d,toP,step,chase,cdm)=>{const B=ZBOSS[e.zb];if(e.busy>0)return;
-  if(e.cd<=0&&d<520){const m=B.moves[e.mv=(e.mv||0)+1&1];ZB_MOVES[m](e);e.cd=2.6*cdm;return;}
+  if(e.cd<=0&&d<520){const mv=e.moves||B.moves,m=mv[e.mv=((e.mv||0)+1)%mv.length];ZB_MOVES[m](e);e.cd=2.6*cdm;return;}
   if(B.ranged&&d<180){step(toP+Math.PI,0.7);return;}
   if(d>e.r+G.p.r+24)chase();else if(!(e.swing>0)){e.wind=0.5;e.act=null;e.swing=1;bossLater(e,1.2,()=>{e.swing=0;});}};
 AI.nest=(e,T,d,toP,step,chase,cdm,dt)=>{e.face+=0.01;e.spawnCd=(e.spawnCd??2)-(dt||0.033);if(d<520&&e.spawnCd<=0&&G.enemies.filter(o=>!o.dead&&o.master===e).length<5){e.spawnCd=4.5;
@@ -159,7 +160,7 @@ const LAYOUT={
     keepConnected();const start=regionAt(pts[0][0]+1,pts[0][1]),exit=regionAt(pts[pts.length-1][0],pts[pts.length-1][1]);return finishLayout([start,...regs,exit],start,exit);}
 };
 // ---------- building a zone ----------
-function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZones(c);
+function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZones(c);if(c.mapRun&&zid!=='map'&&typeof endMap==='function')endMap('abandon'); /* sigils.js */
   G.zone=zid;G.depth=Z.depth;c.depth=Z.depth;c.zone=zid;c.maxDepth=Math.max(c.maxDepth||1,Z.depth);
   resetArea();G.inTown=false;c.town=0;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&(mode==='boss'||mode==='noboss')?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
@@ -197,7 +198,7 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   const regs=L.regions.filter(r=>!used.has(r));placeEncounters(depth,regs,L.start,L.exit,false,spot);
   const hide=L.hide.slice(),take=()=>{const h=hide.shift();return h?{x:(h[0]+0.5)*TILE,y:(h[1]+0.5)*TILE}:null;};
   const midRegion=L.regions.filter(r=>!used.has(r)).sort((a,b)=>Math.abs(D[a.cy*MW+a.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45)-Math.abs(D[b.cy*MW+b.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45))[0];
-  if(midRegion){used.add(midRegion);const q=spot(midRegion);G.feats.push(zoneFeat('wp',q.x,q.y));}
+  if(midRegion&&!Z.map){used.add(midRegion);const q=spot(midRegion);G.feats.push(zoneFeat('wp',q.x,q.y));} // maps have no waypoint
   const hc=take();if(hc)G.feats.push(zoneFeat('hchest',hc.x,hc.y));
   if(Z.gate==='key'&&!zst(G.char,zid).key){const k=take()||spot(freeRegs()[0]||L.exit);G.feats.push(zoneFeat('key',k.x,k.y));
     const pk=++packId;rollPack(depth,true).forEach((type,m)=>G.enemies.push(makeEnemy(type,k.x+rand(-70,70),k.y+rand(-70,70),depth,m<3,pk,rollAffixes(depth))));}
@@ -263,7 +264,7 @@ function zonePortals(p){const P=G.portal,S=G.sidePortal,Z=ZONES[G.zone];
   const b=$('descBtn');if(b.textContent!==t)b.textContent=t;b.classList.toggle('hidden',!t);b.classList.toggle('dis',nearM&&!P.active);}
 function zoneGoal(){const Z=ZONES[G.zone],S=zst(G.char,G.zone);if(gateOpen(G.zone))return 'Exit open';
   return Z.gate==='boss'?`Slay ${ZBOSS[Z.boss].name.split(',')[0]}`:Z.gate==='key'?`Find the ${Z.key}`:Z.gate==='seals'?`Light the seals (${S.seals||0}/3)`:Z.gate==='actboss'?`Defeat ${ACTS[Z.act-1].boss.split(',')[0]}`:'';}
-function zoneDescend(){const Z=ZONES[G.zone];
+function zoneDescend(){const Z=ZONES[G.zone];if(Z&&Z.map){if(G.portal.active)mapLeave();return;} /* sigils.js: home from a map */
   if(G.atSide&&G.sidePortal){saveInstance();return startZone(G.sidePortal.to,'side');}
   if(!G.portal.active)return;
   if(Z.parent)return startZone(Z.parent,'back');
@@ -272,7 +273,7 @@ function zoneDescend(){const Z=ZONES[G.zone];
 // What a zone boss's death does: the gate, the quest, loot.
 function zoneBossDown(e){const zid=G.zone,Z=ZONES[zid],B=ZBOSS[e.zb],c=G.char;if(zid)zst(c,zid).boss=true;
   if(Z&&Z.gate==='boss'){G.portal.active=true;toast(`${B.name} falls`,'The way on is open');}else toast(`${B.name} falls`,'');
-  if(B.quest)questDone(B.quest);G.shake=Math.max(G.shake,12);
+  if(B.quest)questDone(B.quest);G.shake=Math.max(G.shake,12);if(Z&&Z.map)mapComplete(e); // sigils.js
   const d=PD();for(let k=0;k<2+lootHere().zb;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+2,2,k===0?2:0,{act:dropAct(d)})); // 2 items (Nightmare 3, Hell 4), the first rare or better
   dropGold(e.x,e.y,d*30);dropGold(e.x+20,e.y,d*20);dropStones(e,'boss');saveChar();}
 function superDown(e){const c=G.char,d=PD();for(let k=0,n=Math.random()<0.5?2:1;k<n;k++)dropItem(e.x+rand(-30,30),e.y+rand(-30,30),rollDrop(c,d+1,2,k===0?2:0,{act:dropAct(d)}));for(let k=0;k<3;k++)dropGold(e.x+rand(-20,20),e.y,d*8);}
@@ -308,6 +309,7 @@ function drawElder(){const E=G.elder;if(!E)return;const t=G.time,W=E.who;softSha
 function elderTick(){const p=G.p;G.elderNear=!!(G.inTown&&G.elder&&p&&Math.hypot(p.x-G.elder.x,p.y-G.elder.y)<70);}
 // HUD line: zone name, area level, objective.
 function zoneHud(){const Z=ZONES[G.zone];if(!Z)return null;const left=G.enemies.filter(e=>!e.dead).length;
+  if(Z.map&&G.char.mapRun){const r=G.char.mapRun;return `Map T${r.sig.tier} · ${Z.name.replace(/^Map: /,'')} · Lv ${areaLvl(PD())} · ${r.done?'Complete: take the portal home':zoneGoal()} · ${'♥'.repeat(Math.max(0,r.lives))} · ${left} foes`;} // sigils.js
   return `${diffTag()}Act ${Z.act} · ${Z.name} · Lv ${areaLvl(powDepth(Z.depth))} · ${zoneGoal()} · ${left} foes`;}
 // ---------- minimap ----------
 function minimapZone(s){if(!G.zone||G.inTown)return;const S=G.sidePortal;

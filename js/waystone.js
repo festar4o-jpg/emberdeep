@@ -17,7 +17,7 @@ function setWayDiff(d){if(d>=0&&d<=Math.min(DIFF_N-1,G.char.diffDone||0))wayDiff
 function renderWay(){const c=G.char,M=wayMax(),wd=wayD(),S=diffState(c,wd),same=wd===(c.diff||0),cur=same?G.depth:0,E=endMax();
   $('wayModes').innerHTML=((c.diffDone||0)>0?DIFFS.slice(0,Math.min(DIFF_N,(c.diffDone||0)+1)).map((D,i)=>`<div class="tab${i===wd?' on':''}" data-dif="${i}" style="color:${D.col}">${D.name}</div>`).join('')+'<span class="fdim"> · </span>':'')+
     WAY_MODES.map(([k,n])=>`<div class="tab${k===wayMode?' on':''}" data-m="${k}">${n}</div>`).join('');
-  let h='';
+  let h=mapsOpen(c)?`<div class="wayrow"><div class="wayn" style="color:#ffb347">🗺 Maps</div><div class="wayb"><div class="btn sm" id="wayMaps">Map Device (${SIGILS.length} Sigils${c.mapRun&&c.mapRun.lives>0?' · a map is open':''})</div></div></div>`:''; // sigils.js
   for(let a=0;a<5;a++){const first=a*5+1;
     h+=`<div class="wayrow"><div class="wayn" style="color:${ACTS[a].col}">${roman(a+1)} · ${esc(ACTS[a].name)}</div><div class="wayb">`+
       `<div class="btn sm${first<=M?'':' dis'}" data-town="${first}">🏠 ${esc(TOWNS[a].name)}</div>`;
@@ -30,7 +30,7 @@ function renderWay(){const c=G.char,M=wayMax(),wd=wayD(),S=diffState(c,wd),same=
       `<span class="wayend">Endless ${d-25} · ${esc(ACTS[actIdx(d)].name)} ${stageOf(d)}${d%5===0?' 💀':''}</span>`+
       [1,5].map(n=>`<div class="btn sm" data-e="${n}">+${n}</div>`).join('')+
       `<div class="btn sm" data-d="${d}">Go</div><div class="btn sm" data-town="${d}">🏠 ${esc(townOf(d).name)}</div></div></div>`;}
-  $('wayList').innerHTML=h;
+  $('wayList').innerHTML=h;if($('wayMaps'))$('wayMaps').onclick=()=>{closeWay();openMapDevice();};
   $('wayModes').querySelectorAll('[data-m]').forEach(el=>el.onclick=()=>setWayMode(el.dataset.m));
   $('wayModes').querySelectorAll('[data-dif]').forEach(el=>el.onclick=()=>setWayDiff(+el.dataset.dif));
   $('wayList').querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.d,false));
