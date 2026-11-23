@@ -132,10 +132,15 @@ function openPouch(target){pouchTarget=target||null;pouchSel=null;pouchMat=null;
 function closePouch(){$('pouchOv').classList.add('hidden');const t=pouchTarget;pouchTarget=null;setPause();if(t)openItem(t.it,t.eq);}
 function renderPouch(){
   const c=G.char,T=pouchTarget;
-  $('pouchSub').textContent=T?`Tap a gem or rune to socket it into ${T.it.name} (${freeSockets(T.it)} free)`:G.inTown?'Tap a gem to see its stats or combine three into one.':'Gems combine 3 → 1 in town.';
-  const cell=s=>{const n=pouchCount(c,s);return `<div class="cell pc${n?'':' empty'}${pouchSel&&stoneKey(pouchSel)===stoneKey(s)?' sel':''}">${stoneSvg(s)}${n?`<span class="cnt">${n}</span>`:''}</div>`;};
+  $('pouchSub').textContent=T?`Tap a gem or rune to see what it does in ${T.it.name} (${freeSockets(T.it)} free socket${freeSockets(T.it)>1?'s':''})`:G.inTown?'Tap a gem to see its stats or combine three into one.':'Gems combine 3 → 1 in town.';
+  const H=T?hostOf(T.it):null; // socketing: each cell shows what it gives in this item (v1.0.64)
+  const cell=s=>{const n=pouchCount(c,s);return `<div class="cell pc${n?'':' empty'}${pouchSel&&stoneKey(pouchSel)===stoneKey(s)?' sel':''}">${stoneSvg(s)}${n?`<span class="cnt">${n}</span>`:''}${H?`<span class="pcap">${esc(stoneShort(s,H))}</span>`:''}</div>`;};
   const gems=[];for(const g of GEM_KEYS)for(let q=1;q<=5;q++)gems.push({g,q});
   $('pouchGems').innerHTML=gems.map(cell).join('');
+  // what each gem gives (weapon / armor / jewelry, or just this item's kind), and the runes
+  $('pouchLegend').innerHTML=GEM_KEYS.map(g=>`<span><b style="color:${GEMS[g].col}">${GEMS[g].name}</b> ${H?esc(shortName(GEMS[g][H][0])):['w','a','j'].map(h=>esc(shortName(GEMS[g][h][0]))).join(' / ')}</span>`).join('')+
+    `<span class="fdim">${H?'In this '+HOST_NAME[H].toLowerCase():'Weapon / Armor / Jewelry'}</span>`;
+  $('pouchRuneLegend').innerHTML=RUNE_KEYS.map(r=>`<span><b style="color:#ffd36b">${RUNES[r].name}</b> ${esc(shortName(RUNES[r].k))}</span>`).join('');
   [...$('pouchGems').children].forEach((el,i)=>el.onclick=()=>pickPouch(gems[i]));
   const runes=RUNE_KEYS.map(r=>({r}));
   $('pouchRunes').innerHTML=runes.map(cell).join('');
@@ -145,16 +150,34 @@ function renderPouch(){
   [...$('pouchMats').children].forEach((el,i)=>el.onclick=()=>{if(pouchTarget)return;pouchMat=MAT_KEYS[i];pouchSel=null;renderPouch();});
   const s=pouchSel;let h='';
   if(pouchMat){const M=MATS[pouchMat];h=`<b>${M.ic} ${M.name}</b> <span class="fdim">× ${m[pouchMat]}</span><div>From salvaging ${M.from}</div><div class="fdim">Blacksmith: ${M.use}</div>`;}
-  if(s){const n=pouchCount(c,s);h=`<b style="color:${stoneCol(s)}">${esc(stoneName(s))}</b> <span class="fdim">× ${n}</span>`;
+  if(s&&T){h=socketPreview(c,T,s);}
+  else if(s){const n=pouchCount(c,s);h=`<b style="color:${stoneCol(s)}">${esc(stoneName(s))}</b> <span class="fdim">× ${n}</span>`;
     if(s.g)h+=['w','a','j'].map(k=>`<div>${HOST_NAME[k]}: ${esc(statText(stoneStat(s,k)))}</div>`).join('');
     else{h+=`<div>${esc(statText(stoneStat(s,'w')))} in any item</div>`;const uses=Object.keys(RUNEBINDS).filter(k=>recipeKnown(k)&&RUNEBINDS[k].runes.includes(s.r));
       if(uses.length)h+=`<div class="fdim">Used in: ${uses.map(k=>RUNEBINDS[k].name).join(', ')}</div>`;}
     if(s.g&&s.q<5)h+=`<div class="row" style="margin-top:6px"><div class="btn sm${G.inTown&&n>=3?'':' dis'}" id="combBtn">Combine 3 → ${esc(stoneName({g:s.g,q:s.q+1}))}</div></div>${G.inTown?'':'<div class="fdim">Combining works in town.</div>'}`;}
   $('pouchInfo').innerHTML=h||'<span class="fdim">Gems, runes and salvage materials go here, not in your bag.</span>';
   if($('combBtn'))$('combBtn').onclick=()=>{if(combineGems(s.g,s.q)){toast('Combined',stoneName({g:s.g,q:s.q+1}));renderPouch();}};
+  if($('sockGo'))$('sockGo').onclick=()=>socketChosen();if($('sockNo'))$('sockNo').onclick=()=>{pouchSel=null;renderPouch();};
 }
+// Short label of what a stone gives in host h: "+10% Dmg".
+const stoneShort=(s,h)=>{const st=stoneStat(s,h);return `+${fmtNum(st.k,st.v)} ${shortName(st.k)}`;};
+// Socketing: what the stone gives in this item, and the change it makes (your character's total if the item is worn,
+// else the item's own total), with Socket and Cancel. Nothing is socketed until Socket is tapped.
+function socketPreview(c,T,s){const it=T.it,h=hostOf(it),st=stoneStat(s,h),n=pouchCount(c,s),nm=AFF[st.k]?AFF[st.k].t.replace('{v}','').replace(/^[+]\s*/,'').replace('%','').trim():st.k;
+  const clone=Object.assign({},it,{socketed:(it.socketed||[]).concat([s])});let ch='';
+  if(T.eq&&c.equip[T.eq]===it){const s0=calcStats(c),s1=calcStats(c,clone,T.eq),v0=st.k in s0?s0[st.k]:0,v1=st.k in s1?s1[st.k]:0;
+    ch=`<div>${esc(nm)}: ${fmtNum(st.k,v0)} → <b class="up">${fmtNum(st.k,v1)}</b> <span class="fdim">(your total)</span></div>`;
+    if(st.k==='dmg'||st.k==='spell'||st.k==='crit'||st.k==='critd'||st.k==='aspd'){const d=(dpsOf(s1)/dpsOf(s0)-1)*100;ch+=`<div class="fdim">DPS ${d>=0?'+':''}${d.toFixed(1)}%</div>`;}}
+  else{const R0=itemRows(it,it.cls||c.cls),r=R0[st.k],v0=r?r.v:0;ch=`<div>${esc(nm)} on this item: ${fmtNum(st.k,v0)} → <b class="up">${fmtNum(st.k,v0+st.v)}</b></div><div class="fdim">Counts once the item is worn.</div>`;}
+  return `<b style="color:${stoneCol(s)}">${esc(stoneName(s))}</b> <span class="fdim">× ${n}</span>
+    <div>In this ${HOST_NAME[h].toLowerCase()}: <b>${esc(statText(st))}</b></div>${ch}
+    ${s.r?'<div class="fdim">Runes in the right order can make a Runebind (see the Book).</div>':''}
+    <div class="row" style="margin-top:6px"><div class="btn sm${n?'':' dis'}" id="sockGo">💎 Socket</div><div class="btn sm" id="sockNo">Cancel</div></div>`;}
+function socketChosen(){const c=G.char,t=pouchTarget,s=pouchSel;if(!t||!s||!pouchCount(c,s))return;
+  if(insertStone(t.it,s)){pouchTarget=null;pouchSel=null;$('pouchOv').classList.add('hidden');setPause();renderInv();openItem(t.it,t.eq);toast('Socketed',stoneName(s));}}
 function pickPouch(s){const c=G.char;
-  if(pouchTarget){if(!pouchCount(c,s))return;const t=pouchTarget;if(insertStone(t.it,s)){pouchTarget=null;$('pouchOv').classList.add('hidden');setPause();if(t.eq)renderInv();openItem(t.it,t.eq);renderInv();}return;}
+  if(pouchTarget){if(!pouchCount(c,s))return;pouchSel=s;pouchMat=null;renderPouch();return;} // socketing: preview first (socketPreview)
   pouchSel=s;pouchMat=null;renderPouch();}
 function openBook(){$('bookOv').classList.remove('hidden');renderBook();setPause();}
 function closeBook(){$('bookOv').classList.add('hidden');setPause();}

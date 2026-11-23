@@ -179,7 +179,8 @@ function setHtml(it,c){const v=setView(it,c);
 // A unique power line (orange); class powers on another class's character are marked as inactive.
 function powerHtml(k,c){const P=UPOW[k],off=P.cls&&P.cls!==c.cls;return `<div class="ipow${off?' off':''}">✦ ${esc(P.t)}${off?` <small>(${CLASSES[P.cls].name} only)</small>`:''}${P.d&&G.stats?`<span class="pdet">${esc(P.d())}</span>`:''}${COMBOS.filter(C=>C.a===k||C.b===k).map(C=>{const on=G.stats&&hasPw(C.a)&&hasPw(C.b);
     return `<span class="pcombo${on?' on':''}">✚ ${esc(C.name)}${on?' (active)':''}, with ${esc(pwSource(C.a===k?C.b:C.a))}: ${esc(C.t)}${C.d&&G.stats?' · '+esc(C.d()):''}</span>`;}).join('')}</div>`;}
-function openItem(it,equipped,price){
+// full: the long view with both whole cards (the compact compare is the default for a bag item that would replace one).
+function openItem(it,equipped,price,full){
   if(it.slot==='charm'&&price==null)return openCharm(it,equipped==='charm');
   const c=G.char;
   const card=x=>{const mm=upgMul(x);let h=`<div class="card" style="border-color:${RCOL[x.rarity]}"><div class="chead"><div class="cicon">${itemIcon(x)}</div><div><div class="iname" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="isub">${RNAME[x.rarity]} ${typeLabel(x)}${x.tier?' · '+tierLabel(x):''} · Item level ${x.ilvl}${(x.slot==='weapon'||x.slot==='shield'||x.slot==='focus')&&x.cls&&x.cls!==c.cls?` · <span style="color:#e07a5a">${CLASSES[x.cls].name} item</span>`:''}</div></div></div>`;
@@ -199,11 +200,12 @@ function openItem(it,equipped,price){
     if(x.sockets){const sk=x.socketed||[],hs=hostOf(x);h+=`<div class="sockrow">${Array.from({length:x.sockets},(_,i)=>sk[i]?`<span class="sock">${stoneSvg(sk[i])}</span>`:'<span class="sock empty"></span>').join('')}<span class="fdim">${sk.length}/${x.sockets} sockets</span></div>`;
       for(const sg of sk)h+=`<div class="isock"><span style="color:${stoneCol(sg)}">${esc(stoneName(sg))}</span>: ${esc(statText(stoneStat(sg,hs)))}</div>`;}
     return h+'</div>';};
-  let h=card(it);
   const fits=fitsFor(c,it),target=equipped?null:bestSlot(c,it),multi=fits.length>1;
+  const curT=!equipped&&target?c.equip[target]:null,compact=!!curT&&!full&&price==null;
+  let h=compact?compareHtml(c,it,curT,target,multi):(curT&&full?'<div class="cvsum" id="cvBack">◂ Compact compare</div>':'')+card(it);
   if(!equipped&&!fits.length)h+=`<div class="cmp dn">${CLASSES[c.cls].name}s can't use this. Salvage or sell it.</div>`;
   else if(!equipped&&!target)h+=`<div class="cmp dn">Your two-handed weapon blocks the Off Hand.</div>`;
-  if(!equipped&&target){const cur=c.equip[target];
+  if(!equipped&&target&&!compact){const cur=c.equip[target];
     if(cur)h+=`<div class="isub" style="margin:4px 0">Currently equipped${multi?' ('+SLOT_NAME[target]+')':''}:</div>`+card(cur);
     if(is2h(it)&&c.equip.offhand)h+=`<div class="isub" style="margin:4px 0">Also unequips your Off Hand:</div>`+card(c.equip.offhand);
     const s0=calcStats(c),s1=calcStats(c,it,target);
@@ -214,7 +216,7 @@ function openItem(it,equipped,price){
     h+=`<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
   if(price!=null){ // shop listing: buy or close only
     h+=`<div class="row"><div class="btn sm${c.gold<price?' dis':''}" id="iBuy">Buy (${price}🪙)</div><div class="btn sm" id="iClose">Close</div></div>`;
-    $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
+    $('itemPanel').innerHTML=h;$('itemPanel').classList.remove('cvp');$('itemOv').classList.remove('hidden');setPause();
     $('iBuy').onclick=()=>buyItem(it,price);$('iClose').onclick=closeItem;return;}
   const cost=upgradeCost(it);
   const eqOk=sl=>canEquipIn(c,it,sl);
@@ -231,7 +233,8 @@ function openItem(it,equipped,price){
     <div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>
     ${equipped?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}
     <div class="btn sm" id="iClose">Close</div></div>`;
-  $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
+  $('itemPanel').innerHTML=h;$('itemPanel').classList.toggle('cvp',compact);$('itemOv').classList.remove('hidden');setPause();
+  if($('cvFull'))$('cvFull').onclick=()=>openItem(it,equipped,undefined,true);if($('cvBack'))$('cvBack').onclick=()=>openItem(it,equipped);
   const after=()=>{refreshStats();renderInv();saveChar();};
   if($('iCraft'))$('iCraft').onclick=()=>{$('itemOv').classList.add('hidden');openCurrency(it,equipped);}; // currency.js
   if(equipped)$('iUnequip').onclick=()=>{if(c.bag.length>=30){toast('Bag is full');return;}c.equip[equipped]=null;c.bag.push(it);closeItem();after();};
@@ -346,3 +349,43 @@ function renderClassPick(){$('classPick').innerHTML=Object.entries(CLASSES).map(
 tap('newBtn',()=>{if(SAVES.length>=6)return;$('titleOv').classList.add('hidden');$('createOv').classList.remove('hidden');$('nameIn').value='';renderClassPick();});
 tap('createBack',()=>{$('createOv').classList.add('hidden');showTitle();});
 tap('createGo',()=>{const name=$('nameIn').value.trim()||CLASSES[pickCls].name;$('nameIn').blur();const c=newChar(name.slice(0,14),pickCls);SAVES.push(c);storeSaves();startGame(c);});
+// ---------- compact item compare (v1.0.64) ----------
+// A bag item next to what it would replace: both side by side on one screen, one row per stat (matching stats on the
+// same row), tiers small, the difference in green or red, and a summary of what equipping it does to your character
+// (DPS, Life, Armor, resistances...). Tapping the summary opens the full view with both whole cards.
+const SHORT={life:'Life',res:'Mana/Fury',dmg:'Damage',armor:'Armor',crit:'Crit',critd:'Crit Dmg',aspd:'Atk Speed',cdr:'Cooldown',move:'Move',loh:'Life on Hit',
+  regen:'Regen',block:'Block',spell:'Spell Dmg',pot:'Potions',fres:'Fire Res',cres:'Cold Res',lres:'Light Res',pres:'Pois Res',ares:'All Res',rarity:'Rarity',gold:'Gold',
+  xp:'XP',lpk:'Life/Kill',potheal:'Pot Heal',maxres:'Max Res',allsk:'All Skills',skill:'Skill'};
+const shortName=k=>SHORT[k]||(AFF[k]?AFF[k].t.replace(/[+{}v%]/g,'').trim():k);
+const isPct=k=>!!AFF[k]&&/%/.test(AFF[k].t);
+const fmtNum=(k,v)=>{const d=AFF[k]&&AFF[k].dec||Math.abs(v)<10&&v%1;return (d?(+v).toFixed(1):Math.round(v))+(isPct(k)?'%':'');};
+// Every stat an item gives, merged by key: {key: {v, t, label}} (base damage/armor, quality, implicits, stats, skills, sockets).
+function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[key]={v:0,t:null,label,k});r.v+=v;if(t&&(!r.t||t<r.t))r.t=t;};
+  const m=upgMul(it)*(1+(it.q||0)/100);
+  if(it.slot==='weapon'){add('wdmg','Weapon Dmg',(it.dmin+it.dmax)/2*m,null,null);add('wspd','Attacks/s',wOf(it).spd,null,null);}
+  if(it.arm)add('barm','Base Armor',it.arm*m,null,null);
+  for(const a of it.imp||[]){if(a.k==='skill')add('sk'+a.s,SKILLS[cls][a.s].name,a.v,null,'skill');else add(a.k,shortName(a.k),a.v*(AFF[a.k].flat?1:upgMul(it)),null,a.k);}
+  for(const a of it.affs){if(a.k==='skill')add('sk'+a.s,SKILLS[cls][a.s].name,a.v,null,'skill');else if(AFF[a.k])add(a.k,shortName(a.k),+affVal(a,affMul(it)),a.t,a.k);}
+  if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const st=stoneStat(sg,h);add(st.k,shortName(st.k),st.v,null,st.k);}}
+  for(const pw of itemPowers(it))R['pw:'+pw]={label:'★ '+(UPOW[pw]?UPOW[pw].t:pw),v:1,pw:1};
+  return R;}
+// What equipping changes for the character: DPS (damage x crit x speed x spell), Life, Armor, resistances, the rest.
+const dpsOf=s=>(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*s.wspd*(1+s.spell/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08);
+function equipSummary(c,it,slot){const s0=calcStats(c),s1=calcStats(c,it,slot),out=[],d0=dpsOf(s0),d1=dpsOf(s1);
+  const pct=d0>0?(d1/d0-1)*100:0;if(Math.abs(pct)>=0.5)out.push([`DPS ${pct>0?'+':''}${pct.toFixed(Math.abs(pct)<10?1:0)}%`,pct]);
+  for(const [k,n] of [['life','Life'],['armor','Armor'],['move','Move'],['block','Block']]){const d=s1[k]-s0[k];if(Math.abs(d)>=0.5)out.push([`${n} ${d>0?'+':''}${Math.round(d)}${k==='move'||k==='block'?'%':''}`,d]);}
+  for(const k of RES_KEYS){const d=resOf(s1,k)-resOf(s0,k);if(Math.abs(d)>=0.5)out.push([`${RES_NAME[k]} Res ${d>0?'+':''}${Math.round(d)}%`,d]);}
+  return out;}
+function compareHtml(c,it,cur,slot,multi){const cls=it.cls||c.cls,A=itemRows(it,cls),B=itemRows(cur,cur.cls||c.cls),keys=[...new Set(Object.keys(A).concat(Object.keys(B)))];
+  const order=k=>k==='wdmg'?0:k==='wspd'?1:k==='barm'?2:k.startsWith('pw:')?9:k.startsWith('sk')?8:3;keys.sort((a,b)=>order(a)-order(b));
+  const sum=equipSummary(c,it,slot);
+  const head=x=>`<div class="cvh"><div class="cvn" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="cvs">${x.tier?tierLabel(x)+' · ':''}iLvl ${x.ilvl}${x.q?' · Q'+x.q+'%':''}${x.sockets?' · '+(x.socketed||[]).length+'/'+x.sockets+'◇':''}</div></div>`;
+  const cell=(r,k)=>!r?'<span class="cvz">–</span>':r.pw?'<span class="cvpw">✓</span>':`${r.k?fmtNum(r.k,r.v):k==='wspd'?(+r.v).toFixed(2):Math.round(r.v)}${r.t?`<span class="cvt" style="color:${TIER_COL[r.t]}">T${r.t}</span>`:''}`;
+  let rows='';for(const k of keys){const a=A[k],b=B[k],lab=(a||b).label;let dt='',cl='';
+    if(!(a&&a.pw||b&&b.pw)){const d=(a?a.v:0)-(b?b.v:0);if(Math.abs(d)>=(k==='wspd'?0.005:0.05)){cl=d>0?'up':'dn';const kk=(a||b).k;dt=(d>0?'+':'−')+(kk?fmtNum(kk,Math.abs(d)):k==='wspd'?Math.abs(d).toFixed(2):Math.round(Math.abs(d)));}}
+    else cl=a&&!b?'up':b&&!a?'dn':'';
+    rows+=`<div class="cvr"><span class="cvl">${esc(lab)}</span><span class="cva ${a&&cl==='up'?'up':''}">${cell(a,k)}</span><span class="cvb ${b&&cl==='dn'?'up':''}">${cell(b,k)}</span><span class="cvd ${cl}">${dt}</span></div>`;}
+  const chips=sum.length?sum.map(([t,v])=>`<span class="${v>0?'up':'dn'}">${t}</span>`).join(' · '):'<span class="fdim">No change</span>';
+  return `<div class="cvsum" id="cvFull" title="Tap for the full view"><b>If equipped${multi?' ('+SLOT_NAME[slot]+')':''}:</b> ${chips} <span class="fdim">▸ details</span></div>
+    <div class="cvgrid"><div class="cvr cvtop"><span class="cvl"></span><span class="cva">${head(it)}</span><span class="cvb">${head(cur)}</span><span class="cvd"></span></div>
+    <div class="cvr cvlab"><span class="cvl"></span><span class="cva">New</span><span class="cvb">Equipped</span><span class="cvd">Δ</span></div>${rows}</div>`;}

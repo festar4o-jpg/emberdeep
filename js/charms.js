@@ -81,7 +81,7 @@ function openCharm(it,inPouch){
     ${curAny(it)?'<div class="btn sm" id="iCraft">✦ Craft</div>':''}<div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>${inPouch?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}<div class="btn sm" id="iClose">Close</div></div>`;
   if(clash)h+=`<div class="cmp dn">You already carry ${esc(it.name)} in your pouch.</div>`;
   else if(!inPouch&&!fits)h+=`<div class="cmp dn">Not enough room: needs ${C.slots} free slot${C.slots>1?'s':''}.</div>`;
-  $('itemPanel').innerHTML=h;$('itemOv').classList.remove('hidden');setPause();
+  $('itemPanel').innerHTML=h;$('itemPanel').classList.remove('cvp');$('itemOv').classList.remove('hidden');setPause();
   if(inPouch)$('cOut').onclick=()=>{if(!charmOut(it)){toast('Bag is full');return;}closeItem();renderInv();};
   else{$('cIn').onclick=()=>{if(!charmIn(it)){toast('Charm pouch is full',`Needs ${C.slots} free slot${C.slots>1?'s':''}`);return;}closeItem();renderInv();};
     $('iSalv').onclick=()=>{const r=salvageItem(c,it);if(!r)return;toast('Salvaged',`+${r.gold} gold ${matText(r.mats)}`);closeItem();renderInv();saveChar();};}
