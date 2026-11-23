@@ -2,7 +2,7 @@
 // Monsters: boss move sets, behaviours (AI), monster types, elite modifiers, pack rolling.
 // ---------- monster behaviours ----------
 // ---------- bosses: each act's boss has its own move set and a second phase below 50% life ----------
-const later=(t,fn)=>G.delayed.push({t,fn});
+const later=(t,fn)=>G.delayed.push({t,fn,sk:G.sk});
 const bossLater=(e,t,fn)=>later(t,()=>{if(!e.dead)fn();});
 // Telegraphed ground circle: fills up, then hits whoever is inside.
 function groundStrike(e,x,y,r,delay,dmg,col,after){G.fx.push({type:'tele',x,y,r,t:0,max:delay,col});

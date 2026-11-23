@@ -1,12 +1,12 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;} /* +% damage with this skill (G.sk: the skill this hit comes from) */const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100; /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -91,7 +91,9 @@ function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin
 const BLINK_DIST=175;
 // el: the hit's element (a resistance key) when not the attacker's own (src.elem, src.elemS share of the hit).
 function dmgPlayer(raw,src,el){
-  const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
+  const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul();
+  if(G.stats.evade>0&&Math.random()*100<G.stats.evade){floatText(p.x,p.y-p.r-8,'Evade','#a8e0c0',false);return false;} // v1.0.70: evasion
+  raw*=1-(G.stats.dr||0)/100; // less damage taken /* bossfight.js: underleveled for the area, boss matchup */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
   const E=el||src&&src.elem,sh=el?1:src&&src.elemS||1,rm=E?1-sh*resOf(G.stats,E)/100:1; // items.js: resistances (penalty included)
@@ -99,6 +101,7 @@ function dmgPlayer(raw,src,el){
   floatText(p.x,p.y-p.r-8,d,E&&sh>=0.5?RES_COL[E]:'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
+  if(G.stats.thorns&&src&&!src.dead&&src.hp!=null&&src.type!=='nest'){const t=Math.round(G.stats.thorns*(src.type==='boss'?0.5:1));src.hp-=t;src.flash=0.06;if(src.type==='boss')bossGate(src);if(src.hp<=0&&!src.dead)killEnemy(src);} // thorns
   if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
   checkDeath(p);return true;
 }
@@ -111,7 +114,7 @@ function slowPlayer(amt,t){const p=G.p;p.slowAmt=Math.max(p.slowT>0?p.slowAmt:0,
 const HAZ_RES={fire:'fres',frost:'cres',poison:'pres'},resMul=k=>k?1-resOf(G.stats,k)/100:1;
 function addEHaz(x,y,r,t,dps,kind){if(G.ehaz.length>70)G.ehaz.shift();G.ehaz.push({x,y,r,t,max:t,dps,kind});}
 function healPlayer(v,silent){const p=G.p;if(p.dead)return;const before=p.hp;p.hp=Math.min(G.stats.life,p.hp+v);if(!silent&&p.hp-before>=1)floatText(p.x,p.y-p.r-20,'+'+Math.round(p.hp-before),'#5f5',false);}
-function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home});}
+function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({sk:G.sk,x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home});}
 function enemyShoot(e,ang,spd,col,dmg,r,extra){G.proj.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r||5,col,life:2.5,from:'e',dmg,src:e},extra));}
 function eShoot(e,ang){e._lunge=G.time; // sprites.js: recoil as the shot leaves
 const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
@@ -204,7 +207,7 @@ function update(dt){
     if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
+    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
     if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04*resMul('fres'));burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;
@@ -212,7 +215,7 @@ function update(dt){
   if(!G.inTown&&Math.random()<0.5){const i=Math.floor(p.x/TILE)+randi(-9,9),j=Math.floor(p.y/TILE)+randi(-7,7);
     if(i>=0&&j>=0&&i<MW&&j<MH){const k=j*MW+i,t=G.terrain[k],lava=t===T_LAVA||G.grid[k]===2&&ACTS[actIdx(G.depth)].gen==='ember';
       if(lava||t===T_POISON)G.parts.push({x:(i+Math.random())*TILE,y:(j+Math.random())*TILE,vx:rand(-8,8),vy:lava?-rand(30,70):-12,life:lava?0.9:0.7,max:0.9,col:lava?'#ffb040':'#b8ff5a',s:lava?2.5:3});}}
-  if(p.spin>0){p.spin-=dt;p.spinTick-=dt;if(p.spinTick<=0){p.spinTick=0.25;if(hasPw('pull'))pullIn(240,45);aoe(p.x,p.y,88,p.spinMult,{});}}
+  if(p.spin>0){p.spin-=dt;p.spinTick-=dt;if(p.spinTick<=0){p.spinTick=0.25;if(hasPw('pull'))pullIn(240,45);G.sk=p.spinSk??null;aoe(p.x,p.y,88,p.spinMult,{});G.sk=null;}}
   if(G.stats.pw&&Object.keys(G.stats.pw).length)powerTick(dt);
   encounterTick(dt);portalTick(dt); /* portal.js */
   for(let i=0;i<5;i++)if(held[i])tryCast(i);
@@ -268,9 +271,9 @@ function update(dt){
     if(q.home)homeIn(q,dt);
     q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
     if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
-    if(q.from==='p'){let hit=false;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult,{weapon:q.weapon});if(q.onhit)q.onhit();
+    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult,{weapon:q.weapon});if(q.onhit)q.onhit();
         if(q.pierce>0){q.pierce--;q.life=life;hit=false;(q.hits||(q.hits=new Set())).add(e);continue;}}break;}}
-      if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);}
+      if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);G.sk=null;}
     else if(!p.dead&&Math.hypot(p.x-q.x,p.y-q.y)<p.r+q.r){q.life=0;if(dmgPlayer(q.dmg,q.src)&&q.slow)slowPlayer(q.slow,1.6);if(q.r>=7)burst(q.x,q.y,8,q.col,120);}
   }
   G.proj=G.proj.filter(q=>q.life>0);
@@ -282,9 +285,9 @@ function update(dt){
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*PD()))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
-  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}
+  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;G.sk=h.sk??null;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});G.sk=null;}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}
   G.hazards=G.hazards.filter(h=>h.t>0);
-  for(const dl of G.delayed){dl.t-=dt;if(dl.t<=0&&!dl.done){dl.done=true;dl.fn();}}
+  for(const dl of G.delayed){dl.t-=dt;if(dl.t<=0&&!dl.done){dl.done=true;const was=G.sk;G.sk=dl.sk??null;dl.fn();G.sk=was;}} // a delayed hit keeps its skill
   G.delayed=G.delayed.filter(dl=>!dl.done);
   // loot
   for(const l of G.loot){l.t+=dt;if(p.dead||l.taken||(l.item&&lootHidden(l.item)))continue;const d=Math.hypot(l.x-p.x,l.y-p.y);

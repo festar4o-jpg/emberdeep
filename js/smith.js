@@ -122,7 +122,7 @@ function smithBlock(op,it,affIdx){
 }
 function canPay(c,cost){const m=matsOf(c);return c.gold>=cost.gold&&MAT_KEYS.every(k=>!cost[k]||m[k]>=cost[k]);}
 function pay(c,cost){const m=matsOf(c);c.gold-=cost.gold;for(const k of MAT_KEYS)if(cost[k])m[k]-=cost[k];}
-const affPool=it=>(TYPES[it.slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].cls===it.cls);
+const affPool=it=>(TYPES[it.slot].pool||AFF_KEYS).filter(k=>(!AFF[k].cls||AFF[k].cls===it.cls)&&(!AFF[k].myth||it.myth));
 // Runs an operation if allowed and affordable. Returns true on success.
 function smith(op,it,affIdx){const c=G.char;if(smithBlock(op,it,affIdx))return false;if(op==='add'&&it.addOpts&&it.addOpts.length)return false;
   const cost=SMITH_OPS[op].cost(it);if(!canPay(c,cost))return false;pay(c,cost);

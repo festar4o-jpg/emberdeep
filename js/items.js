@@ -7,16 +7,16 @@ const EQ_SLOTS=['mainhand','ring1','helm','amulet','offhand','gloves','ring2','b
 const SLOT_NAME={mainhand:'Main Hand',offhand:'Off Hand',helm:'Helm',body:'Body',gloves:'Gloves',belt:'Belt',boots:'Boots',amulet:'Amulet',ring1:'Ring 1',ring2:'Ring 2'};
 // Item types: which slots they fit, drop weight (w = % of drops; shield and focus share the off-hand 10%, one per class), and affix pool.
 const TYPES={
-  weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','loh','life','res','spell']},
-  shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh','resist','ares']},
-  focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','res','cdr','crit','regen','life']},
-  helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen','resist']},
-  body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr','resist']},
-  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor','resist']},
-  belt:{name:'Belt',slots:['belt'],w:10,pool:['life','pot','armor','regen','res','resist']},
-  boots:{name:'Boots',slots:['boots'],w:10,pool:['move','life','armor','regen','cdr','resist']},
+  weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','loh','life','res','spell','skdmg','bossdmg']},
+  shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh','resist','ares','thorns','dr']},
+  focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','res','cdr','crit','regen','life','skdmg','bossdmg']},
+  helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen','resist','lifepct','evade']},
+  body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr','resist','lifepct','thorns','dr']},
+  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor','resist','skdmg','evade']},
+  belt:{name:'Belt',slots:['belt'],w:10,pool:['life','pot','armor','regen','res','resist','lifepct','dr']},
+  boots:{name:'Boots',slots:['boots'],w:10,pool:['move','life','armor','regen','cdr','resist','evade']},
   amulet:{name:'Amulet',slots:['amulet'],w:6,pool:null}, // null = any affix
-  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell','resist','ares']}
+  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell','resist','ares','bossdmg','skdmg']}
 };
 // ---------- base tiers: each act adds a tier (Tier I in act 1 … Tier V in act 5) ----------
 // A base's tier sets its base level, which drives base damage, armor and implicit values; item level only nudges it
@@ -186,6 +186,19 @@ const AFF={
   pres:{ps:'s',t:'+{v}% Poison Resistance',pre:'Antidotal',suf:'of the Serpent',roll:resRoll,flat:1,res:1},
   ares:{ps:'s',t:'+{v}% All Resistances',pre:'Warded',suf:'of the Elements',roll:l=>resRoll(l)*0.5,flat:1,res:1},
   resist:{ps:'s',t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1},
+  // v1.0.70: skill damage (skd0-skd4: the wearer's skills in skill-bar order; 'skdmg' rolls one of them), boss damage,
+  // % maximum Life, thorns, evasion, less damage taken (myth: only on Mythic bases).
+  skd0:{ps:'p',t:'+{v}% damage with skill 1',pre:'Practised',suf:'of Technique',roll:l=>rand(10,16)+l*0.4,flat:1,skd:0},
+  skd1:{ps:'p',t:'+{v}% damage with skill 2',pre:'Practised',suf:'of Technique',roll:l=>rand(10,16)+l*0.4,flat:1,skd:1},
+  skd2:{ps:'p',t:'+{v}% damage with skill 3',pre:'Practised',suf:'of Technique',roll:l=>rand(10,16)+l*0.4,flat:1,skd:2},
+  skd3:{ps:'p',t:'+{v}% damage with skill 4',pre:'Practised',suf:'of Technique',roll:l=>rand(10,16)+l*0.4,flat:1,skd:3},
+  skd4:{ps:'p',t:'+{v}% damage with skill 5',pre:'Practised',suf:'of Technique',roll:l=>rand(10,16)+l*0.4,flat:1,skd:4},
+  skdmg:{ps:'p',t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1},
+  bossdmg:{ps:'s',t:'+{v}% damage to bosses',pre:'Regicidal',suf:'of the Slayer',roll:l=>rand(6,10)+l*0.22,flat:1},
+  lifepct:{ps:'p',t:'+{v}% maximum Life',pre:'Vigorous',suf:'of Vigour',roll:l=>rand(3,5)+l*0.06,flat:1},
+  thorns:{ps:'p',t:'{v} damage to attackers when hit',pre:'Barbed',suf:'of Thorns',roll:l=>rand(6,12)+l*1.8,flat:1},
+  evade:{ps:'s',t:'+{v}% chance to evade hits',pre:'Elusive',suf:'of Evasion',roll:l=>rand(2,4)+l*0.04,dec:1,flat:1},
+  dr:{ps:'s',t:'{v}% less damage taken',pre:'Unyielding',suf:'of Endurance',roll:l=>rand(1.5,3)+l*0.035,dec:1,flat:1,myth:1},
   // charm-only stats (v1.0.62, charms.js): never on gear. nom: not scaled by the charm's size; lg: large and grand only.
   rarity:{ps:'s',t:'+{v}% Item Rarity',pre:'Lucky',suf:'of Fortune',roll:l=>rand(8,13)+l*0.3,flat:1,charm:1},
   gold:{ps:'s',t:'+{v}% Gold Found',pre:'Gilded',suf:'of Greed',roll:l=>rand(14,22)+l*0.4,flat:1,charm:1},
@@ -324,7 +337,7 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
 }
 // T (magic, rare and charm stats): {il: item level, boost, best, worst} rolls a tier (see affix tiers); without T the old
 // way (uniques, set items, implicits).
-function rollAff(k,ilvl,rm=1,T){if(k==='resist')k=pick(RES_KEYS);const a=AFF[k];
+function rollAff(k,ilvl,rm=1,T){if(k==='resist')k=pick(RES_KEYS);if(k==='skdmg')k='skd'+randi(0,4);const a=AFF[k];
   if(T&&tiered(k)){const t=rollAffTier(T.il,T.boost||0,T);return {k,v:tierVal(k,ilvl,t,rm),t};}
   const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
 // tier: base tier 1..5 for tiered types (default: the tier of the item level's act). forceSet: make this set piece.
@@ -362,7 +375,7 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   if(MYTH_NEXT&&TIERED.has(slot)&&!U&&!SI&&it.tier===5){it.myth=true;if(it.dmin){it.dmin*=1.25;it.dmax*=1.25;}if(it.arm)it.arm*=1.25;const [k,v]=pick(MYTH_IMP[slot]);it.imp=(it.imp||[]).concat([{k,v,myth:1}]);}
   MYTH_NEXT=false;
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
-  const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].cls===cls);
+  const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&(!AFF[k].myth||it.myth)); // myth stats: Mythic bases only
   const keys=SI?SET_ITEMS[SI].affs.slice():U?pool.slice().sort(()=>Math.random()-0.5).slice(0,n):pickAffKeys(pool,n,rarity<=1?1:MAX_PRE,rarity<=1?1:MAX_SUF); // magic 1+1, rare 2+2
   const TT=!U&&!SI?{il:ilvl,boost}:null; // tiers on magic and rare items only
   for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm,TT));it.uv=UPG_VER;
@@ -448,7 +461,7 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
   for(const a of it.imp||[])if(scaledAff(a))a.v=AFF[a.k].dec?+(+a.v).toFixed(1):Math.max(1,Math.round(a.v));
   if(it.dmin!=null){it.dmin=+it.dmin.toFixed(3);it.dmax=+it.dmax.toFixed(3);}if(it.arm)it.arm=+it.arm.toFixed(3);
   it.uv=UPG_VER;return it;}
-function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
+function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;if(AFF[a.k]&&AFF[a.k].skd!=null)return `+${affVal(a,m)}% ${SKILLS[cls][AFF[a.k].skd].name} damage`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 // The tier tag after a stat line on item cards: T1-T2 gold, T3 bright, the rest dim.
 const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64','#7c6c58','#6c5c4c','#5c4e42'];
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
@@ -529,7 +542,7 @@ function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
-  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
+  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,skd0:0,skd1:0,skd2:0,skd3:0,skd4:0,bossdmg:0,lifepct:0,thorns:0,evade:0,dr:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
@@ -552,14 +565,15 @@ function calcStats(c,swap,at){
   else if(s.mh){s.dmin=s.mh.dmin;s.dmax=s.mh.dmax;s.wspd=s.mh.spd;}
   const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
+  s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)
   shrineStats(s);
   if(typeof mapStats==='function')mapStats(s); // sigils.js: a map's modifiers on you
   return s;
 }
 // Resistance to one element after the difficulty's penalty (maps.js resPenalty), at most 75%; can go below 0.
 function resOf(s,k){return Math.min(resCap(s),(s[k]||0)+(s.ares||0)-resPenalty());}
-function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15);
-  const def=(s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10)*(1+RES_KEYS.reduce((a,k)=>a+Math.max(0,Math.min(RES_CAP,(s[k]||0)+(s.ares||0))),0)/600);return off*Math.sqrt(def)*(1+s.move/400);}
+function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15)*(1+(s.skd0+s.skd1+s.skd2+s.skd3+s.skd4)/500)*(1+s.bossdmg/400);
+  const def=(s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10)*(1+RES_KEYS.reduce((a,k)=>a+Math.max(0,Math.min(RES_CAP,(s[k]||0)+(s.ares||0))),0)/600);return off*Math.sqrt(def/(1-s.evade/100)/(1-s.dr/100))*(1+s.move/400);}
 // ---------- loot filter (per character, set in the menu) ----------
 // c.filter = {min, rares, autoSalv}: autoSalv salvages plain white items on pickup (see smith.js).
 // min 0 = off, 'auto' = hide anything more than one tier below the act you're in,

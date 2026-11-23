@@ -173,7 +173,7 @@ function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mu
 // Trophy powers that trigger on a kill.
 function trophyKill(e){const p=G.p;if(p.dead)return;
   if(hasPw('kingsPyre')){p.pyreN=Math.min(10,(p.pyreT>0?p.pyreN||0:0)+1);p.pyreT=4;}
-  if(hasPw('rotBurst')){const own=G.hazards.filter(h=>h.rot);if(own.length>=ROT_MAX)G.hazards.splice(G.hazards.indexOf(own[0]),1);G.hazards.push({x:e.x,y:e.y,r:75,t:3,tick:0.5,mult:ROT_MULT,rot:true,quiet:true});}
+  if(hasPw('rotBurst')){const own=G.hazards.filter(h=>h.rot);if(own.length>=ROT_MAX)G.hazards.splice(G.hazards.indexOf(own[0]),1);G.hazards.push({sk:G.sk,x:e.x,y:e.y,r:75,t:3,tick:0.5,mult:ROT_MULT,rot:true,quiet:true});}
   if(hasPw('boneNova')){p.boneN=(p.boneN||0)+1;if(p.boneN>=BONE_KILLS){p.boneN=0;G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:180,t:0,max:0.4,col:'#e8e0c0'});burst(p.x,p.y,30,'#e8e0c0',260);aoe(p.x,p.y,175,BONE_MULT,{splashed:true});}}}
 // Shackles of the Ash Tyrant: a direct hit may lash the nearest other enemy.
 function ashChain(e){let o=null,bd=170;for(const x of G.enemies){if(x===e||x.dead||x.hidden||x.spawnT>0)continue;const d=Math.hypot(x.x-e.x,x.y-e.y);if(d<bd){bd=d;o=x;}}
@@ -224,14 +224,14 @@ function counterBlast(){const p=G.p;if(p.counterCd>0)return;p.counterCd=0.6;aoe(
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:135,t:0,max:0.3,col:'#cfd6dc'});}
 // Worldbreaker: an Earthshatter at a fixed spot (Leap Slam landing).
 function earthshatterAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:165,t:0,max:0.35,col:'#ff7a2a',own:1});
-  G.delayed.push({t:0.35,fn:()=>{aoe(x,y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(x,y,175);G.fx.push({type:'ring',x,y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(x,y,40,'#c8763a',260);}});}
+  G.delayed.push({sk:G.sk,t:0.35,fn:()=>{aoe(x,y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(x,y,175);G.fx.push({type:'ring',x,y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(x,y,40,'#c8763a',260);}});}
 // Rimeheart Vestment: a free Frost Nova when you get hit.
 function autoNova(){const p=G.p;if(p.novaCd>0)return;p.novaCd=4;const r=pwRank(2);
   aoe(p.x,p.y,150,0.8+0.1*(r-1),{freeze:1.8+0.1*r});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:155,t:0,max:0.4,col:'#9fe4ff'});burst(p.x,p.y,30,'#bff0ff',240);}
 // Eye of the Falling Sky: a free Meteor.
 function meteorAt(x,y){const r=pwRank(4);G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a',own:1,meteor:1});
-  G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
-    G.hazards.push({x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}
+  G.delayed.push({sk:G.sk,t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
+    G.hazards.push({sk:G.sk,x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}
 // Litany of Ash: turn a bolt toward the nearest enemy.
 function homeIn(q,dt){const e=nearest(q.x,q.y,320);if(!e)return;const sp=Math.hypot(q.vx,q.vy),a=Math.atan2(q.vy,q.vx),want=Math.atan2(e.y-q.y,e.x-q.x);
   let d=want-a;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;const na=a+clamp(d,-7*dt,7*dt);q.vx=Math.cos(na)*sp;q.vy=Math.sin(na)*sp;}
@@ -246,9 +246,9 @@ function powerTick(dt){const p=G.p;if(p.dead)return;
   if(hasPw('burnAura')){p.auraT=(p.auraT||0)-dt;if(p.auraT<=0){p.auraT=0.5;aoe(p.x,p.y,AURA_R,AURA_MULT,{splashed:true,quiet:true,dot:true,ignite:combo('Bonfire')});}}
   if(hasPw('fireTrail')){const L=p.trail||(p.trail={x:p.x,y:p.y});if(Math.hypot(p.x-L.x,p.y-L.y)>26){L.x=p.x;L.y=p.y;
     const tr=G.hazards.filter(h=>h.trail);if(tr.length>=14)G.hazards.splice(G.hazards.indexOf(tr[0]),1);
-    G.hazards.push({x:p.x,y:p.y,r:36,t:2.5,tick:0.25,mult:TRAIL_MULT,trail:true,quiet:true});}}
+    G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:36,t:2.5,tick:0.25,mult:TRAIL_MULT,trail:true,quiet:true});}}
   if(hasPw('coreFlare')){p.flareT=(p.flareT==null?5:p.flareT)-dt;if(p.flareT<=0){p.flareT=5;aoe(p.x,p.y,170,1.6,{splashed:true});
-    G.fx.push({type:'ring',x:p.x,y:p.y,r0:16,r1:175,t:0,max:0.4,col:'#ff6a1a'});burst(p.x,p.y,36,'#ffb04a',260);G.hazards.push({x:p.x,y:p.y,r:120,t:2,tick:0.25,mult:0.2,quiet:true});}}
+    G.fx.push({type:'ring',x:p.x,y:p.y,r0:16,r1:175,t:0,max:0.4,col:'#ff6a1a'});burst(p.x,p.y,36,'#ffb04a',260);G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:120,t:2,tick:0.25,mult:0.2,quiet:true});}}
   if(hasPw('skyfall')){p.skyT=(p.skyT==null?3:p.skyT)-dt;if(p.skyT<=0){const e=nearest(p.x,p.y,420);if(e){meteorAt(e.x,e.y);p.skyT=8;}else p.skyT=0.5;}}
 }
 const AURA_R=115;
@@ -257,13 +257,13 @@ function ignite(e){const dps=pwHit(IGNITE_MULT)*(1-(e.dr||0));e.burnDps=e.burnT>
 // Cometwake: the end of a dodge (Wildfire with Ashwalker Treads: burning ground there).
 function cometImpact(){const p=G.p;aoe(p.x,p.y,90,1.2,{splashed:true});burst(p.x,p.y,26,'#ff8a2a',240);
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:8,r1:95,t:0,max:0.3,col:'#ffaa44'});G.shake=Math.max(G.shake,5);
-  if(combo('Wildfire'))G.hazards.push({x:p.x,y:p.y,r:70,t:3,tick:0.25,mult:WILD_MULT,quiet:true});}
+  if(combo('Wildfire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:70,t:3,tick:0.25,mult:WILD_MULT,quiet:true});}
 // Tempest: a critical hit takes 0.25 s off every skill cooldown (4 times per second at most).
 function stormbeat(){const p=G.p;if(p.beatT>0)return;p.beatT=0.25;for(let i=1;i<5;i++)if(p.cd[i]>0)p.cd[i]=Math.max(0,p.cd[i]-0.25);}
 // Cinderguard Vow: a Cleave leaves a patch of burning ground in front of you (at most 8 patches at once).
 function cinderPatch(ang,reach){const p=G.p,x=p.x+Math.cos(ang)*reach*0.6,y=p.y+Math.sin(ang)*reach*0.6;
   const own=G.hazards.filter(h=>h.cinder);if(own.length>=8)G.hazards.splice(G.hazards.indexOf(own[0]),1);
-  G.hazards.push({x,y,r:48,t:2.5,tick:0.25,mult:CINDER_MULT,cinder:true,quiet:true});}
+  G.hazards.push({sk:G.sk,x,y,r:48,t:2.5,tick:0.25,mult:CINDER_MULT,cinder:true,quiet:true});}
 // Frostbound Regalia: a frozen enemy that dies bursts into 8 piercing ice shards.
 function iceShards(e){const n=8;for(let k=0;k<n;k++){const a=k/n*TAU;
   G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:6,col:'#bff0ff',life:0.5,from:'p',mult:0.6,pierce:1,hits:new Set([e])});}

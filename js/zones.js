@@ -174,7 +174,8 @@ function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZon
   saveChar();setPause();if(newAct)showActTitle(d0);else toast(Z.name,Z.sub);}
 function gateOpen(zid){const Z=ZONES[zid],S=zst(G.char,zid);return Z.gate==='none'||Z.gate==='boss'&&S.boss||Z.gate==='key'&&S.key||Z.gate==='seals'&&S.seals>=3;}
 function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
-  for(let t=0;t<8&&!L;t++)L=LAYOUT[Z.layout](Z);
+  // a layout that comes out too small (a few in a hundred builds of some styles) is built again
+  for(let t=0;t<12;t++){const L2=LAYOUT[Z.layout](Z);if(!L2)continue;L=L2;let f=0;for(const v of G.grid)if(v===0)f++;if(f>900)break;}
   if(!L){for(let t=0;t<5&&!L;t++)L=finishLayout(GEN.crypt(Z.depth),null,null);} // safety net
   G.zoneTheme=Z.theme;G.rooms=L.regions;const tile=r=>({x:(r.cx+0.5)*TILE,y:(r.cy+0.5)*TILE});G.zStart=tile(L.start);
   const ex=tile(L.exit);G.portal={x:ex.x,y:ex.y,active:gateOpen(zid),zone:true};

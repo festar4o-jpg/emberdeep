@@ -24,10 +24,10 @@ const SKILLS={
       desc:r=>`Leap at an enemy and smash the ground for ${pct(1.8+0.22*(r-1))} damage, stunning for 1s. Costs 25 Fury.`,
       cast(r){const p=G.p;const a=aimPoint(270);let tx=a.x,ty=a.y;const dx=tx-p.x,dy=ty-p.y,L=Math.hypot(dx,dy);if(L>260){tx=p.x+dx/L*260;ty=p.y+dy/L*260;}
         for(let k=0;k<20&&blockedAt(tx,ty,p.r);k++){tx-=(tx-p.x)*0.15;ty-=(ty-p.y)*0.15;}
-        p.leap={sx:p.x,sy:p.y,tx,ty,t:0,dur:0.38,mult:1.8+0.22*(r-1)};}},
+        p.leap={sx:p.x,sy:p.y,tx,ty,t:0,dur:0.38,mult:1.8+0.22*(r-1),sk:G.sk};}},
     {name:'Whirlwind',icon:'🌀',cd:7,cost:35,
       desc:r=>`Spin for ${(2+0.1*(r-1)).toFixed(1)}s, hitting everything nearby for ${pct(0.5+0.07*(r-1))} damage 4 times per second. Move faster while spinning.`,
-      cast(r){const p=G.p;p.spin=(2+0.1*(r-1))*(hasPw('oathspin')?2:1);p.spinTick=0;p.spinMult=0.5+0.07*(r-1);}},
+      cast(r){const p=G.p;p.spin=(2+0.1*(r-1))*(hasPw('oathspin')?2:1);p.spinTick=0;p.spinSk=G.sk;p.spinMult=0.5+0.07*(r-1);}},
     {name:'War Cry',icon:'📯',cd:16,cost:0,
       desc:r=>`Roar: heal 20% Life, gain 30 Fury and +${pct(0.3+0.04*(r-1))} damage for 6s.`,
       cast(r){const p=G.p;p.buffT=6;p.buffAmt=0.3+0.04*(r-1);healPlayer(G.stats.life*0.2);gainRes(30);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:160,t:0,max:0.5,col:'#ffcc55'});
@@ -35,7 +35,7 @@ const SKILLS={
     {name:'Earthshatter',icon:'🌋',cd:12,cost:50,
       desc:r=>`Split the earth around you for ${pct(3.2+0.4*(r-1))} damage and stun for 1.5s. Costs 50 Fury.`,
       cast(r){const p=G.p;G.fx.push({type:'tele',x:p.x,y:p.y,r:165,t:0,max:0.35,col:'#ff7a2a',own:1});
-        G.delayed.push({t:0.35,fn:()=>{aoe(p.x,p.y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(p.x,p.y,175);G.fx.push({type:'ring',x:p.x,y:p.y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(p.x,p.y,40,'#c8763a',260);}});}}
+        G.delayed.push({sk:G.sk,t:0.35,fn:()=>{aoe(p.x,p.y,165,3.2+0.4*(r-1),{stun:1.5});G.shake=14;G.hitStop=0.07;fxCracks(p.x,p.y,175);G.fx.push({type:'ring',x:p.x,y:p.y,r0:20,r1:175,t:0,max:0.4,col:'#ff7a2a'});burst(p.x,p.y,40,'#c8763a',260);}});}}
   ],
   arcanist:[
     {name:'Arcane Bolt',icon:'✴️',cd:0.38,cost:0,
@@ -58,8 +58,8 @@ const SKILLS={
     {name:'Meteor',icon:'☄️',cd:10,cost:40,
       desc:r=>`Call down a meteor for ${pct(3.8+0.45*(r-1))} damage. Leaves burning ground for 3s. Costs 40 Mana.`,
       cast(r){const a=aimPoint(440);const x=a.x,y=a.y;G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a',own:1,meteor:1});
-        G.delayed.push({t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
-          G.hazards.push({x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}}
+        G.delayed.push({sk:G.sk,t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
+          G.hazards.push({sk:G.sk,x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}}
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
@@ -82,6 +82,6 @@ function tryCast(i){
   p.cd[i]=skillCd(i);p.cdMax[i]=p.cd[i];
   if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);
     if(combo('Eye of the Storm'))for(let j=1;j<5;j++)if(j!==i&&p.cd[j]>0)p.cd[j]=Math.max(0,p.cd[j]-1);}
-  sk.cast(r);skillSfx(G.char.cls,i); // sfx.js
+  G.sk=i;try{sk.cast(r);}finally{G.sk=null;}skillSfx(G.char.cls,i); // sfx.js; G.sk: hits from this cast count as this skill (+% skill damage)
   if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
 }
