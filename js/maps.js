@@ -33,7 +33,7 @@ const DIFFS=[{name:'Normal',col:'#d9a441',elite:0,res:0,loot:{drop:1,rar:0,gold:
   {name:'Hell',col:'#ff4a3a',elite:0.12,res:50,loot:{drop:1.5,rar:50,gold:2,pity:120,stone:1.6,boss:2,zb:2,cur:1.8}}];
 const DIFF_N=DIFFS.length;
 const curDiff=()=>G.char&&G.char.diff||0;
-const powDepth=d=>{const c=G.char;if(!c)return d;if(c.mapRun&&G.zone==='map'&&!G.inTown)return 75+2*c.mapRun.sig.tier; /* sigils.js: maps */return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
+const powDepth=d=>{const c=G.char;if(!c)return d;if(c.mapRun&&G.zone==='map'&&!G.inTown)return mapPD(c.mapRun); /* sigils.js: maps */return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
 const PD=()=>powDepth(G.depth||1);
 // Resistance penalty where you are: the difficulty's (Nightmare 20, Hell 50); the endless depths take the highest beaten.
 // The difficulty whose rules apply where you are: the one you play in the story; the highest beaten in the endless depths.
