@@ -52,7 +52,8 @@ function killEnemy(e){
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk);{const kd=e.type==='boss'?'boss':e.zb?'zboss':e.su?'su':dk;dropCurrency(e,kd);sigilDrops(e,kd);} // gems, runes, charms, currency, Sigils (sigils.js)
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
-  if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
+  if(e.type==='boss'&&e.ab)archDown(e); // pinnacle.js: a Citadel guardian or the Hollow Sun
+  else if(e.type==='boss'){const L=bossDef(e).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,PD()+L.ilvl,3,min,{act:dropAct(PD()),top:true}));}
     dropGold(e.x,e.y,PD()*L.gold);dropGold(e.x+20,e.y,PD()*L.gold*0.5);
     if(actIdx(G.depth)===4)emberCoreDrop(e);

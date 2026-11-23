@@ -29,6 +29,7 @@ const CURS={
   bulwark:{name:'Catalyst of the Bulwark',ic:'⛨',col:'#c8b088',w:2,cat:['life','armor','block'],desc:'Next craft: one new stat is a defence (Life, Armor or Block)'},
   haste:{name:'Catalyst of Haste',ic:'➶',col:'#a8e0c0',w:2,cat:['aspd','move','cdr'],desc:'Next craft: one new stat is a speed (Attack, Move or Cooldown)'},
   fury:{name:'Catalyst of Fury',ic:'⚔',col:'#ff6a5a',w:2,cat:['dmg','crit','critd'],desc:'Next craft: one new stat is an attack stat (Damage, Crit, Crit Damage)'},
+  crucible:{name:'Sunfire Crucible',ic:'☀',col:'#ffcc55',w:0,desc:'Burns +1 to All Skills into a white, magic or rare item, once (only the Hollow Sun drops it)'},
   arcana:{name:'Catalyst of Arcana',ic:'✧',col:'#c8a0ff',w:1.5,cat:['spell'],desc:'Next craft: one new stat is Spell Damage (Arcanist gear)'}
 };
 const CRAFTS_ADD=new Set(['spark','crown','shard','cinder']); // the crafts a catalyst works on
@@ -72,6 +73,7 @@ function curBlockBase(k,it){if(!it||it.slot==='charm'||it.rb)return 'Not on char
   if(k==='awl')return (it.sockets||0)<mx?null:`Already has ${mx} sockets`;
   if(k==='spindle')return it.socketed&&it.socketed.length?'Unsocket its stones first':mx>1||!it.sockets?null:'Holds only one socket';}
 function curBlock(k,it){if(k==='awl'||k==='spindle'||k==='whet')return curBlockBase(k,it);
+  if(k==='crucible')return !it||it.slot==='charm'||it.rarity>2||it.rb?'Only white, magic and rare gear':it.sunfire?'Already burned by a Crucible':null;
   if(!curEditable(it))return 'Only white, magic and rare gear and charms';
   if(CURS[k]&&CURS[k].cat)return it.cat===k?'Already on this item':null;
   const n=statCount(it);
@@ -88,7 +90,8 @@ function curBlock(k,it){if(k==='awl'||k==='spindle'||k==='whet')return curBlockB
 // Applies currency k to the item (pays one). Returns a short text of what happened, or null.
 function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';const cat=it.cat;
   if(CURS[k].cat){it.cat=k;CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();playSfx('rune');return 'Ready: the next Spark, Crown, Shard or Cinder on this item uses it';}
-  if(k==='awl'){it.sockets=(it.sockets||0)+1;msg=`Now ${it.sockets} socket${it.sockets>1?'s':''}`;}
+  if(k==='crucible'){it.sunfire=true;it.imp=(it.imp||[]).concat([{k:'allsk',v:1}]);msg='+1 to All Skills, burned in';}
+  else if(k==='awl'){it.sockets=(it.sockets||0)+1;msg=`Now ${it.sockets} socket${it.sockets>1?'s':''}`;}
   else if(k==='spindle'){const mx=maxSockets(it),was=it.sockets||0;let n=randi(1,mx);if(mx>1)while(n===was)n=randi(1,mx);it.sockets=n;msg=`Now ${n} socket${n>1?'s':''}`;}
   else if(k==='whet'){it.q=Math.min(qualMax(it),(it.q||0)+5);msg=`Quality ${it.q+(it.sup?15:0)}%`;}
   else if(k==='spark'){const keys=keysWithCat(it,curAddPool(it,1),randi(1,2),1,1);it.affs=keys.map(x=>newAff(it,x));msg='Awakened: now magic';}
@@ -100,7 +103,7 @@ function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';co
   else if(k==='ash'){const st=it.affs.filter(a=>a.k!=='skill'),a=pick(st);it.affs.splice(it.affs.indexOf(a),1);msg='Removed '+affText(a,1,it.cls);}
   else if(k==='star'){const best=bestTierFor(it),a=pick(tieredAffs(it).filter(x=>x.t>best));a.t--;a.v=reTier(it,a);msg=`${affText(a,1,it.cls)} rose to T${a.t}`;}
   if(CRAFTS_ADD.has(k)&&cat){delete it.cat;msg+=` · ${CURS[cat].name} used`;} // a catalyst lasts one craft
-  if(k!=='awl'&&k!=='spindle'&&k!=='whet'){delete it.addOpts;if(isCharm(it))it.name=charmName(it);else restat(it);}CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();
+  if(!['awl','spindle','whet','crucible'].includes(k)){delete it.addOpts;if(isCharm(it))it.name=charmName(it);else restat(it);}CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();
   playSfx(k==='star'?'unique':'rune');return msg;}
 // ---------- drops ----------
 // Chance per kill (normal, champion pack member, champion, zone boss, act boss: those always drop some), x DIFFS loot.cur.

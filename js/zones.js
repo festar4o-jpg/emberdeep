@@ -168,7 +168,7 @@ function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZon
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   if(!restoreInstance(zid,mode)){ /* portal.js: kept instances; waypoint travel elsewhere throws them away */
     if(mode==='fresh'||mode==='all'||mode==='boss'||mode==='noboss')clearInstances();
-    if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;G.zStart={x:p.x,y:p.y};}else genZone(Z,mode);}
+    if(Z.layout==='boss'){genLevel(Z.depth,G.levelMode);G.sidePortal=null;G.zStart={x:p.x,y:p.y};if(Z.pinnacle)sunArena();}else genZone(Z,mode);} /* pinnacle.js: the crater */
   G.cam.x=p.x;G.cam.y=p.y;
   const d0=(Z.act-1)*5+1,newAct=Z.depth===d0&&!Z.parent&&(c.actSeen||0)<d0;if(newAct)c.actSeen=d0;
   saveChar();setPause();if(newAct)showActTitle(d0);else toast(Z.name,Z.sub);}
@@ -190,9 +190,9 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
       rollPack(depth,elite).forEach((type,m)=>{let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(!safe(x,y,ETYPES[type].r)){x=c.x;y=c.y;}G.enemies.push(makeEnemy(type,x,y,depth,elite&&m<4,id,affs));});}}
   const freeRegs=()=>shuffle(L.regions.filter(r=>!used.has(r)&&far(r)));
   // zone boss: near the exit for a boss gate (it guards the way), otherwise somewhere deep
-  if(Z.boss){const cand=L.regions.filter(r=>!used.has(r)&&far(r)).sort((a,b)=>D[b.cy*MW+b.cx]-D[a.cy*MW+a.cx]);const r=Z.gate==='boss'?cand[0]:cand[Math.min(cand.length-1,randi(1,3))];
-    if(r){used.add(r);const q=spot(r);const b=makeZoneBoss(Z.boss,q.x,q.y,depth);G.enemies.push(b);G.zboss=b;
-      if(zst(G.char,zid).boss)b.hp=b.maxHp; /* bosses come back on every visit */}}
+  if(Z.boss||Z.arch){const cand=L.regions.filter(r=>!used.has(r)&&far(r)).sort((a,b)=>D[b.cy*MW+b.cx]-D[a.cy*MW+a.cx]);const r=Z.gate==='boss'?cand[0]:cand[Math.min(cand.length-1,randi(1,3))];
+    if(r){used.add(r);const q=spot(r);if(Z.arch){const b=makeArchBoss(Z.arch,q.x,q.y,depth);G.enemies.push(b);G.boss=b;}else{const b=makeZoneBoss(Z.boss,q.x,q.y,depth);G.enemies.push(b);G.zboss=b;
+      if(zst(G.char,zid).boss)b.hp=b.maxHp; /* bosses come back on every visit */}}} // pinnacle.js: a Citadel's guardian
   // champions with an escort
   for(const id of Z.su||[]){const r=freeRegs()[0];if(!r)break;used.add(r);const q=spot(r),pk=++packId;G.enemies.push(makeSuper(id,q.x,q.y,depth,pk));
     rollPack(depth,false).slice(0,3).forEach(type=>G.enemies.push(makeEnemy(type,q.x+rand(-60,60),q.y+rand(-60,60),depth,false,pk,null)));}
@@ -311,7 +311,7 @@ function drawElder(){const E=G.elder;if(!E)return;const t=G.time,W=E.who;softSha
 function elderTick(){const p=G.p;G.elderNear=!!(G.inTown&&G.elder&&p&&Math.hypot(p.x-G.elder.x,p.y-G.elder.y)<70);}
 // HUD line: zone name, area level, objective.
 function zoneHud(){const Z=ZONES[G.zone];if(!Z)return null;const left=G.enemies.filter(e=>!e.dead).length;
-  if(Z.map&&G.char.mapRun){const r=G.char.mapRun;return `Map T${r.sig.tier} · ${Z.name.replace(/^Map: /,'')} · Lv ${areaLvl(PD())} · ${r.done?'Complete: take the portal home':zoneGoal()} · ${'♥'.repeat(Math.max(0,r.lives))} · ${left} foes`;} // sigils.js
+  if(Z.map&&G.char.mapRun){const r=G.char.mapRun;if(r.pinnacle)return `☀ The Hollow Sun · Lv ${areaLvl(PD())} · ${r.done?'Extinguished: take the portal home':'Extinguish it'} · ${'♥'.repeat(Math.max(0,r.lives))}`;return `Map T${r.sig.tier} · ${Z.name.replace(/^Map: /,'')} · Lv ${areaLvl(PD())} · ${r.done?'Complete: take the portal home':zoneGoal()} · ${'♥'.repeat(Math.max(0,r.lives))} · ${left} foes`;} // sigils.js
   return `${diffTag()}Act ${Z.act} · ${Z.name} · Lv ${areaLvl(powDepth(Z.depth))} · ${zoneGoal()} · ${left} foes`;}
 // ---------- minimap ----------
 function minimapZone(s){if(!G.zone||G.inTown)return;const S=G.sidePortal;

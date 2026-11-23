@@ -16,7 +16,8 @@
 //               finds easier and harder; the entrance banner says which.
 // Also here: area levels and the level/gear difference rule (diminishing returns when far overleveled/overgeared).
 const PHASE_AT=[0.7,0.35],TRANS_T=1.3,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.2,DPS_CAP=0.06,CAP_RESERVE=1.5,ENRAGE_AT=0.15,BOSS_HP_K=2.6;
-const ROMAN_PH=['I','II','III'];
+const ROMAN_PH=['I','II','III','IV'];
+const phaseAt=e=>bossDef(e).phaseAt||PHASE_AT; // pinnacle.js bosses have their own thresholds
 function bossInit(e){e.phase=0;e.stagger=0;e.staggerMax=100;e.staggers=0;e.punishes=0;e.homeX=e.x;e.homeY=e.y;e.maxHp*=BOSS_HP_K;e.hp=e.maxHp;}
 // ---------- area level and the level / gear difference ----------
 // Area level: twice the depth in the story (Act 1 = 2..10, Act 5 = 42..50), then +1 per endless depth. Shown and used
@@ -32,7 +33,7 @@ function overMul(){if(OM_T===G.time)return OM_V;OM_T=G.time;const c=G.char;if(!c
   if(ts.length){const over=ts.reduce((a,it)=>a+it.tier,0)/ts.length-dropAct(PD());if(over>0.5)m*=Math.max(0.6,1-0.12*(over-0.5));}
   return OM_V=m;}
 // A boss fight can also change the damage you take (BOSSES[k].vs[cls][2]): while the boss lives and fights you.
-function bossTakenMul(){const b=G.boss;if(!b||b.dead||!b.aggro||!G.char)return 1;const V=(BOSSES[b.kind]||BOSSES[0]).vs,m=V&&V[G.char.cls];return m&&m[2]||1;}
+function bossTakenMul(){const b=G.boss;if(!b||b.dead||!b.aggro||!G.char)return 1;const V=bossDef(b).vs,m=V&&V[G.char.cls];return m&&m[2]||1;}
 // Extreme gear: items upgraded +8 or more on average, or far overleveled/overgeared for the area. Only then do the
 // boss damage caps apply, so act-appropriate gear never meets them and every upgrade shows.
 let XG_T=-1,XG_V=false;
@@ -42,7 +43,7 @@ function extremeGear(){if(XG_T===G.time)return XG_V;XG_T=G.time;const c=G.char;i
 const underMul=()=>{const c=G.char;if(!c||G.inTown)return 1;return Math.min(2,1+0.05*Math.max(0,areaLvl()-c.lvl-(c.para||0)-2));};
 // ---------- damage into a monster (hitEnemy) ----------
 function dmgTo(e,d,crit,opts){d*=overMul();if(e.type!=='boss')return Math.max(1,Math.round(d));
-  const V=(BOSSES[e.kind]||BOSSES[0]).vs,cm=V&&G.char&&V[G.char.cls];if(cm)d*=cm[0]; /* class matchup: each boss favours one class */
+  const V=bossDef(e).vs,cm=V&&G.char&&V[G.char.cls];if(cm)d*=cm[0]; /* class matchup: each boss favours one class */
   const open=e.punishT>0||e.staggerT>0;if(e.punishT>0)d*=1.5;if(e.staggerT>0)d*=1.35;
   const raw=d;if(extremeGear())d=Math.min(d,e.maxHp*HIT_CAP,e.budget??e.maxHp*DPS_CAP*CAP_RESERVE); /* the cap only ever meets extreme gear */e.capRaw=(e.capRaw||0)+raw;e.capCut=(e.capCut||0)+raw-d; /* telemetry: how much the cap clips */e.budget=(e.budget??e.maxHp*DPS_CAP*CAP_RESERVE)-d;
   if(!(e.staggerT>0)&&!(e.transT>0)&&!(e.shieldT>0)){e.stagger+=(opts&&opts.dot?0:4)+90*d/e.maxHp*(crit||(opts&&opts.kb>=95)?1.6:1);if(e.stagger>=e.staggerMax)staggerBoss(e);}
@@ -50,12 +51,12 @@ function dmgTo(e,d,crit,opts){d*=overMul();if(e.type!=='boss')return Math.max(1,
 // After any loss of life (hits, bleeding, burning): hold a boss at its phase threshold and start the transition.
 function bossGate(e){if(e.type!=='boss'||e.dead)return;
   if(e.transT>0||e.shieldT>0){if(e.hpLock!=null&&e.hp<e.hpLock)e.hp=e.hpLock;return;}
-  const th=PHASE_AT[e.phase];if(th!=null&&e.hp<e.maxHp*th){e.hp=e.maxHp*th;bossTransition(e);}}
+  const th=phaseAt(e)[e.phase];if(th!=null&&e.hp<e.maxHp*th){e.hp=e.maxHp*th;bossTransition(e);}}
 function bossTransition(e){e.phase++;e.transT=TRANS_T;e.hpLock=e.hp;e.busy=0;e.wind=0;e.tele=null;e.act=null;e.dash=0;e.punishT=0;e.staggerT=0;e.stun=0;e.stagger=0;
   const col=ACTS[e.kind||0].col,p=G.p;G.shake=Math.max(G.shake,14);G.hitStop=0.1;playSfx('phase');
   G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:240,t:0,max:0.7,col});G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:150,t:0,max:0.45,col:'#ffffff'});
   const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<170&&d>0){const k=(170-d)*0.8;moveEnt(p,(p.x-e.x)/d*k,(p.y-e.y)/d*k);}
-  G.phaseBanner={text:`Phase ${ROMAN_PH[e.phase]}`,sub:((BOSSES[e.kind]||BOSSES[0]).phases[e.phase-1]||{}).name||'',t:G.time,col};}
+  G.phaseBanner={text:`Phase ${ROMAN_PH[e.phase]}`,sub:(bossDef(e).phases[e.phase-1]||{}).name||'',t:G.time,col};}
 function staggerBoss(e){e.staggerT=STAG_T;e.stun=Math.max(e.stun||0,STAG_T);e.stagger=0;e.staggerMax*=1.3;e.staggers++;e.busy=0;e.wind=0;e.act=null;e.tele=null;e.dash=0;
   G.shake=Math.max(G.shake,8);G.hitStop=Math.max(G.hitStop||0,0.08);playSfx('stagger');floatText(e.x,e.y-e.r*1.6,'STAGGERED','#ffd54a',true);
   G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r*2.6,t:0,max:0.35,col:'#ffd54a'});}
@@ -69,7 +70,7 @@ function shieldAdds(e,type,n,name,hpK){e.shieldBy=true;e.shieldT=9999;e.hpLock=e
     const m=makeEnemy(type,x,y,G.depth,true,e.pack,null);m.name=name;m.hp=m.maxHp=m.maxHp*(hpK||1.6);m.aggro=true;m.shieldOf=e;m.spawnT=0.5;G.enemies.push(m);burst(x,y,16,ACTS[e.kind||0].col,160);}
   toast(e.name+' is shielded',`Kill the ${name}s to break it`);}
 // Runs every frame for a boss before its AI. Returns true while it can't act (transition).
-function bossFrame(e,dt){const B=BOSSES[e.kind]||BOSSES[0];
+function bossFrame(e,dt){const B=bossDef(e);
   if(e.punishT>0)e.punishT-=dt;if(e.staggerT>0)e.staggerT-=dt;
   {const k=e.punishT>0||e.staggerT>0?1.5:1;e.budget=Math.min(e.maxHp*DPS_CAP*CAP_RESERVE*k,(e.budget??e.maxHp*DPS_CAP*CAP_RESERVE)+e.maxHp*DPS_CAP*k*dt);} /* the damage-per-second allowance refills */
   if(e.stagger>0&&G.time-(e.lastHit||-9)>2)e.stagger=Math.max(0,e.stagger-12*dt);
@@ -77,7 +78,8 @@ function bossFrame(e,dt){const B=BOSSES[e.kind]||BOSSES[0];
     if(e.transT<=0){e.hpLock=null;const P=B.phases[e.phase-1];if(P&&P.enter)P.enter(e);}return true;}
   if(e.shieldBy){if(G.enemies.some(o=>!o.dead&&o.shieldOf===e))e.shieldT=9999;else{e.shieldBy=false;e.shieldT=0;e.hpLock=null;G.shake=Math.max(G.shake,10);playSfx('stagger');
     G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r*3,t:0,max:0.4,col:'#bcd0ff'});toast('Shield broken!',e.name+' is vulnerable');e.punishT=PUNISH_T;e.punishes++;}}
-  if(!e.enraged&&e.phase>=2&&e.hp<e.maxHp*ENRAGE_AT){e.enraged=true;e.spd*=1.25;toast(`${e.name} is enraged!`,(B.enrage||'').replace(/!$/,''));G.shake=Math.max(G.shake,10);}
+  if(e.ab)archTick(e,dt); // pinnacle.js: the Gravity Well's pull
+  if(!e.enraged&&e.phase>=phaseAt(e).length&&e.hp<e.maxHp*ENRAGE_AT){e.enraged=true;e.spd*=1.25;toast(`${e.name} is enraged!`,(B.enrage||'').replace(/!$/,''));G.shake=Math.max(G.shake,10);}
   if(e.arena){const A=e.arena,p=G.p;A.r=Math.max(A.min,A.r-A.rate*dt);if(!p.dead&&Math.hypot(p.x-A.x,p.y-A.y)>A.r){A.tick=(A.tick||0)-dt;if(A.tick<=0){A.tick=0.5;dmgPlayer(e.dmg*0.35,e);}}}
   const P=B.phases[e.phase-1];if(P&&P.tick)P.tick(e,dt);
   return false;}

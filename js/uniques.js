@@ -65,6 +65,11 @@ function pwSource(k){for(const u in UNIQUES)if(UNIQUES[u].pw.includes(k))return 
   if(typeof RUNEBINDS!=='undefined')for(const r in RUNEBINDS)if((RUNEBINDS[r].pw||[]).includes(k))return RUNEBINDS[r].name+' (rune word)';
   for(const s in SETS)if(SETS[s].full.some(f=>f.pw===k))return SETS[s].name+' (full set)';return '?';}
 const UNIQUES={
+  // the Hollow Sun's own (pinnacle.js): three powers each, never anywhere else
+  dawnbreaker:{name:'Dawnbreaker',type:'weapon',wt:'greatsword',cls:'warden',act:5,boss:'sun',strong:1,pw:['cinderCleave','kingsWrath','coreFlare']},
+  eclipseaegis:{name:'Aegis of the Eclipse',type:'shield',cls:'warden',act:5,boss:'sun',strong:1,pw:['counter','rimeSkin','lastBreath']},
+  hollowheart:{name:'Heart of the Hollow Sun',type:'weapon',wt:'staff',cls:'arcanist',act:5,boss:'sun',strong:1,pw:['skyfall','stormweave','coreFlare']},
+  corona:{name:'The Last Corona',type:'amulet',cls:null,act:5,boss:'sun',strong:1,pw:['burnAura','kingsPyre','ignite']},
   tremorblade:{name:'Tremorblade',type:'weapon',wt:'sword',cls:'warden',act:1,pw:['shockwave']},
   maelstrom:{name:'Maelstrom Grips',type:'gloves',cls:'warden',act:2,pw:['pull']},
   bloodleap:{name:'Bloodleap Greaves',type:'boots',cls:'warden',act:3,pw:['bloodleap']},
@@ -87,7 +92,7 @@ const UNIQUES={
   frozenshard:{name:'Shard of the Frozen King',type:'amulet',cls:null,act:4,boss:3,pw:['rimeSkin']},
   cinderbrand:{name:'Brand of the Cinder King',type:'belt',cls:null,act:5,boss:4,pw:['kingsPyre']}
 };
-const BOSS_UQ=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss!=null).sort((a,b)=>UNIQUES[a].boss-UNIQUES[b].boss);
+const BOSS_UQ=Object.keys(UNIQUES).filter(k=>typeof UNIQUES[k].boss==='number').sort((a,b)=>UNIQUES[a].boss-UNIQUES[b].boss);
 // Chance per kill of an act boss: its own trophy unique, and a set piece (any set that can drop in that act).
 const TROPHY_CH=0.35,BOSS_SET_CH=0.3;
 // ---------- set items (rarity 5, green) ----------

@@ -187,12 +187,12 @@ const BOSS_PAINT=[
 ];
 // The ghoul is the default look for monster types without a painter of their own.
 const SHAPE_PAINT={blob:'ghoul',archer:'archer',scarab:'scarab',worm:'worm',toad:'toad',vine:'vine',troll:'troll',wraith:'wraith',golem:'golem',shard:'shard',imp:'imp',magma:'magma',thief:'thief'};
-function painterFor(e,T){if(e.type==='boss')return BOSS_PAINT[e.kind||0];if(e.type==='zboss')return ZB_PAINT[e.zb];if(e.type==='nest')return PAINT.nest; /* zones.js */if(T.shape==='robe')return PAINT[e.type]||PAINT.dustmage;if(e.type==='brute')return PAINT.ogre;return PAINT[SHAPE_PAINT[T.shape||'blob']];}
+function painterFor(e,T){if(e.type==='boss')return e.ab&&ARCH[e.ab].pinnacle?sunPaint:BOSS_PAINT[e.kind||0];if(e.type==='zboss')return ZB_PAINT[e.zb];if(e.type==='nest')return PAINT.nest; /* zones.js */if(T.shape==='robe')return PAINT[e.type]||PAINT.dustmage;if(e.type==='brute')return PAINT.ogre;return PAINT[SHAPE_PAINT[T.shape||'blob']];}
 // Walk cycle frame from distance actually moved (stands still when the creature does).
 function animFrame(o,stride){const dx=o.x-(o._ax??o.x),dy=o.y-(o._ay??o.y);o._ax=o.x;o._ay=o.y;o._ap=((o._ap||0)+Math.hypot(dx,dy)/stride)%SPR_F;return o._ap|0;}
 function creatureSprite(e,T){const P=painterFor(e,T);if(!P)return null;const r=Math.round(e.r),f=T.shape==='shard'?0:T.shape==='imp'||T.shape==='wraith'||T.shape==='vine'||e.type==='boss'&&e.kind===2?((G.time*(T.shape==='imp'?14:4)+e.seed)|0)%SPR_F:animFrame(e,Math.max(8,r*0.7));
   const rr=e.type==='boss'?Math.round(r*BOSS_SCALE):r; // bosses are drawn much bigger than their footprint
-  return sprite(`${e.type}|${e.kind||0}|${rr}|${f}`,rr*(T.shape==='worm'||e.zb&&ZBOSS[e.zb].wide?3.3:2.25),x=>P(x,rr,f));} /* zones.js: worm-shaped zone bosses need the room */
+  return sprite(`${e.type}|${e.kind||0}${e.ab?'|'+e.ab:''}|${rr}|${f}`,rr*(T.shape==='worm'||e.zb&&ZBOSS[e.zb].wide?3.3:2.25),x=>P(x,rr,f));} /* zones.js: worm-shaped zone bosses need the room */
 // ---------- hero, layered by what is worn ----------
 // Boots, cape or cloak, the body armour kind (none / robe / leather / chain / plate, tinted by its tier: steel,
 // then frost-blue at Tier IV and blackened red at Tier V), pauldrons and straps, then the head: a helm if one is worn.
@@ -281,6 +281,6 @@ function drawBossIntro(){const B=G.bossIntro;if(!B)return;B.t=Math.max(B.t,0);co
   const y=CH*0.3;ctx.textAlign='center';ctx.globalAlpha=a;
   const g=ctx.createLinearGradient(0,y-40,0,y+30);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(0.5,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,y-40,CW,70);
   ctx.font=`bold ${Math.round(26*Math.min(1.3,Z))}px Georgia`;ctx.lineWidth=4;ctx.strokeStyle='#000';ctx.strokeText(e.name,CW/2,y);ctx.fillStyle='#d8c8a8';ctx.fillText(e.name,CW/2,y);
-  ctx.font=`italic ${Math.round(13*Math.min(1.3,Z))}px Georgia`;ctx.fillStyle=ACTS[e.kind||0].col;ctx.fillText(ACTS[e.kind||0].sub,CW/2,y+22);
-  const V=(BOSSES[e.kind]||BOSSES[0]).vs,m=V&&G.char&&V[G.char.cls];if(m){ctx.font=`${Math.round(12*Math.min(1.3,Z))}px Georgia`;const good=m[0]>=1;ctx.fillStyle=good?'#8fe08a':'#e8826a';ctx.fillText(`${m[1]} (${good?'+':'−'}${Math.round(Math.abs(m[0]-1)*100)}% damage${m[2]?`, ${m[2]>1?'+':'−'}${Math.round(Math.abs(m[2]-1)*100)}% taken`:''})`,CW/2,y+40);} /* class matchup */
+  ctx.font=`italic ${Math.round(13*Math.min(1.3,Z))}px Georgia`;ctx.fillStyle=e.ab?(e.col||ACTS[e.kind||0].col):ACTS[e.kind||0].col;ctx.fillText(e.ab?bossDef(e).sub:ACTS[e.kind||0].sub,CW/2,y+22);
+  const V=bossDef(e).vs,m=V&&G.char&&V[G.char.cls];if(m){ctx.font=`${Math.round(12*Math.min(1.3,Z))}px Georgia`;const good=m[0]>=1;ctx.fillStyle=good?'#8fe08a':'#e8826a';ctx.fillText(`${m[1]} (${good?'+':'−'}${Math.round(Math.abs(m[0]-1)*100)}% damage${m[2]?`, ${m[2]>1?'+':'−'}${Math.round(Math.abs(m[2]-1)*100)}% taken`:''})`,CW/2,y+40);} /* class matchup */
   ctx.strokeStyle=`rgba(200,180,140,${0.6*a})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(CW/2-160*u,y+8);ctx.lineTo(CW/2+160*u,y+8);ctx.stroke();ctx.globalAlpha=1;}

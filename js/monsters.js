@@ -97,7 +97,9 @@ const BOSSES=[
 function cinderJets(e,dt,n){e.jetT=(e.jetT||0)-dt;if(e.jetT<=0){e.jetT=0.34;e.jetA=(e.jetA||0)+0.2*(e.jetDir||1);for(let k=0;k<n;k++)enemyShoot(e,e.jetA+k*TAU/n,220,'#ffb040',e.dmg*0.18,6);}}
 function blinkNear(e){const p=G.p;for(let k=0;k<20;k++){const a=rand(0,TAU),r=rand(110,160),x=p.x+Math.cos(a)*r,y=p.y+Math.sin(a)*r,ti=tileIdx(x,y);
   if(blockedAt(x,y,e.r)||!(G.flow[ti]>=0))continue;burst(e.x,e.y,20,'#e0c080',180);e.x=x;e.y=y;burst(x,y,20,'#e0c080',180);return true;}return false;}
-function bossAI(e,T,d,toP,step,chase,dt){const B=BOSSES[e.kind]||BOSSES[0];
+// A boss's rules: an act boss (BOSSES by act), or a Citadel guardian / the Hollow Sun (pinnacle.js ARCH, e.ab).
+const bossDef=e=>e&&e.ab&&typeof ARCH!=='undefined'&&ARCH[e.ab]||BOSSES[e&&e.kind]||BOSSES[0];
+function bossAI(e,T,d,toP,step,chase,dt){const B=bossDef(e);
   if(e.busy>0)return;
   if(e.cd<=0){const ms=B.moves.filter(m=>m.name!==e.last&&(m.ph||0)<=e.phase);let w=Math.random()*ms.reduce((a,m)=>a+m.w,0),mv=ms[0];
     for(const m of ms){w-=m.w;if(w<0){mv=m;break;}}

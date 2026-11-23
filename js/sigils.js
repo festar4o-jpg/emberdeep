@@ -81,14 +81,16 @@ const MAPM=()=>inMap()?(G.char.mapRun.mm||(G.char.mapRun.mm=mapModsOf(G.char.map
 // The zone a map is built from: a main or side zone (not an act boss arena), its boss and champions random.
 function mapSource(){const zs=Object.keys(ZONES).filter(z=>!ZONES[z].map&&ZONES[z].layout!=='boss'&&ZONES[z].act);return pick(zs);}
 function regMapZone(r){const Z=ZONES[r.src]||ZONES.a1z1,mm=mapModsOf(r);
+  if(r.pinnacle){ZONES.map=Object.assign({},ZONES.a5z5,{name:'The Hollow Sun',sub:'The pinnacle · power like depth 105',map:true,pinnacle:true,parent:null,side:null,next:null});return ZONES.map;}
   const T=r.ntype&&r.ntype!=='plain'?ATLAS_TYPES[r.ntype].name+' · ':'',nm=r.sig.mods.length+(r.extra||[]).length;
   ZONES.map=Object.assign({},Z,{name:'Map: '+Z.name,sub:`${T}Tier ${r.sig.tier} · ${nm} modifier${nm===1?'':'s'}`,map:true,parent:null,side:null,next:null,gate:'boss',
-    key:null,captive:null,hoard:r.ntype==='vault'?1:0,boss:r.boss,su:r.su,density:(Z.density||1.2)*(1+(mm.mpack||0)/100)*(1+(r.eg&&r.eg.strife||0)/100),elite:(Z.elite??0.2)*(1+(mm.melite||0)/100)});return ZONES.map;}
+    key:null,captive:null,hoard:r.ntype==='vault'?1:0,arch:r.arch||null,boss:r.boss,su:r.su,density:(Z.density||1.2)*(1+(mm.mpack||0)/100)*(1+(r.eg&&r.eg.strife||0)/100),elite:(Z.elite??0.2)*(1+(mm.melite||0)/100)});return ZONES.map;}
 // node: the Atlas node to run it on (v1.0.66; the start node when not given).
 function openMap(s,node){const c=G.char;if(!mapsOpen(c)||c.mapRun&&c.mapRun.lives>0&&!c.mapRun.done)return false;const i=SIGILS.indexOf(s);if(i<0)return false;
-  const g=atlasGraph(atlasOf(c).seed);if(node==null)node=g.start;const n=g.nodes[node];if(!n||n.type==='citadel'||!nodeOpen(c,node))return false;
+  const g=atlasGraph(atlasOf(c).seed);if(node==null)node=g.start;const n=g.nodes[node];if(!n||!nodeOpen(c,node))return false;
   SIGILS.splice(i,1);storeSigils();const zb=Object.keys(ZBOSS),su=Object.keys(SUPERU),nt=nodeType(c,node);
   c.mapRun={sig:s,src:n.src,node,ntype:nt,boss:pick(zb),su:shuffle(su.slice()).slice(0,randi(1,2)),lives:mapLives(c),done:false,town:G.inTown?G.depth:c.depth<=25?c.depth:25};
+  if(n.type==='citadel'){c.mapRun.arch=citadelOf(c,node);c.mapRun.ntype='citadel';} // pinnacle.js: its guardian
   if(nt==='shrine')c.mapRun.shrine=pick(Object.keys(SHRINES));
   {const L=engsFor(c,node);if(L.length){const o=engEffects(L);c.mapRun.eg=o;c.mapRun.lives+=o.life;if(o.champ)c.mapRun.su=c.mapRun.su.concat(shuffle(su.filter(x=>!c.mapRun.su.includes(x))).slice(0,o.champ));useEngs(c,L);}} // Beacons' Engravings
   if(nt==='corrupted'){const have=new Set(s.mods.map(m=>m.k));c.mapRun.extra=shuffle(MOD_KEYS.filter(k=>!have.has(k))).slice(0,2).map(k=>({k,t:2}));}
@@ -146,11 +148,12 @@ function renderMapDevice(){const c=G.char,r=c.mapRun,M=c.maps||{done:0,best:0};
   $('mapTabs').querySelectorAll('[data-mt]').forEach(el=>el.onclick=()=>setMapTab(el.dataset.mt));
   const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)} ${r.done?'(complete)':''}<div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
   $('mapSub').innerHTML=`${M.done} maps done · best Tier ${M.best||'–'} · ${SIGILS.length}/${SIG_CAP} Sigils (shared by your heroes). Each map: ${mapLives(c)} lives.`;
-  if(mapTab==='atlas'||mapTab==='tree'||mapTab==='eng'){$('mapList').innerHTML=open+(mapTab==='atlas'?renderAtlas():mapTab==='eng'?renderEngs():renderTree());$('mapInfo').innerHTML='';$('mapInfo').style.display='none';
+  if(mapTab==='atlas'||mapTab==='tree'||mapTab==='eng'){$('mapList').innerHTML=open+(mapTab==='atlas'?sunRow(c)+renderAtlas():mapTab==='eng'?renderEngs():renderTree());$('mapInfo').innerHTML='';$('mapInfo').style.display='none';
     $('mapList').querySelectorAll('[data-n]').forEach(el=>el.onclick=()=>{atlasSel=+el.dataset.n;const sc=$('mapList').querySelector('.atlasview'),st=sc?sc.scrollLeft:0,tp=sc?sc.scrollTop:0;renderMapDevice();const s2=$('mapList').querySelector('.atlasview');if(s2){s2.scrollLeft=st;s2.scrollTop=tp;}});
     $('mapList').querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{mapSel=SIGILS[+el.dataset.pick];renderMapDevice();});
     if($('atlasGo'))$('atlasGo').onclick=()=>{if(!mapSel||!openMap(mapSel,atlasSel))toast('Can\'t open it','Finish or abandon your open map first');};
     $('mapList').querySelectorAll('[data-eng]').forEach(el=>el.onclick=()=>{if(placeEng(c,atlasSel,ENGS[+el.dataset.eng])){toast('Engraving placed','It changes the maps around this Beacon');renderMapDevice();}});
+    if($('sunGo'))$('sunGo').onclick=()=>{if(!openSun())toast('The crater stays shut','One fragment of each kind, and no open map');};
     if($('engTake'))$('engTake').onclick=()=>{if(takeEng(c,atlasSel))renderMapDevice();};
     $('mapList').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{if(treeTake(c,el.dataset.t)){toast('Atlas tree',ATLAS_TREE.find(x=>x.id===el.dataset.t).name);renderMapDevice();}});
     if($('mapBack'))$('mapBack').onclick=()=>{closeMapDevice();closeWay();regMapZone(r);startZone('map',hasInstance('map')?'tp':'fresh');};
@@ -182,7 +185,7 @@ tap('mapClose',closeMapDevice);
 // spent on the Atlas tree (ATLAS_TREE).
 const ATLAS_N=[10,6],ATLAS_SP=130,ATLAS_TYPES={plain:{name:'Map',col:'#b8a888'},shrine:{name:'Shrine',col:'#7ad8ff',t:"A shrine's blessing lasts the whole map"},
   vault:{name:'Vault',col:'#f2d04a',t:'A hoard chest; +50% Item Quantity and Rarity'},boss:{name:'Boss',col:'#ff5a3a',t:'A far tougher map boss, with much more loot'},
-  corrupted:{name:'Corrupted',col:'#c050ff',t:'Two extra modifiers; double Item Quantity and Rarity'},citadel:{name:'Citadel',col:'#ffffff',t:'Sealed. Its guardian waits for the Hollow Sun to rise.'}};
+  corrupted:{name:'Corrupted',col:'#c050ff',t:'Two extra modifiers; double Item Quantity and Rarity'},citadel:{name:'Citadel',col:'#ffffff',t:'Its guardian holds a Fragment of the Hollow Sun (run a Sigil here; it can be fought again)'}};
 const ATLAS_CACHE={};
 function atlasGraph(seed){if(ATLAS_CACHE[seed])return ATLAS_CACHE[seed];const R=artRng(seed),N=[],[W,H]=ATLAS_N,zs=Object.keys(ZONES).filter(z=>!ZONES[z].map&&ZONES[z].layout!=='boss'&&ZONES[z].act).sort();
   for(let j=0;j<H;j++)for(let i=0;i<W;i++)N.push({id:N.length,x:70+i*ATLAS_SP+(j%2)*ATLAS_SP*0.5+(R()-0.5)*60,y:60+j*ATLAS_SP*0.78+(R()-0.5)*44,type:'plain',src:zs[Math.floor(R()*zs.length)],nb:[]});
@@ -246,12 +249,12 @@ function renderAtlas(){const c=G.char,A=atlasOf(c),g=atlasGraph(A.seed),N=g.node
   const sv=`<div class="atlasview"><svg width="${g.w|0}" height="${g.h|0}" viewBox="0 0 ${g.w|0} ${g.h|0}">${lines}${dots}</svg></div>`;
   const n=atlasSel!=null?N[atlasSel]:null;let info='';
   if(n){const Z=ZONES[n.src],t=nodeType(c,n.id),bc=BE.has(n.id),T=bc?{name:'Beacon',col:'#5ae0c0',t:'Clear it to light it; a lit Beacon holds an Engraving that changes every map within 2 steps'}:ATLAS_TYPES[n.type];
-    info=`<b style="color:${T.col}">${T.name}${n.type==='citadel'?'':': '+esc(Z.name)}</b> <span class="fdim">${A.done[n.id]?'· done '+A.done[n.id]+'×':''}${n.start?' · the start':''}</span>${T.t?`<div class="fdim">${esc(T.t)}${t!==n.type&&n.type!=='citadel'?' (used up)':''}</div>`:''}`;
+    info=`<b style="color:${T.col}">${T.name}${n.type==='citadel'?' of '+(FRAGS[citadelOf(c,n.id)]||{}).boss:': '+esc(Z.name)}</b> <span class="fdim">${A.done[n.id]?'· done '+A.done[n.id]+'×':''}${n.start?' · the start':''}</span>${T.t?`<div class="fdim">${esc(T.t)}${t!==n.type&&n.type!=='citadel'?' (used up)':''}</div>`:''}`;
     if(bc){const st=BS[n.id];if(st&&st.lit){info+=st.eng?`<div style="color:${ENG[st.eng.k].col}">${esc(ENG[st.eng.k].name)}: ${esc(engText(st.eng))} <span class="fdim">(${st.eng.uses} maps left)</span></div><div class="row"><div class="btn sm" id="engTake">Take it out</div></div>`
         :`<div class="fdim">Lit: place an Engraving</div><div class="row">${ENGS.map((e,i)=>`<div class="btn sm" data-eng="${i}" style="color:${ENG[e.k].col}" title="${esc(engText(e))}">${esc(ENG[e.k].name.replace('Engraving of ',''))} ·${e.uses}</div>`).join('')||'<span class="fdim">No Engravings: map bosses drop them</span>'}</div>`;}
       else info+='<div class="fdim">Not lit yet: clear its map</div>';}
     {const L=engsFor(c,n.id);if(L.length)info+=`<div class="fdim">Engravings here: ${L.map(({e})=>`<span style="color:${ENG[e.k].col}">${esc(ENG[e.k].name.replace('Engraving of ',''))}</span>`).join(', ')}</div>`;}
-    if(n.type!=='citadel'){const sel=mapSel&&SIGILS.includes(mapSel)?mapSel:null,list=SIGILS.slice().sort((a,b)=>b.tier-a.tier||b.rarity-a.rarity).slice(0,12);
+    {const sel=mapSel&&SIGILS.includes(mapSel)?mapSel:null,list=SIGILS.slice().sort((a,b)=>b.tier-a.tier||b.rarity-a.rarity).slice(0,12);
       info+=`<div class="row" style="margin-top:4px">${list.map(s=>`<div class="btn sm${s===sel?' on':''}" data-pick="${SIGILS.indexOf(s)}" style="color:${SIG_COL[s.rarity]}">◆T${s.tier}${s.mods.length?' ·'+s.mods.length:''}</div>`).join('')||'<span class="fdim">No Sigils</span>'}</div>`+
         `<div class="row"><div class="btn sm${sel?'':' dis'}" id="atlasGo">🗺 Run ${sel?sigName(sel):'(pick a Sigil)'}</div></div>`;}}
   return sv+`<div class="pinfo">${info||'<span class="fdim">Tap a node. Completing a map reveals the nodes next to it.</span>'}</div>`;}

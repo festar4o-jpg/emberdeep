@@ -45,7 +45,7 @@ function render(){
     ctx.globalAlpha=0.28*a;ctx.fillStyle=poi?'#8fd040':fr?'#8fc8f0':'#ff6a1a';ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();
     ctx.globalAlpha=0.35*a;ctx.fillStyle=poi?'#c8ff70':fr?'#e6f6ff':'#ffc040';ctx.beginPath();ctx.arc(h.x,h.y,h.r*0.55,0,TAU);ctx.fill();}
   ctx.globalAlpha=1;
-  drawArena();for(const f of G.fx)if(f.type==='cata')drawCata(f,f.t/f.max);else if(f.type==='nova')drawNova(f,f.t/f.max); /* bossfight.js: shrinking arenas, Cataclysm's safe wedge */
+  drawArena();for(const f of G.fx)if(f.type==='cata')drawCata(f,f.t/f.max);else if(f.type==='nova')drawNova(f,f.t/f.max);else if(f.type==='eclipse')drawEclipse(f,f.t/f.max); /* bossfight.js: shrinking arenas, Cataclysm's safe wedge */
   for(const e of G.enemies)if(!e.dead&&e.wind>0&&e.tele){ctx.strokeStyle=e.tele.col;ctx.globalAlpha=0.75;ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.tele.r,0,TAU);ctx.stroke();ctx.globalAlpha=0.15;ctx.fillStyle=e.tele.col;ctx.fill();ctx.globalAlpha=1;}
   // loot
   ctx.textAlign='center';LABELS.length=0;

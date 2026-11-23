@@ -511,7 +511,7 @@ function calcStats(c,swap,at){
     if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const a=stoneStat(sg,h);s[a.k]+=a.v;}} // gems and runes: flat, not upgraded
     const am=affMul(it); /* affixes: upgrades and the tier bonus; implicits: upgrades only */
     for(const a of it.affs){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:am);}
-    for(const a of it.imp||[]){if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]+=a.v*(AFF[a.k].flat?1:m);}
+    for(const a of it.imp||[]){if(a.k==='skill')s.skill[a.s]+=a.v;else if(a.k==='allsk')s.skill=s.skill.map(x=>x+a.v); /* Sunfire Crucible */else s[a.k]+=a.v*(AFF[a.k].flat?1:m);}
   }
   addSetStats(EQ_SLOTS.map(sl=>eq[sl]).filter(Boolean),s); // set bonuses
   addCharmStats(c,s); // charm pouch
