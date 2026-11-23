@@ -313,12 +313,14 @@ function affVal(a,m){const d=AFF[a.k];let v=a.v*(d&&d.flat?1:m);return d&&d.dec?
 // levels 11-15), so an older tier dropped late still rolls older, smaller numbers (Tier V Life ~4x Tier I, Damage % and
 // Crit Damage ~2-2.5x, Crit, Attack/Move Speed and Cooldown ~1.5-1.8x). Tier V keeps climbing in the endless depths.
 const affLvl=(ilvl,tier)=>!tier?ilvl:clamp(ilvl,TIER_LO[tier-1],tier===5?999:TIER_LO[tier-1]+4);
-// Upgrades (+1..+10, gold): +4% base damage, armor and implicit stats per level (+40% at +10); affixes are not upgraded,
-// so a fresh drop from the current act beats upgraded gear from an act or two back. Rings and amulets have no base:
+// Upgrades (+1..+10, gold): +2% base damage, armor and implicit stats per level (+20% at +10); affixes are not upgraded,
+// so a fresh rare from the next act beats a +10 rare from the act before (~13-21% more power; the game test checks it).
+// It was +4% until v1.0.52, and +10 gear then out-powered next-act drops. Rings and amulets have no base and no tier:
 // upgrades give their affixes +4% per level instead. Items from before v1.0.48 (upgrades were +10% to everything, and
 // v1.0.47 gave affixes +4% per tier) are reset to the current rules when they load (bakeUpgrades, v1.0.49).
-const UPG_STEP=0.04,UPG_VER=3;
-const upgMul=it=>1+UPG_STEP*(it.upg||0);
+const UPG_STEP=0.02,JEWEL_STEP=0.04,UPG_VER=3;
+const upgStep=it=>it.tier?UPG_STEP:JEWEL_STEP;
+const upgMul=it=>1+upgStep(it)*(it.upg||0);
 const affMul=it=>it.tier?1:upgMul(it);
 // v1.0.49: every item is brought to the current rules, as if it had dropped today; its +level stays (now +4%/level).
 // Each affix keeps its place in its range: a roll at the top of the old range lands at the top of the new one for
@@ -336,7 +338,7 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
   const al=affLvl(it.ilvl,it.tier);
   if(it.uv===2){const fits=a=>{const [lo,hi]=rollRange(a.k,al),m=affRm(it,a.k);return a.v>=lo*m-1.01&&a.v<=hi*m+1.01;};
     if(it.affs.filter(scaledAff).every(fits)&&!baseInflated(it)){it.uv=UPG_VER;return it;} // rolled under the new rules
-    const u=it.upg||0,old=1+0.1*u,nu=1+UPG_STEP*u,tb=it.tier>1?1+0.04*(it.tier-1):1,kb=old/nu,ka=it.tier?old*tb:old/nu; // undo v1.0.48's bake
+    const u=it.upg||0,old=1+0.1*u,nu=1+0.04*u,tb=it.tier>1?1+0.04*(it.tier-1):1,kb=old/nu,ka=it.tier?old*tb:old/nu; // undo v1.0.48's bake
     if(u>0){if(it.dmin!=null){it.dmin/=kb;it.dmax/=kb;}if(it.arm)it.arm/=kb;for(const a of it.imp||[])if(scaledAff(a))a.v/=kb;}
     for(const a of it.affs)if(scaledAff(a))a.v/=ka;}
   for(const a of it.affs){if(!scaledAff(a))continue;const m=affRm(it,a.k),[o0,o1]=OLD_ROLL[a.k]?OLD_ROLL[a.k](it.ilvl):rollRange(a.k,it.ilvl),[n0,n1]=rollRange(a.k,al);

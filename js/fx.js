@@ -84,7 +84,7 @@ function drawBeam(l,col,big){const rgb=rgbOf(col),named=l.item&&(l.item.rarity==
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // The moment a good item hits the ground: rares give a small golden spark; set items and uniques a burst of light,
 // a shockwave, a shake and a call-out over the item (the sound is in sfx.js dropSfx).
-function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=RCOL[it.rarity];l.born=G.time;
+function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=RCOL[it.rarity];l.born=G.time;buzz(it.rarity===3?'unique':it.rarity===5?'set':'rare');
   if(it.rarity===2){burst(l.x,l.y,10,col,120);return;}
   if(it.rarity===3||it.rarity===5){burst(l.x,l.y,34,col,260);burst(l.x,l.y,14,'#ffffff',180);
     G.fx.push({type:'ring',x:l.x,y:l.y,r0:10,r1:150,t:0,max:0.6,col});G.fx.push({type:'ring',x:l.x,y:l.y,r0:4,r1:90,t:0,max:0.45,col:'#ffffff'});
@@ -115,7 +115,7 @@ function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const M=MAT[matOf(e)],p
   for(let k=0;k<(sp?Math.round((heavy?8:4)*sp)+1:0);k++){const b=a+Math.PI+fr(-1.2,1.2),v=fr(150,340);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.12,0.28),M.sparkCol||'#ffe0a0',fr(1.2,2.2));}
   if(M.dust)dustPuff(e.x,e.y,e.r*0.6,3);
   if(M.blood&&fxRnd()<0.75)splat(e.x+Math.cos(a)*fr(4,e.r*1.4),e.y+Math.sin(a)*fr(4,e.r*1.2),fr(3,6)*(heavy?1.5:1),M.blood);
-  if(heavy){G.hitStop=Math.max(G.hitStop||0,crit?0.06:0.045);G.shake=Math.max(G.shake,crit?5:3);}}
+  if(heavy){G.hitStop=Math.max(G.hitStop||0,crit?0.06:0.045);G.shake=Math.max(G.shake,crit?5:3);}if(crit)buzz('crit');}
 // Dust kicked up by impacts: soft, slow, spreading puffs.
 function dustPuff(x,y,r,n,col){for(let k=0;k<n;k++){const a=fr(0,TAU),v=fr(15,60);part(x+Math.cos(a)*r*fr(0.3,1),y+Math.sin(a)*r*fr(0.3,1)*0.6,Math.cos(a)*v,Math.sin(a)*v*0.6-8,fr(0.6,1.1),col||'#6e604c',fr(6,11),{soft:1});}}
 // ---------- blood on the floor ----------

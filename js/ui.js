@@ -181,7 +181,7 @@ function openItem(it,equipped,price){
       if(w.hands===2)h+=`<div class="ibase" style="color:var(--dim)">Two-handed: blocks the Off Hand</div>`;}
     if(x.arm)h+=`<div class="ibase">Armor: ${Math.round(x.arm*mm)}</div>`;
     for(const a of x.imp||[])h+=`<div class="ibase">${esc(affText(a,mm,x.cls||c.cls))}</div>`;
-    if(x.upg)h+=`<div class="itierb">⚒ Upgraded +${x.upg}: +${Math.round(UPG_STEP*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</div>`;
+    if(x.upg)h+=`<div class="itierb">⚒ Upgraded +${x.upg}: +${Math.round(upgStep(x)*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</div>`;
     for(const a of x.affs)h+=`<div class="iaff${a.k==='skill'?' skl':''}">${esc(affText(a,affMul(x),x.cls||c.cls))}</div>`;
     for(const k of itemPowers(x))h+=powerHtml(k,c);
     if(setOf(x))h+=setHtml(x,c);
@@ -304,8 +304,8 @@ document.addEventListener('fullscreenchange',fsLabel);document.addEventListener(
 addEventListener('orientationchange',()=>{releaseInputs();setTimeout(resize,200);});
 // ---------- settings (shared by all characters) ----------
 const SETTINGS_KEY='emberdeep_settings',JOY_SIZES={s:44,m:55,l:68};
-let SETTINGS={joy:'m',lefty:false,sound:true};
-function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false};}catch(e){}applySettings();}
+let SETTINGS={joy:'m',lefty:false,sound:true,vib:true};
+function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false,vib:o.vib!==false};}catch(e){}applySettings();}
 const SETTINGS_NOW=()=>SETTINGS; // (tests: SETTINGS is a let)
 function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}backupSoon();}
 function setSetting(k,v){SETTINGS[k]=v;storeSettings();releaseInputs();applySettings();renderSettings();}
@@ -316,7 +316,8 @@ function renderSettings(){
   $('setJoy').innerHTML=[['s','Small'],['m','Medium'],['l','Large']].map(([k,n])=>`<div class="tab${SETTINGS.joy===k?' on':''}" data-j="${k}">${n}</div>`).join('');
   $('setJoy').querySelectorAll('[data-j]').forEach(el=>el.onclick=()=>setSetting('joy',el.dataset.j));
   $('setLefty').classList.toggle('on',SETTINGS.lefty);$('setLefty').onclick=()=>setSetting('lefty',!SETTINGS.lefty);
-  $('setSound').classList.toggle('on',SETTINGS.sound!==false);$('setSound').onclick=()=>setSetting('sound',SETTINGS.sound===false);}
+  $('setSound').classList.toggle('on',SETTINGS.sound!==false);$('setSound').onclick=()=>setSetting('sound',SETTINGS.sound===false);
+  $('setVib').classList.toggle('on',SETTINGS.vib!==false);$('setVib').onclick=()=>{setSetting('vib',SETTINGS.vib===false);if(SETTINGS.vib)buzz('heavy');};}
 function showTitle(){
   $('titleOv').classList.remove('hidden');
   $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';

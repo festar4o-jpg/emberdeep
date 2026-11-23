@@ -260,7 +260,7 @@ function creaturePose(e){const t=G.time,r=e.r;let dx=0,sc=1;
 function addCorpse(e){const T=ETYPES[e.type];if(!T||e.hidden)return;if(BURSTS[e.type])return deathBurst(e); // fx.js: small and brittle things burst
   const S=creatureSprite(e,T);if(!S)return;const boss=e.type==='boss';
   G.fx.push({type:'corpse',S,x:e.x,y:e.y,a:e.face,dir:e.face+Math.PI,t:0,max:boss?5:3,sc:boss?BOSS_SCALE:1,boss});
-  if(boss){G.shake=Math.max(G.shake,14);G.hitStop=0.12;fxExplosion(e.x,e.y,e.r*2.2,ACTS[e.kind||0].col);}}
+  if(boss){G.shake=Math.max(G.shake,14);G.hitStop=0.12;buzz('boss');fxExplosion(e.x,e.y,e.r*2.2,ACTS[e.kind||0].col);}}
 // Lurch back and topple over (first half second), lie there darkening, then fade out over the last 1.2s.
 function drawCorpses(){for(const f of G.fx){if(f.type!=='corpse')continue;const k=Math.min(1,f.t/0.45),e=1-(1-k)*(1-k),fade=Math.min(1,(f.max-f.t)/1.2);
   const x=f.x+Math.cos(f.dir)*9*e,y=f.y+Math.sin(f.dir)*9*e;softShadow(x,y+6,f.S.half*0.55*f.sc,f.S.half*0.25*f.sc,fade*0.8);

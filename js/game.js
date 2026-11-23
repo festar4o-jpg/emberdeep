@@ -92,6 +92,7 @@ function dmgPlayer(raw,src){
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
+  {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
   if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
   checkDeath(p);return true;
@@ -111,7 +112,7 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst
 
 function gainXp(v){
   const c=G.char;if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
-  while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
+  while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
     const newSk=SKILL_REQ.indexOf(c.lvl);toast('Level '+c.lvl+'!',newSk>0?'New skill available — tap ✨':'+1 skill point');
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }

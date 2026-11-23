@@ -26,3 +26,19 @@ function playSfx(k){if(SETTINGS.sound===false||!DROP_SFX[k])return;const a=audio
   if(a.currentTime-sfxLast<0.06)return;sfxLast=a.currentTime;try{DROP_SFX[k](a);}catch(e){}}
 // What a drop sounds like: nothing for common/magic items and gold.
 function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
+// ---------- vibration ----------
+// Short buzzes on crits, heavy hits taken, boss kills, level-ups and good drops. In the Android app they go through
+// EmberdeepApp (native Vibrator: the WebView's own navigator.vibrate is unreliable); in a browser through
+// navigator.vibrate. Patterns are [on, off, on, ...] in ms. Rate-limited: within 180 ms of the last buzz only a
+// stronger one gets through, so a fight never turns into one long rattle. Settings → Vibration turns them off.
+const VIB={crit:[14],hurt:[30],heavy:[70,40,45],levelup:[40,60,40,60,90],rare:[22],set:[60,70,60,70,150],unique:[50,60,50,60,50,60,220],boss:[120,60,200]};
+const VIB_RANK={crit:1,hurt:2,rare:3,heavy:4,levelup:5,set:6,unique:6,boss:7};
+let vibAt=-1e9,vibRank=0,vibLastK=null;
+function buzz(k){if(SETTINGS.vib===false||!VIB[k])return false;const now=Date.now(),r=VIB_RANK[k];
+  if(now-vibAt<180&&r<=vibRank)return false;
+  const busy=VIB[vibLastK]&&now-vibAt<VIB[vibLastK].reduce((a,b)=>a+b,0);if(busy&&r<vibRank)return false; // a long pattern still playing isn't cut by a weaker one
+  vibAt=now;vibRank=r;vibLastK=k;
+  try{const A=typeof window!=='undefined'&&window.EmberdeepApp;
+    if(A&&typeof A.postMessage==='function')A.postMessage(JSON.stringify({type:'vibrate',p:VIB[k]}));
+    else if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(VIB[k]);}catch(e){}
+  return true;}
