@@ -40,6 +40,7 @@ function killEnemy(e){
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
   if(hasPw('bloodrage'))healPlayer(G.stats.life*0.02,true);
+  if(G.stats.lpk)healPlayer(G.stats.lpk,true); // charms: Life per Kill
   if(e.frozen>0&&hasPw('shatter'))iceShards(e);
   if(T0.split&&(e.gen||0)<2)for(let k=0;k<2;k++){const a=rand(0,TAU);let x=e.x+Math.cos(a)*e.r*0.6,y=e.y+Math.sin(a)*e.r*0.6;if(blockedAt(x,y,10)){x=e.x;y=e.y;}
     const c=makeEnemy(e.type,x,y,G.depth,e.elite,e.pack,e.affs);c.chest=e.chest;c.gen=(e.gen||0)+1;c.r=Math.max(9,e.r*0.72);c.hp=c.maxHp=e.maxHp*0.45;c.dmg=e.dmg*0.7;c.xp=e.xp*0.35;c.spd=e.spd*1.1;
@@ -59,7 +60,7 @@ function killEnemy(e){
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
     if(G.depth===25&&(c.diffDone||0)<=(c.diff||0)){const d=c.diff||0;c.diffDone=d+1;c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory(d);},1800);} // maps.js: the next difficulty opens
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
-    else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
+    else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);dropUCharm(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
   else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
@@ -116,7 +117,7 @@ const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot
 function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
 
 function gainXp(v){
-  const c=G.char;if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
+  const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
   while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
     const newSk=SKILL_REQ.indexOf(c.lvl);toast('Level '+c.lvl+'!',newSk>0?'New skill available — tap ✨':'+1 skill point');
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}

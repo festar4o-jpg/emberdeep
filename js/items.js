@@ -185,11 +185,20 @@ const AFF={
   lres:{ps:'s',t:'+{v}% Lightning Resistance',pre:'Grounded',suf:'of the Storm',roll:resRoll,flat:1,res:1},
   pres:{ps:'s',t:'+{v}% Poison Resistance',pre:'Antidotal',suf:'of the Serpent',roll:resRoll,flat:1,res:1},
   ares:{ps:'s',t:'+{v}% All Resistances',pre:'Warded',suf:'of the Elements',roll:l=>resRoll(l)*0.5,flat:1,res:1},
-  resist:{ps:'s',t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1}
+  resist:{ps:'s',t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1},
+  // charm-only stats (v1.0.62, charms.js): never on gear. nom: not scaled by the charm's size; lg: large and grand only.
+  rarity:{ps:'s',t:'+{v}% Item Rarity',pre:'Lucky',suf:'of Fortune',roll:l=>rand(8,13)+l*0.3,flat:1,charm:1},
+  gold:{ps:'s',t:'+{v}% Gold Found',pre:'Gilded',suf:'of Greed',roll:l=>rand(14,22)+l*0.4,flat:1,charm:1},
+  xp:{ps:'s',t:'+{v}% Experience',pre:'Learned',suf:'of Wisdom',roll:l=>rand(6,10)+l*0.12,flat:1,charm:1},
+  lpk:{ps:'p',t:'+{v} Life per Kill',pre:'Hungry',suf:'of the Feast',roll:l=>rand(4,8)+l*1.1,flat:1,charm:1},
+  potheal:{ps:'s',t:'+{v}% Potion Healing',pre:'Brimming',suf:'of the Spring',roll:l=>rand(14,22)+l*0.25,flat:1,charm:1},
+  maxres:{ps:'s',t:'+{v}% to maximum Resistances',pre:'Unyielding',suf:'of the Bastion',roll:l=>l>=50?2:1,flat:1,charm:1,nom:1,lg:1},
+  allsk:{ps:'p',t:'+{v} to All Skills',pre:'Exalted',suf:'of Mastery',roll:()=>1,flat:1,charm:1,nom:1,only:1} // unique charms only
 };
 const RES_KEYS=['fres','cres','lres','pres'],RES_CAP=75;
+const resCap=s=>RES_CAP+(s&&s.maxres||0); // charms can raise it
 const RES_NAME={fres:'Fire',cres:'Cold',lres:'Lightning',pres:'Poison'},RES_COL={fres:'#ff9a3a',cres:'#9fd8ff',lres:'#ffe45a',pres:'#9fe04a'};
-const AFF_KEYS=Object.keys(AFF).filter(k=>!AFF[k].meta);
+const AFF_KEYS=Object.keys(AFF).filter(k=>!AFF[k].meta&&!AFF[k].charm); // gear (charm stats stay on charms)
 // Per-tier base names (Tier I … V); amulets and rings are untiered.
 const BASES={shield:[['Buckler','Round Shield'],['Kite Shield','Sandstone Targe'],['Heater','Rotwood Pavise'],['Tower Shield','Frostward Shield'],['Ember Bulwark','Demon Aegis']],
   helm:[['Cap','Hood'],['Helm','Desert Circlet'],['Great Helm','Bog Coif'],['Frost Helm','Winged Helm'],['Cinder Crown','Demon Horns']],
@@ -356,7 +365,7 @@ const TIER_BAND0=[null,[1.95,2.25],[1.65,1.95],[1.4,1.65],[1.2,1.4],[1.04,1.2],[
 let TIER_BAND=TIER_BAND0; // scaled below (after tierWeights) so an average Normal drop (item level 15) is as strong as before tiers
 const TIER_W=[0,0.8,2,5.5,11,17,20,18,13,9],TIER_MIN_IL=[0,18,12,7,3,1,1,1,1,1];
 const tierFloor=il=>il>75?3:il>50?5:il>25?6:TIER_N;
-const NO_TIER=new Set(['pot']);
+const NO_TIER=new Set(['pot','maxres','allsk']);
 const tiered=k=>!!AFF[k]&&!AFF[k].meta&&!NO_TIER.has(k);
 // T.best / T.worst (catalysts, v1.0.62) narrow the range further.
 function tierWeights(il,boost=0,T={}){const lo=Math.min(tierFloor(il),T.worst||TIER_N),hi=T.best||1,s=clamp((il-1)/75,0,1),b=Math.max(0,boost);
@@ -440,7 +449,7 @@ function migrateItem(it){
   if(TIERED.has(it.slot)&&!(it.tier>=1&&it.tier<=5))it.tier=tierOfLvl(it.ilvl); // pre-tier items: their stats already match the tier of their item level
   bakeUpgrades(it); /* brought to the current affix and upgrade rules */
   // v1.0.60: stats on magic and rare items and charms get the tier their value fits (the value itself is kept)
-  if(it.rarity===1||it.rarity===2||it.slot==='charm'){const l=it.slot==='charm'?it.ilvl:affLvl(it.ilvl,it.tier),rmOf=k=>it.slot==='charm'?CHARM[it.size].m:affRm(it,k);
+  if(it.rarity===1||it.rarity===2||it.slot==='charm'&&!it.uc){const l=it.slot==='charm'?it.ilvl:affLvl(it.ilvl,it.tier),rmOf=k=>it.slot==='charm'?CHARM[it.size].m:affRm(it,k);
     for(const a of it.affs)if(a.t==null&&tiered(a.k))a.t=tierOf(a.k,l,a.v,rmOf(a.k));}
   for(const a of it.affs)if(a.t!=null&&!(a.t>=1&&a.t<=TIER_N&&tiered(a.k)))delete a.t;
   return it;
@@ -486,7 +495,7 @@ function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
-  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
+  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
@@ -513,7 +522,7 @@ function calcStats(c,swap,at){
   return s;
 }
 // Resistance to one element after the difficulty's penalty (maps.js resPenalty), at most 75%; can go below 0.
-function resOf(s,k){return Math.min(RES_CAP,(s[k]||0)+(s.ares||0)-resPenalty());}
+function resOf(s,k){return Math.min(resCap(s),(s[k]||0)+(s.ares||0)-resPenalty());}
 function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15);
   const def=(s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10)*(1+RES_KEYS.reduce((a,k)=>a+Math.max(0,Math.min(RES_CAP,(s[k]||0)+(s.ares||0))),0)/600);return off*Math.sqrt(def)*(1+s.move/400);}
 // ---------- loot filter (per character, set in the menu) ----------

@@ -2,7 +2,8 @@
 // Crafting currencies (v1.0.61, PoE2 style): small consumables that drop from monsters (more from champions and bosses,
 // and more in harder content: maps.js DIFFS loot.cur) and change one item. They live in one pouch shared by every hero
 // (CUR_KEY, part of the save backups). No craft limit: each use costs a drop. They work on white, magic and rare gear;
-// uniques, set items, Runebinds and charms can't be changed by them. Every new stat rolls a tier for the item's level
+// uniques, set items, Runebinds and unique charms can't be changed by them. Charms (v1.0.62): Shard, Cinder, Tear,
+// Void Ash and Star-Iron work on them, up to the size's most stats (charms.js CHARM max); a charm keeps at least one stat. Every new stat rolls a tier for the item's level
 // (items.js affix tiers) and must fit an open prefix or suffix slot. The Blacksmith's crafts stay as they were.
 // Use: an item card's ✦ Craft button (pick a currency), or look through the pouch from the inventory (✦ Currency).
 const CUR_KEY='emberdeep_currency';
@@ -24,17 +25,25 @@ function storeCur(){try{localStorage.setItem(CUR_KEY,JSON.stringify(CUR));}catch
 const curCount=k=>CUR[k]||0;
 function curAdd(k,n=1){if(!CURS[k])return;CUR[k]=curCount(k)+n;storeCur();}
 // ---------- what each one does ----------
-const curEditable=it=>!!it&&it.slot!=='charm'&&it.rarity<=2&&!it.rb;
+const curEditable=it=>!!it&&it.rarity<=2&&!it.rb&&!it.uc;
+const isCharm=it=>it.slot==='charm';
+// A charm's stat count (its grand skill not counted) and the room it has.
+const charmStats=it=>it.affs.filter(a=>a.k!=='skill').length;
 const tieredAffs=it=>it.affs.filter(a=>a.t&&tiered(a.k));
 // The best tier a stat can reach on this item (item level gates T1-T3: items.js TIER_MIN_IL).
 const bestTierFor=it=>{for(let t=1;t<=TIER_N;t++)if(it.ilvl>=TIER_MIN_IL[t])return t;return TIER_N;};
 // Stats that can be added keeping the item's rarity (magic 1 + 1, rare 2 + 2), not already on it.
-function curAddPool(it,rar=it.rarity){const have=new Set(it.affs.map(a=>a.k));
-  return affPool(it).filter(k=>!have.has(k)&&(k!=='resist'||!RES_KEYS.every(x=>have.has(x)))&&affFits(it,k,rar));}
-const newAff=(it,k)=>rollAff(k,affLvl(it.ilvl,it.tier),1,{il:it.ilvl});
+function curAddPool(it,rar=it.rarity){const have=new Set(it.affs.map(a=>a.k)),fresh=k=>!have.has(k)&&(k!=='resist'||!RES_KEYS.every(x=>have.has(x)));
+  if(isCharm(it))return charmStats(it)<CHARM[it.size].max?charmPool(it,it.cls).filter(fresh):[];
+  return affPool(it).filter(k=>fresh(k)&&affFits(it,k,rar));}
+const newAff=(it,k)=>isCharm(it)?charmAff(it,k):rollAff(k,affLvl(it.ilvl,it.tier),1,{il:it.ilvl});
+// A tier's value for stat a on this item (charms: their own level and size multiplier).
+const reTier=(it,a)=>isCharm(it)?tierVal(a.k,it.ilvl,a.t,charmRm(it,a.k)):tierVal(a.k,affLvl(it.ilvl,it.tier),a.t);
 // Why a currency can't be used on this item (null: it can).
-function curBlock(k,it){if(!curEditable(it))return 'Only white, magic and rare gear';
+function curBlock(k,it){if(!curEditable(it))return 'Only white, magic and rare gear and charms';
   const n=statCount(it);
+  if(isCharm(it)){if(k==='spark'||k==='crown')return 'Not on charms';if(k==='shard')return curAddPool(it).length?null:`Holds at most ${CHARM[it.size].max} stat${CHARM[it.size].max>1?'s':''}`;
+    if(k==='cinder')return null;if(k==='ash')return charmStats(it)>=2?null:'A charm keeps at least one stat';}
   if(k==='spark')return it.rarity===0?null:'Only white items';
   if(k==='crown')return it.rarity!==1?'Only magic items':curAddPool(it,2).length?null:'No stat can be added';
   if(k==='shard')return it.rarity<1?'Only magic and rare items':curAddPool(it).length?null:'No free prefix or suffix';
@@ -44,15 +53,16 @@ function curBlock(k,it){if(!curEditable(it))return 'Only white, magic and rare g
   if(k==='star')return it.rarity<1?'Only magic and rare items':tieredAffs(it).some(a=>a.t>bestTierFor(it))?null:'Every stat is already at its best tier';
   return 'Unknown';}
 // Applies currency k to the item (pays one). Returns a short text of what happened, or null.
-function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;const l=affLvl(it.ilvl,it.tier);let msg='';
+function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';
   if(k==='spark'){const keys=pickAffKeys(curAddPool(it,1),randi(1,2),1,1);it.affs=keys.map(x=>newAff(it,x));msg='Awakened: now magic';}
   else if(k==='crown'){it.affs.push(newAff(it,pick(curAddPool(it,2))));msg='Ascended: now rare';}
   else if(k==='shard'){const a=newAff(it,pick(curAddPool(it)));it.affs.push(a);msg='Added '+affText(a,1,it.cls)+(a.t?` (T${a.t})`:'');}
-  else if(k==='cinder'){it.affs=pickAffKeys(affPool(it),randi(3,4),MAX_PRE,MAX_SUF).map(x=>newAff(it,x)).concat(Math.random()<0.3?[{k:'skill',s:randi(0,4),v:1}]:[]);msg='Every stat rerolled';}
-  else if(k==='tear'){for(const a of tieredAffs(it))a.v=tierVal(a.k,l,a.t);msg='Values rerolled, tiers kept';}
+  else if(k==='cinder'){if(isCharm(it)){const C=CHARM[it.size],sk=it.affs.filter(a=>a.k==='skill');it.affs=sk.concat(charmPool(it,it.cls).sort(()=>Math.random()-0.5).slice(0,randi(C.n[0],C.n[1])).map(x=>newAff(it,x)));}
+    else it.affs=pickAffKeys(affPool(it),randi(3,4),MAX_PRE,MAX_SUF).map(x=>newAff(it,x)).concat(Math.random()<0.3?[{k:'skill',s:randi(0,4),v:1}]:[]);msg='Every stat rerolled';}
+  else if(k==='tear'){for(const a of tieredAffs(it))a.v=reTier(it,a);msg='Values rerolled, tiers kept';}
   else if(k==='ash'){const st=it.affs.filter(a=>a.k!=='skill'),a=pick(st);it.affs.splice(it.affs.indexOf(a),1);msg='Removed '+affText(a,1,it.cls);}
-  else if(k==='star'){const best=bestTierFor(it),a=pick(tieredAffs(it).filter(x=>x.t>best));a.t--;a.v=tierVal(a.k,l,a.t);msg=`${affText(a,1,it.cls)} rose to T${a.t}`;}
-  delete it.addOpts;restat(it);CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();
+  else if(k==='star'){const best=bestTierFor(it),a=pick(tieredAffs(it).filter(x=>x.t>best));a.t--;a.v=reTier(it,a);msg=`${affText(a,1,it.cls)} rose to T${a.t}`;}
+  delete it.addOpts;if(isCharm(it))it.name=charmName(it);else restat(it);CUR[k]--;if(!CUR[k])delete CUR[k];storeCur();
   playSfx(k==='star'?'unique':'rune');return msg;}
 // ---------- drops ----------
 // Chance per kill (normal, champion pack member, champion, zone boss, act boss: those always drop some), x DIFFS loot.cur.

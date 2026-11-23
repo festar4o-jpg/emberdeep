@@ -43,7 +43,7 @@ function updateHud(){
     $('bossStg').firstElementChild.style.width=(b.staggerT>0?100:Math.min(100,(b.stagger||0)/(b.staggerMax||100)*100))+'%';$('bossStg').classList.toggle('full',b.staggerT>0);}
   else $('bossbar').classList.add('hidden');
 }
-function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;playSfx('potion');healPlayer(G.stats.life*0.45);burst(p.x,p.y,16,'#5f5',120);
+function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;playSfx('potion');healPlayer(G.stats.life*0.45*(1+(G.stats.potheal||0)/100)); /* charms: Potion Healing */burst(p.x,p.y,16,'#5f5',120);
   if(hasPw('potionReset')){p.cd.fill(0);floatText(p.x,p.y-40,'Cooldowns reset','#ff9a3a',false);}}
 
 // ---------- input ----------
@@ -146,9 +146,9 @@ function renderInv(){
   [...$('eqgrid').children].forEach((el,i)=>el.onclick=()=>{const sl=EQ_SLOTS[i],it=c.equip[sl];if(sl==='offhand'&&twoH){toast('Off Hand blocked','Your two-handed weapon needs both hands');return;}if(it)openItem(it,sl);});
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
   const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*PD()))*100);
-  $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
+  $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
     // resistances after the difficulty's penalty (red below 0, gold at the 75% cap)
-    RES_KEYS.map(k=>{const v=resOf(s,k);return [`<span style="color:${RES_COL[k]}">${RES_NAME[k]} Res</span>`,`<span style="color:${v<0?'#ff6a5a':v>=RES_CAP?'#f2d04a':'inherit'}">${Math.round(v)}%</span>`];}),
+    RES_KEYS.map(k=>{const v=resOf(s,k);return [`<span style="color:${RES_COL[k]}">${RES_NAME[k]} Res</span>`,`<span style="color:${v<0?'#ff6a5a':v>=resCap(s)?'#f2d04a':'inherit'}">${Math.round(v)}%</span>`];}),
     resPenalty()?[['Res penalty',`<span style="color:${DIFFS[curDiff()]?.col||'#ff6a5a'}">−${resPenalty()}%</span>`]]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('goldv').textContent=c.gold;$('bagCount').textContent=`${c.bag.length}/30`;
   const cells=[];for(let i=0;i<Math.max(30,c.bag.length);i++)cells.push(cellHtml(c.bag[i]));$('bag').innerHTML=cells.join('');
