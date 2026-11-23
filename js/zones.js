@@ -70,8 +70,9 @@ const ZB_ELEM={weaver:['pres',0.5],abbess:['fres',0.6],lamplighter:['fres',0.6],
   bog:['pres',0.6],thornfather:['pres',0.5],gloomhag:['lres',0.6],silt:['cres',0.5],leechking:['pres',0.6],frostjaw:['cres',0.5],avwitch:['cres',0.7],matriarch:['cres',0.6],
   vosk:['lres',0.5],ymra:['cres',0.6],pyrrhus:['fres',0.7],overseer:['fres',0.5],coil:['fres',0.7],ixa:['fres',0.7],slavemaster:['fres',0.5]};
 function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);if(ZB_ELEM[id]){e.elem=ZB_ELEM[id][0];e.elemS=ZB_ELEM[id][1];}
-  if(G.zone==='map'&&ZONES.map&&ZONES.map.map){e.hp=e.maxHp=e.maxHp*1.6;e.dmg*=1.25;const o=pick(Object.keys(ZBOSS).filter(k=>k!==id)),x=ZBOSS[o].moves.find(m=>!B.moves.includes(m));e.moves=B.moves.concat(x?[x]:[]);} // a map boss: tougher, a third mechanic
-  e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;return e;}
+  e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;if(G.zone==='map'&&ZONES.map&&ZONES.map.map){e.hp=e.maxHp=e.maxHp*1.6;e.dmg*=1.25;const o=pick(Object.keys(ZBOSS).filter(k=>k!==id)),x=ZBOSS[o].moves.find(m=>!B.moves.includes(m));e.moves=B.moves.concat(x?[x]:[]);
+    if(G.char.mapRun&&G.char.mapRun.ntype==='boss'){e.hp=e.maxHp=e.maxHp*2;e.dmg*=1.2;e.name+=' the Unbroken';}} // sigils.js: a map boss is tougher, with a third mechanic (Boss nodes: far tougher)
+  return e;}
 function makeSuper(id,x,y,depth,pack){const S=SUPERU[id],e=makeEnemy(S.base,x,y,depth,true,pack,S.affs.slice());
   e.su=id;e.name=S.name;e.hp=e.maxHp=e.maxHp*(S.hp||2.2);e.dmg*=1.15;e.r+=2;return e;}
 // Zone boss mechanics: telegraphed with the same red/orange markers as act bosses.

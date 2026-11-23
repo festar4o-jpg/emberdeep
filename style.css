@@ -300,3 +300,6 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 .pc .pcap{position:absolute;left:0;right:0;bottom:1px;font-size:8.5px;line-height:1;text-align:center;color:#e8dcc4;text-shadow:0 0 2px #000,0 0 2px #000;white-space:nowrap;overflow:hidden;}
 .pinfo .up{color:#6f6;}
 .smod{font-size:12px;line-height:1.35;}.smod.mp{color:#ff9a7a;}.smod.ms{color:#c8a0ff;}#mapList .slot{cursor:pointer}#mapList .slot.cur-ok{border-color:#ffb347}#mapList .ic small{font-size:11px;display:block;line-height:1;}
+.atlasview{overflow:auto;max-height:52vh;border:1px solid var(--edge);border-radius:8px;background:radial-gradient(circle at 50% 50%,#1a140e,#060403);touch-action:pan-x pan-y;}
+.aedge{stroke:#5a4a36;stroke-width:2;}.aedge.done{stroke:#7a9a5a;}.anode{cursor:pointer;}
+#mapList .wayb .btn.sm{max-width:150px;}

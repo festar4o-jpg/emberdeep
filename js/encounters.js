@@ -66,7 +66,7 @@ const SHRINE_T=30;
 function shrineStats(s){const b=G.p&&G.p.shr;if(!b)return;
   if(b.dmg>0)s.dmg+=40;if(b.speed>0){s.move+=30;s.aspd+=30;}if(b.armor>0)s.armor=s.armor*1.6+4*PD();}
 const shrineXp=v=>G.p&&G.p.shr&&G.p.shr.xp>0?v*1.5:v;
-function shrineText(){const b=G.p&&G.p.shr;if(!b)return '';return Object.keys(SHRINES).filter(k=>b[k]>0).map(k=>`${SHRINES[k].icon} ${SHRINES[k].short} ${Math.ceil(b[k])}s`).join('  ');}
+function shrineText(){const b=G.p&&G.p.shr;if(!b)return '';return Object.keys(SHRINES).filter(k=>b[k]>0).map(k=>`${SHRINES[k].icon} ${SHRINES[k].short} ${b[k]>9000?'(map)':Math.ceil(b[k])+'s'}`).join('  ');}
 
 // ---------- level placement ----------
 // Shrines (0-2), a cursed chest (not on boss depths) and, rarely, a treasure thief — each in its own room.
@@ -131,7 +131,7 @@ function thiefLoot(e){const d=PD(),a=actIdx(d)+1,c=G.char,n=3+Math.ceil(a/2)+(d>
 
 // ---------- per frame: buff timers, walls, chest waves, the use button ----------
 let useLabel='';
-function encounterTick(dt){const p=G.p,b=p.shr;
+function encounterTick(dt){if(typeof inMap==='function'&&inMap())mapTick(); /* sigils.js: a Shrine node's blessing */const p=G.p,b=p.shr;
   if(b){let ch=false;for(const k in b)if(b[k]>0){b[k]-=dt;if(b[k]<=0){b[k]=0;ch=true;}}if(ch)refreshStats();}
   for(const w of G.walls){w.t-=dt;if(w.t<=0){G.grid[w.k]=0;G.flowTile=-1;burst((w.i+0.5)*TILE,(w.j+0.5)*TILE,6,'#8a7050',90);}}
   G.walls=G.walls.filter(w=>w.t>0);

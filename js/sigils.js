@@ -76,30 +76,43 @@ const mapsOpen=c=>!!c&&(c.diffDone||0)>=3;
 const inMap=()=>!!(G.char&&G.char.mapRun&&G.zone==='map'&&!G.inTown);
 const mapPD=r=>75+2*r.sig.tier;
 // The map's modifiers as one table {key: value}.
-function mapModsOf(r){const o={};for(const m of r.sig.mods)o[m.k]=modV(m);return o;}
+function mapModsOf(r){const o={};for(const m of r.sig.mods.concat(r.extra||[]))o[m.k]=Math.max(o[m.k]||0,modV(m));return o;} // corrupted nodes add r.extra
 const MAPM=()=>inMap()?(G.char.mapRun.mm||(G.char.mapRun.mm=mapModsOf(G.char.mapRun))):null;
 // The zone a map is built from: a main or side zone (not an act boss arena), its boss and champions random.
 function mapSource(){const zs=Object.keys(ZONES).filter(z=>!ZONES[z].map&&ZONES[z].layout!=='boss'&&ZONES[z].act);return pick(zs);}
 function regMapZone(r){const Z=ZONES[r.src]||ZONES.a1z1,mm=mapModsOf(r);
-  ZONES.map=Object.assign({},Z,{name:'Map: '+Z.name,sub:`Tier ${r.sig.tier} · ${r.sig.mods.length} modifier${r.sig.mods.length===1?'':'s'}`,map:true,parent:null,side:null,next:null,gate:'boss',
-    key:null,captive:null,hoard:0,boss:r.boss,su:r.su,density:(Z.density||1.2)*(1+(mm.mpack||0)/100),elite:(Z.elite??0.2)*(1+(mm.melite||0)/100)});return ZONES.map;}
-function openMap(s){const c=G.char;if(!mapsOpen(c)||c.mapRun&&c.mapRun.lives>0&&!c.mapRun.done)return false;const i=SIGILS.indexOf(s);if(i<0)return false;
-  SIGILS.splice(i,1);storeSigils();const zb=Object.keys(ZBOSS),su=Object.keys(SUPERU);
-  c.mapRun={sig:s,src:mapSource(),boss:pick(zb),su:shuffle(su.slice()).slice(0,randi(1,2)),lives:SIG_LIVES,done:false,town:G.inTown?G.depth:c.depth<=25?c.depth:25};
+  const T=r.ntype&&r.ntype!=='plain'?ATLAS_TYPES[r.ntype].name+' · ':'',nm=r.sig.mods.length+(r.extra||[]).length;
+  ZONES.map=Object.assign({},Z,{name:'Map: '+Z.name,sub:`${T}Tier ${r.sig.tier} · ${nm} modifier${nm===1?'':'s'}`,map:true,parent:null,side:null,next:null,gate:'boss',
+    key:null,captive:null,hoard:r.ntype==='vault'?1:0,boss:r.boss,su:r.su,density:(Z.density||1.2)*(1+(mm.mpack||0)/100),elite:(Z.elite??0.2)*(1+(mm.melite||0)/100)});return ZONES.map;}
+// node: the Atlas node to run it on (v1.0.66; the start node when not given).
+function openMap(s,node){const c=G.char;if(!mapsOpen(c)||c.mapRun&&c.mapRun.lives>0&&!c.mapRun.done)return false;const i=SIGILS.indexOf(s);if(i<0)return false;
+  const g=atlasGraph(atlasOf(c).seed);if(node==null)node=g.start;const n=g.nodes[node];if(!n||n.type==='citadel'||!nodeOpen(c,node))return false;
+  SIGILS.splice(i,1);storeSigils();const zb=Object.keys(ZBOSS),su=Object.keys(SUPERU),nt=nodeType(c,node);
+  c.mapRun={sig:s,src:n.src,node,ntype:nt,boss:pick(zb),su:shuffle(su.slice()).slice(0,randi(1,2)),lives:mapLives(c),done:false,town:G.inTown?G.depth:c.depth<=25?c.depth:25};
+  if(nt==='shrine')c.mapRun.shrine=pick(Object.keys(SHRINES));
+  if(nt==='corrupted'){const have=new Set(s.mods.map(m=>m.k));c.mapRun.extra=shuffle(MOD_KEYS.filter(k=>!have.has(k))).slice(0,2).map(k=>({k,t:2}));}
   regMapZone(c.mapRun);if(c.zst)delete c.zst.map;closeMapDevice();startZone('map','fresh');playSfx('portal');return true;}
 // Leaving: complete (portal after the boss), failed (no lives left) or abandoned (travel elsewhere).
-function endMap(why){const c=G.char,r=c&&c.mapRun;if(!r)return;c.mapRun=null;if(c.tp&&c.tp.zid==='map')c.tp=null;if(INST.z.map){delete INST.z.map;instStore();}
+function endMap(why){const c=G.char,r=c&&c.mapRun;if(!r)return;if(r.shrine&&G.p&&G.p.shr)G.p.shr[r.shrine]=0;c.mapRun=null;if(c.tp&&c.tp.zid==='map')c.tp=null;if(INST.z.map){delete INST.z.map;instStore();}
   if(why==='fail')toast('The map collapses','No lives left: the Sigil is lost');else if(why==='abandon')toast('Your map closed','You travelled away from it');saveChar();return r;}
 function mapLeave(){const c=G.char,town=c.mapRun?c.mapRun.town:25;endMap('done');startTown(town);}
 // Map boss down: the map is complete; Sigils drop (often a tier up), the portal home opens (zones.js zoneBossDown).
 function mapComplete(e){const c=G.char,r=c.mapRun;if(!r||r.done)return;r.done=true;const M=c.maps||(c.maps={done:0,best:0});M.done++;M.best=Math.max(M.best,r.sig.tier);
-  const n=1+(Math.random()<0.4?1:0);for(let i=0;i<n;i++){const t=r.sig.tier+(Math.random()<0.35?1:Math.random()<0.25?-1:0);dropSigil(e.x+rand(-40,40),e.y+rand(-40,40),genSigil(t));}
-  toast('Map complete!',`Tier ${r.sig.tier} · ${M.done} maps done · the portal leads home`);playSfx('levelup');saveChar();}
+  const at=(dx=40)=>[e.x+rand(-dx,dx),e.y+rand(-dx,dx)],boss=r.ntype==='boss';
+  const n=1+(Math.random()<0.4?1:0)+(atl(c,'s5')?1:0)+(boss?1:0);for(let i=0;i<n;i++){const t=r.sig.tier+(Math.random()<0.35+(atl(c,'s2')?0.15:0)?1:Math.random()<0.25?-1:0);dropSigil(...at(),genSigil(t,atl(c,'s3')?(Math.random()<0.2?2:Math.random()<0.6?1:0):undefined));}
+  // the Atlas tree's Bosses branch, and Boss nodes
+  const item=(b,min)=>dropItem(...at(50),rollDrop(c,PD()+2,b,min,{act:5}));
+  if(atl(c,'b1'))item(2,0);if(atl(c,'b4'))item(2,2);if(boss){for(let i=0;i<2+(atl(c,'b3')?2:0);i++)item(3,2);dropCurrency(e,'boss');}
+  if(atl(c,'b2'))dropCurrency(e,'chest');if(atl(c,'b5')){const cats=CUR_KEYS.filter(k=>CURS[k].cat),[x,y]=at();G.loot.push({x,y,cur:pick(cats),t:0});}
+  // the Atlas: the node is done (its neighbours show), points for new special nodes and every 4 new plain ones
+  let pt='';if(r.node!=null){const A=atlasOf(c),first=!A.done[r.node];A.done[r.node]=(A.done[r.node]||0)+1;
+    if(first){if(r.ntype&&r.ntype!=='plain'){A.pts++;pt=' · +1 Atlas point';}else{A.plain++;if(A.plain%4===0){A.pts++;pt=' · +1 Atlas point';}}}}
+  toast('Map complete!',`Tier ${r.sig.tier} · ${M.done} maps done${pt} · the portal leads home`);playSfx('levelup');saveChar();}
 // ---------- Sigil drops ----------
 function dropSigil(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}G.loot.push({x,y,sig:s,t:0});playSfx('rune');}
 // From kills: maps (champions more), Hell act bosses and the endless depths once maps are open.
 function sigilDrops(e,kind){const c=G.char;if(!mapsOpen(c))return;
-  if(inMap()){const ch=kind==='elite'||kind==='su'?0.04:kind==='normal'?0.004:0;if(Math.random()<ch)dropSigil(e.x,e.y,genSigil(c.mapRun.sig.tier));return;}
+  if(inMap()){const ch=(kind==='elite'||kind==='su'?0.04:kind==='normal'?0.004:0)*(1+(atl(c,'s1')?0.15:0)+(atl(c,'s4')?0.25:0));if(Math.random()<ch)dropSigil(e.x,e.y,genSigil(c.mapRun.sig.tier));return;}
   if(kind!=='boss'&&kind!=='zboss')return;const hell=(G.depth||1)<=25&&diffHere()===2,endless=(G.depth||1)>25;
   if((hell||endless)&&Math.random()<(kind==='boss'?0.35:0.15))dropSigil(e.x,e.y,genSigil(endless?randi(1,3):1));}
 function pickSigil(l){if(!sigAdd(l.sig))return;l.taken=true;floatText(l.x,l.y-20,sigName(l.sig),SIG_COL[l.sig.rarity],false);playSfx('pickup');}
@@ -117,25 +130,118 @@ function mapStats(s){const M=MAPM();if(!M)return;if(M.pregen){s.regen*=1-M.prege
   if(M.pslow)s.move-=M.pslow;if(M.pcd)s.cdr-=M.pcd;}
 const mapResPen=()=>{const M=MAPM();return M&&M.pres||0;};
 // Loot in a map: Hell's, with the Sigil's Item Quantity (items, charms, currency) and Item Rarity on top.
-function mapLoot(){const r=G.char.mapRun,L=DIFFS[2].loot,q=1+sigQuant(r.sig)/100;return Object.assign({},L,{drop:L.drop*q,cur:L.cur*q,rar:L.rar+sigRar(r.sig),pity:100});}
+function mapLoot(){const c=G.char,r=c.mapRun,L=DIFFS[2].loot,QR=runQR(c,r),q=1+QR.q/100,cm=1+(atl(c,'r3')?0.2:0)+(atl(c,'r5')?0.3:0);return Object.assign({},L,{drop:L.drop*q,cur:L.cur*q*cm,rar:L.rar+QR.r,pity:100});}
 // ---------- the Map Device window (from the Waystone) ----------
 let mapSel=null;
 function openMapDevice(){const c=G.char;if(!mapsOpen(c))return;mapSel=null;$('mapOv').classList.remove('hidden');renderMapDevice();setPause();}
 function closeMapDevice(){$('mapOv').classList.add('hidden');setPause();}
 function renderMapDevice(){const c=G.char,r=c.mapRun,M=c.maps||{done:0,best:0};
+  $('mapTabs').innerHTML=[['atlas','Atlas'],['sigils','Sigils'],['tree',`Atlas tree${treeFree(c)>0?' ('+treeFree(c)+')':''}`]].map(([k,n])=>`<div class="tab${mapTab===k?' on':''}" data-mt="${k}">${n}</div>`).join('');
+  $('mapTabs').querySelectorAll('[data-mt]').forEach(el=>el.onclick=()=>setMapTab(el.dataset.mt));
   const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)} ${r.done?'(complete)':''}<div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
-  $('mapSub').innerHTML=`${M.done} maps done · best Tier ${M.best||'–'} · ${SIGILS.length}/${SIG_CAP} Sigils (shared by your heroes). Each map: ${SIG_LIVES} lives.`;
+  $('mapSub').innerHTML=`${M.done} maps done · best Tier ${M.best||'–'} · ${SIGILS.length}/${SIG_CAP} Sigils (shared by your heroes). Each map: ${mapLives(c)} lives.`;
+  if(mapTab==='atlas'||mapTab==='tree'){$('mapList').innerHTML=open+(mapTab==='atlas'?renderAtlas():renderTree());$('mapInfo').innerHTML='';$('mapInfo').style.display='none';
+    $('mapList').querySelectorAll('[data-n]').forEach(el=>el.onclick=()=>{atlasSel=+el.dataset.n;const sc=$('mapList').querySelector('.atlasview'),st=sc?sc.scrollLeft:0,tp=sc?sc.scrollTop:0;renderMapDevice();const s2=$('mapList').querySelector('.atlasview');if(s2){s2.scrollLeft=st;s2.scrollTop=tp;}});
+    $('mapList').querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{mapSel=SIGILS[+el.dataset.pick];renderMapDevice();});
+    if($('atlasGo'))$('atlasGo').onclick=()=>{if(!mapSel||!openMap(mapSel,atlasSel))toast('Can\'t open it','Finish or abandon your open map first');};
+    $('mapList').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{if(treeTake(c,el.dataset.t)){toast('Atlas tree',ATLAS_TREE.find(x=>x.id===el.dataset.t).name);renderMapDevice();}});
+    if($('mapBack'))$('mapBack').onclick=()=>{closeMapDevice();closeWay();regMapZone(r);startZone('map',hasInstance('map')?'tp':'fresh');};
+    if($('mapQuit'))$('mapQuit').onclick=()=>{endMap('abandon');renderMapDevice();};
+    if(mapTab==='atlas'&&atlasSel==null){const v=$('mapList').querySelector('.atlasview'),g=atlasGraph(atlasOf(c).seed),st=g.nodes[g.start];if(v&&v.clientWidth){v.scrollLeft=st.x-v.clientWidth/2;v.scrollTop=st.y-v.clientHeight/2;}}
+    return;}
+  $('mapInfo').style.display='';
   const list=SIGILS.slice().sort((a,b)=>b.tier-a.tier||b.rarity-a.rarity);
   $('mapList').innerHTML=open+(list.length?list.map(s=>`<div class="slot${mapSel===s?' cur-ok':''}" data-sig="${SIGILS.indexOf(s)}"><div class="ic" style="color:${SIG_COL[s.rarity]}">◆<small>${s.tier}</small></div><div class="info"><b style="color:${SIG_COL[s.rarity]}">${sigName(s)}</b> <span class="fdim">+${sigQuant(s)}% quantity · +${sigRar(s)}% rarity</span>${s.mods.map(m=>`<div class="smod ${MAP_MODS[m.k].p?'mp':'ms'}">${esc(modText(m))} <span class="fdim">(T${m.t})</span></div>`).join('')}</div></div>`).join(''):'<p class="fdim">No Sigils yet. Hell act bosses and zone bosses, the Endless Depths and maps drop them.</p>');
   const s=mapSel;let h='';
   if(s){h=`<b style="color:${SIG_COL[s.rarity]}">${sigName(s)}</b> <span class="fdim">power like depth ${75+2*s.tier} · area level ${areaLvl(75+2*s.tier)}</span>
     <div class="row" style="margin-top:4px">${CUR_KEYS.filter(k=>!CURS[k].cat&&!['awl','spindle','whet'].includes(k)).map(k=>{const why=curCount(k)<1?'none':sigCurBlock(k,s);return `<div class="btn sm${why?' dis':''}" data-sc="${k}" title="${esc(why||CURS[k].name)}"><span style="color:${CURS[k].col}">${CURS[k].ic}</span> ×${curCount(k)}</div>`;}).join('')}</div>
-    <div class="row"><div class="btn sm${r&&r.lives>0&&!r.done?' dis':''}" id="mapGo">🗺 Open map</div><div class="btn sm red" id="mapSalv">Discard</div></div>`;}
+    <div class="row"><div class="btn sm" id="mapGo">🗺 Pick a node on the Atlas</div><div class="btn sm red" id="mapSalv">Discard</div></div>`;}
   $('mapInfo').innerHTML=h||'<span class="fdim">Tap a Sigil to craft it or open its map. Modifiers make a map harder and add Item Quantity and Rarity.</span>';
   $('mapList').querySelectorAll('[data-sig]').forEach(el=>el.onclick=()=>{mapSel=SIGILS[+el.dataset.sig];renderMapDevice();});
   $('mapInfo').querySelectorAll('[data-sc]').forEach(el=>el.onclick=()=>{const msg=sigUseCur(el.dataset.sc,s);if(msg)toast(CURS[el.dataset.sc].name,msg);renderMapDevice();});
-  if($('mapGo'))$('mapGo').onclick=()=>{if(!openMap(s))toast('Finish or abandon your open map first');};
+  if($('mapGo'))$('mapGo').onclick=()=>setMapTab('atlas');
   if($('mapSalv'))$('mapSalv').onclick=()=>{const i=SIGILS.indexOf(s);if(i>=0){SIGILS.splice(i,1);storeSigils();mapSel=null;renderMapDevice();}};
   if($('mapBack'))$('mapBack').onclick=()=>{closeMapDevice();closeWay();regMapZone(r);startZone('map',hasInstance('map')?'tp':'fresh');};
   if($('mapQuit'))$('mapQuit').onclick=()=>{endMap('abandon');renderMapDevice();};}
 tap('mapClose',closeMapDevice);
+// ---------- the Atlas (v1.0.66) ----------
+// A map of 60 nodes per hero (c.atlas, its layout from a seed). Each node is one of the 27 zones' layouts and themes.
+// You start in the middle; completing a node's map reveals its neighbours. A Sigil can be run on any revealed node.
+// Special nodes (their bonus once, the first time): Shrine (a shrine's blessing for the whole map), Vault (a hoard
+// chest, +50% Quantity and Rarity), Boss (a far tougher map boss with much more loot), Corrupted (two extra
+// modifiers, double Quantity and Rarity). Three Citadels lie at the far edges (sealed for now: their guardians come
+// with the pinnacle boss). Atlas points: one for each special node's first clear, one for every 4 new plain nodes,
+// spent on the Atlas tree (ATLAS_TREE).
+const ATLAS_N=[10,6],ATLAS_SP=130,ATLAS_TYPES={plain:{name:'Map',col:'#b8a888'},shrine:{name:'Shrine',col:'#7ad8ff',t:"A shrine's blessing lasts the whole map"},
+  vault:{name:'Vault',col:'#f2d04a',t:'A hoard chest; +50% Item Quantity and Rarity'},boss:{name:'Boss',col:'#ff5a3a',t:'A far tougher map boss, with much more loot'},
+  corrupted:{name:'Corrupted',col:'#c050ff',t:'Two extra modifiers; double Item Quantity and Rarity'},citadel:{name:'Citadel',col:'#ffffff',t:'Sealed. Its guardian waits for the Hollow Sun to rise.'}};
+const ATLAS_CACHE={};
+function atlasGraph(seed){if(ATLAS_CACHE[seed])return ATLAS_CACHE[seed];const R=artRng(seed),N=[],[W,H]=ATLAS_N,zs=Object.keys(ZONES).filter(z=>!ZONES[z].map&&ZONES[z].layout!=='boss'&&ZONES[z].act).sort();
+  for(let j=0;j<H;j++)for(let i=0;i<W;i++)N.push({id:N.length,x:70+i*ATLAS_SP+(j%2)*ATLAS_SP*0.5+(R()-0.5)*60,y:60+j*ATLAS_SP*0.78+(R()-0.5)*44,type:'plain',src:zs[Math.floor(R()*zs.length)],nb:[]});
+  const cx=70+(W-0.5)*ATLAS_SP/2,cy=60+(H-1)*ATLAS_SP*0.39,d2=(a,b)=>(a.x-b.x)**2+(a.y-b.y)**2,link=(a,b)=>{if(a!==b&&!a.nb.includes(b.id)){a.nb.push(b.id);b.nb.push(a.id);}};
+  const start=N.slice().sort((a,b)=>((a.x-cx)**2+(a.y-cy)**2)-((b.x-cx)**2+(b.y-cy)**2))[0];
+  for(const a of N)N.filter(b=>b!==a).sort((p,q)=>d2(a,p)-d2(a,q)).slice(0,2+(R()<0.5?1:0)).forEach(b=>{if(d2(a,b)<200*200)link(a,b);});
+  // everything reachable from the start, and each node's distance (steps) from it
+  for(;;){const dist=new Map([[start.id,0]]),q=[start];while(q.length){const a=q.shift();for(const b of a.nb)if(!dist.has(b)){dist.set(b,dist.get(a.id)+1);q.push(N[b]);}}
+    const out=N.filter(a=>!dist.has(a.id));if(!out.length){for(const a of N)a.d=dist.get(a.id);break;}
+    const a=out[0],b=N.filter(x=>dist.has(x.id)).sort((p,q)=>d2(a,p)-d2(a,q))[0];link(a,b);}
+  // the three Citadels: the farthest nodes in three directions; then the special nodes
+  const ang=a=>Math.atan2(a.y-cy,a.x-cx);for(let k=0;k<3;k++){const lo=-Math.PI+k*2*Math.PI/3,hi=lo+2*Math.PI/3,c=N.filter(a=>a.type==='plain'&&ang(a)>=lo&&ang(a)<hi).sort((p,q)=>q.d-p.d)[0];if(c)c.type='citadel';}
+  const free=()=>N.filter(a=>a.type==='plain'&&a!==start&&a.d>=1);for(const [t,n] of [['shrine',7],['vault',7],['boss',6],['corrupted',5]])for(let i=0;i<n;i++){const f=free();if(!f.length)break;f[Math.floor(R()*f.length)].type=t;}
+  start.start=true;const G2={nodes:N,start:start.id,w:70*2+(W+0.5)*ATLAS_SP,h:60*2+(H-1)*ATLAS_SP*0.78};ATLAS_CACHE[seed]=G2;return G2;}
+const atlasOf=c=>{const A=c.atlas&&typeof c.atlas==='object'?c.atlas:(c.atlas={});if(!(A.seed>0))A.seed=1+Math.floor(Math.random()*1e9);
+  if(!A.done||typeof A.done!=='object')A.done={};if(!(A.pts>=0))A.pts=0;if(!A.tree||typeof A.tree!=='object')A.tree={};if(!(A.plain>=0))A.plain=0;return A;};
+const nodeDone=(c,id)=>!!atlasOf(c).done[id];
+// Revealed: the start, every completed node and their neighbours.
+function nodeOpen(c,id){const A=atlasOf(c),g=atlasGraph(A.seed),n=g.nodes[id];if(!n)return false;if(n.start||A.done[id])return true;return n.nb.some(b=>A.done[b]||g.nodes[b].start);}
+// A node's special bonus only counts the first time.
+const nodeType=(c,id)=>{const n=atlasGraph(atlasOf(c).seed).nodes[id];return n&&!nodeDone(c,id)?n.type:'plain';};
+// ---------- the Atlas tree ----------
+const ATLAS_TREE=[
+  {id:'s1',br:'Sigils',name:'Sigil Seekers',t:'+15% Sigil drops in maps'},{id:'s2',br:'Sigils',name:'Ascending Path',t:'Sigils from map bosses: 15% more often a tier higher'},
+  {id:'s3',br:'Sigils',name:'Inscribed',t:'Dropped Sigils are more often magic or rare'},{id:'s4',br:'Sigils',name:'Sigil Hoard',t:'+25% Sigil drops in maps'},
+  {id:'s5',br:'Sigils',name:'Twin Sigils',t:'Map bosses drop one more Sigil'},
+  {id:'r1',br:'Riches',name:'Plunder',t:'+6% Item Quantity in maps'},{id:'r2',br:'Riches',name:'Gilded Halls',t:'+10% Item Rarity in maps'},
+  {id:'r3',br:'Riches',name:'Currency Hunter',t:'+20% crafting currency in maps'},{id:'r4',br:'Riches',name:'Plenty',t:'+8% Item Quantity in maps'},
+  {id:'r5',br:'Riches',name:'Starfall',t:'+30% crafting currency in maps'},
+  {id:'d1',br:'Danger',name:'Thrill Seeker',t:'Map modifiers give 15% more Quantity and Rarity'},{id:'d2',br:'Danger',name:'Second Wind',t:'+1 life in every map'},
+  {id:'d3',br:'Danger',name:'Feeding Rot',t:'Corrupted nodes give 50% more Quantity and Rarity'},{id:'d4',br:'Danger',name:'Deeper Thrill',t:'Map modifiers give 25% more Quantity and Rarity'},
+  {id:'d5',br:'Danger',name:'Unbroken',t:'+1 life in every map'},
+  {id:'b1',br:'Bosses',name:'Trophy Hunter',t:'Map bosses drop one more item'},{id:'b2',br:'Bosses',name:'Bounty',t:'Map bosses drop one more crafting currency'},
+  {id:'b3',br:'Bosses',name:"Hunter's Mark",t:'Boss nodes: two more rare items'},{id:'b4',br:'Bosses',name:'Spoils',t:'Map bosses drop one more item, rare or better'},
+  {id:'b5',br:'Bosses',name:'Catalyst Vein',t:'Map bosses always drop a catalyst'}];
+const ATL_BR=['Sigils','Riches','Danger','Bosses'];
+const atl=(c,id)=>!!(c&&atlasOf(c).tree[id]);
+const treeSpent=c=>Object.keys(atlasOf(c).tree).length;
+const treeFree=c=>atlasOf(c).pts-treeSpent(c);
+// A passive needs the one before it in its branch.
+function treeCan(c,id){const i=ATLAS_TREE.findIndex(x=>x.id===id),n=ATLAS_TREE[i];if(!n||atl(c,id)||treeFree(c)<1)return false;const prev=ATLAS_TREE[i-1];return !prev||prev.br!==n.br||atl(c,prev.id);}
+function treeTake(c,id){if(!treeCan(c,id))return false;atlasOf(c).tree[id]=1;saveChar();return true;}
+// Map lives with the tree.
+const mapLives=c=>SIG_LIVES+(atl(c,'d2')?1:0)+(atl(c,'d5')?1:0);
+// A run's Item Quantity / Rarity: the Sigil's tier and modifiers (the tree's Danger branch on the modifiers), extra
+// corrupted modifiers, the node's bonus, and the tree's Riches branch.
+function runQR(c,r){const s=r.sig,mods=s.mods.concat(r.extra||[]),mq=mods.reduce((a,m)=>a+modQ(m),0)*(1+(atl(c,'d1')?0.15:0)+(atl(c,'d4')?0.25:0));
+  let q=2*s.tier+mq,ra=mq*0.7;if(r.ntype==='vault'){q+=50;ra+=50;}if(r.ntype==='corrupted'){const k=atl(c,'d3')?2.5:2;q*=k;ra*=k;}
+  q+=(atl(c,'r1')?6:0)+(atl(c,'r4')?8:0);ra+=atl(c,'r2')?10:0;return {q:Math.round(q),r:Math.round(ra)};}
+// ---------- node bonuses during the run ----------
+function mapTick(){const c=G.char,r=c.mapRun;if(!r||!r.shrine||!G.p)return;const b=G.p.shr||(G.p.shr={});if(!(b[r.shrine]>9000)){b[r.shrine]=99999;refreshStats();}}
+// The Atlas window: the map of nodes, the selected node, and the Sigil to run there.
+let atlasSel=null,mapTab='atlas';
+function setMapTab(t){mapTab=t;renderMapDevice();}
+function renderAtlas(){const c=G.char,A=atlasOf(c),g=atlasGraph(A.seed),N=g.nodes,vis=N.filter(n=>nodeOpen(c,n.id));
+  const vset=new Set(vis.map(n=>n.id));let lines='';for(const a of vis)for(const b of a.nb)if(b>a.id&&vset.has(b)){const o=N[b];lines+=`<line x1="${a.x|0}" y1="${a.y|0}" x2="${o.x|0}" y2="${o.y|0}" class="aedge${A.done[a.id]&&A.done[b]?' done':''}"/>`;}
+  const dots=vis.map(n=>{const done=A.done[n.id],T=ATLAS_TYPES[n.type],col=done&&n.type!=='citadel'?'#6a8a5a':T.col,r=n.type==='citadel'?15:n.start?13:11;
+    return `<g class="anode${atlasSel===n.id?' sel':''}" data-n="${n.id}"><circle cx="${n.x|0}" cy="${n.y|0}" r="${r}" fill="${done?'#1c2a18':'#120e0a'}" stroke="${col}" stroke-width="${atlasSel===n.id?4:2}"/>`+
+      `<text x="${n.x|0}" y="${(n.y|0)+4}" text-anchor="middle" fill="${col}" font-size="11">${n.type==='citadel'?'♜':n.start?'⌂':done?'✓':n.type==='plain'?'':T.name[0]}</text></g>`;}).join('');
+  const sv=`<div class="atlasview"><svg width="${g.w|0}" height="${g.h|0}" viewBox="0 0 ${g.w|0} ${g.h|0}">${lines}${dots}</svg></div>`;
+  const n=atlasSel!=null?N[atlasSel]:null;let info='';
+  if(n){const Z=ZONES[n.src],t=nodeType(c,n.id),T=ATLAS_TYPES[n.type];
+    info=`<b style="color:${T.col}">${T.name}${n.type==='citadel'?'':': '+esc(Z.name)}</b> <span class="fdim">${A.done[n.id]?'· done '+A.done[n.id]+'×':''}${n.start?' · the start':''}</span>${T.t?`<div class="fdim">${esc(T.t)}${t!==n.type&&n.type!=='citadel'?' (used up)':''}</div>`:''}`;
+    if(n.type!=='citadel'){const sel=mapSel&&SIGILS.includes(mapSel)?mapSel:null,list=SIGILS.slice().sort((a,b)=>b.tier-a.tier||b.rarity-a.rarity).slice(0,12);
+      info+=`<div class="row" style="margin-top:4px">${list.map(s=>`<div class="btn sm${s===sel?' on':''}" data-pick="${SIGILS.indexOf(s)}" style="color:${SIG_COL[s.rarity]}">◆T${s.tier}${s.mods.length?' ·'+s.mods.length:''}</div>`).join('')||'<span class="fdim">No Sigils</span>'}</div>`+
+        `<div class="row"><div class="btn sm${sel?'':' dis'}" id="atlasGo">🗺 Run ${sel?sigName(sel):'(pick a Sigil)'}</div></div>`;}}
+  return sv+`<div class="pinfo">${info||'<span class="fdim">Tap a node. Completing a map reveals the nodes next to it.</span>'}</div>`;}
+function renderTree(){const c=G.char,A=atlasOf(c);
+  return `<p class="sub">Atlas points: <b>${treeFree(c)}</b> free of ${A.pts} · one for each special node's first clear, one per 4 new plain nodes</p>`+
+    ATL_BR.map(br=>`<div class="wayrow"><div class="wayn">${br}</div><div class="wayb">${ATLAS_TREE.filter(x=>x.br===br).map(x=>`<div class="btn sm${atl(c,x.id)?' on':treeCan(c,x.id)?'':' dis'}" data-t="${x.id}" title="${esc(x.t)}">${atl(c,x.id)?'✓ ':''}${esc(x.name)}<small style="display:block;font-size:10px;opacity:.8">${esc(x.t)}</small></div>`).join('')}</div></div>`).join('');}
