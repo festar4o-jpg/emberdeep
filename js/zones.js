@@ -204,10 +204,10 @@ const CAPTIVES={pilgrim:{name:'Captive Pilgrim',who:'Pilgrim',free:'The pilgrim 
 const FEAT_LABEL={wp:'🌀 Waypoint',hchest:'Open the hidden chest',seal:'✦ Light the seal',captive:'Free the captive',key:''};
 function zoneFeat(kind,x,y){return {kind,x,y,r:22,done:false,use:FEAT_USE[kind],label:FEAT_LABEL[kind],zdraw:FEAT_DRAW[kind]};}
 const FEAT_USE={
-  wp(f){unlockWp();openWay();},
-  hchest(f){f.done=true;const c=G.char,d=G.depth,n=f.hoard?5:2;for(let k=0;k<n;k++)dropItem(f.x+rand(-40,40),f.y+rand(-30,40),rollDrop(c,d+1,f.hoard?2:1,k===0?2:0,{act:dropAct(d)}));
+  wp(f){unlockWp();playSfx('waypoint');openWay();},
+  hchest(f){f.done=true;playSfx('chest');const c=G.char,d=G.depth,n=f.hoard?5:2;for(let k=0;k<n;k++)dropItem(f.x+rand(-40,40),f.y+rand(-30,40),rollDrop(c,d+1,f.hoard?2:1,k===0?2:0,{act:dropAct(d)}));
     for(let k=0;k<(f.hoard?8:4);k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),Math.round(d*randi(4,9)));dropStones({x:f.x,y:f.y},'elite');burst(f.x,f.y,24,'#f2d04a',200);toast(f.hoard?ZONES[G.zone].hoardName||'A hoard!':'A hidden cache!','');},
-  seal(f){f.done=true;const S=zst(G.char,G.zone);S.seals=(S.seals||0)+1;burst(f.x,f.y,30,'#9ab0ff',220);G.fx.push({type:'ring',x:f.x,y:f.y,r0:10,r1:140,t:0,max:0.6,col:'#9ab0ff'});
+  seal(f){f.done=true;playSfx('shrine');const S=zst(G.char,G.zone);S.seals=(S.seals||0)+1;burst(f.x,f.y,30,'#9ab0ff',220);G.fx.push({type:'ring',x:f.x,y:f.y,r0:10,r1:140,t:0,max:0.6,col:'#9ab0ff'});
     if(S.seals>=3){G.portal.active=true;toast('All seals lit','The way on is open');}else toast(`Seal lit (${S.seals}/3)`,'');saveChar();},
   captive(f){if(G.enemies.some(e=>!e.dead&&e.pack==='captive')){toast('Guards nearby','Deal with them first');return;}
     f.done=true;const c=G.char,K=CAPTIVES[ZONES[G.zone].captive]||CAPTIVES.pilgrim;burst(f.x,f.y,24,'#f2d04a',160);toast(K.free,K.say);questDone(K.quest);

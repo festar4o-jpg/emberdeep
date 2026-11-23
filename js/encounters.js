@@ -85,8 +85,8 @@ function nearFeat(){const p=G.p;let best=null,bd=70;
 function useFeature(){const f=G.nearFeat,p=G.p;if(G.inTown&&G.elderNear&&!G.paused)return openQuests(); /* zones.js */
   if(!f||G.paused||p.dead||G.inTown)return;if(f.use){f.use(f);G.nearFeat=null;return;}
   if(f.kind==='shrine'&&!f.used){const S=SHRINES[f.type];f.used=true;(p.shr||(p.shr={}))[f.type]=SHRINE_T;refreshStats();
-    toast(S.name,S.buff+' for 30s');G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:110,t:0,max:0.5,col:S.col});burst(f.x,f.y,30,S.col,200);}
-  else if(f.kind==='chest'&&f.state==='idle'){f.state='waves';toast('The chest is cursed!','Survive 3 waves');G.shake=8;nextWave(f);}
+    toast(S.name,S.buff+' for 30s');playSfx('shrine');G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:110,t:0,max:0.5,col:S.col});burst(f.x,f.y,30,S.col,200);}
+  else if(f.kind==='chest'&&f.state==='idle'){f.state='waves';playSfx('chest');playSfx('warn',0.3);toast('The chest is cursed!','Survive 3 waves');G.shake=8;nextWave(f);}
   G.nearFeat=null;}
 const chestPack=f=>'chest'+G.feats.indexOf(f)+'-'+f.wave;
 // Wave 1: a pack. Wave 2: a pack and a half. Wave 3: an elite pack with affixes.

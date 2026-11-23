@@ -26,11 +26,11 @@ function renderWay(){const M=wayMax(),cur=G.depth;
   $('wayList').innerHTML=h;
   $('wayModes').querySelectorAll('[data-m]').forEach(el=>el.onclick=()=>setWayMode(el.dataset.m));
   $('wayList').querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.d,false));
-  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();startZone(z,ZONES[z].layout==='boss'?wayMode:'fresh');});
+  $('wayList').querySelectorAll('[data-z]').forEach(el=>el.onclick=()=>{const z=el.dataset.z;closeWay();playSfx('portal');startZone(z,ZONES[z].layout==='boss'?wayMode:'fresh');});
   $('wayList').querySelectorAll('[data-town]').forEach(el=>el.onclick=()=>wayGo(+el.dataset.town,true));
   $('wayList').querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>{wayEnd=clamp(wayEnd+ +el.dataset.e,26,M);renderWay();});}
 // Travel. Returns false for a depth this hero hasn't reached.
-function wayGo(d,town){if(!G.char||d<1||d>wayMax())return false;closeWay();
+function wayGo(d,town){if(!G.char||d<1||d>wayMax())return false;closeWay();playSfx('portal');
   if(town){if(!(G.inTown&&actIdx(d)===actIdx(G.depth)&&cycleOf(d)===cycleOf(G.depth)))startTown(d);return true;}
   startDepth(d,d%5===0?wayMode:'all');return true;}
 // From the pause menu, anywhere outside a boss fight: back to this act's town (zones are kept for the return portal).

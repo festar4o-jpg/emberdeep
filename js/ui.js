@@ -43,7 +43,7 @@ function updateHud(){
     $('bossStg').firstElementChild.style.width=(b.staggerT>0?100:Math.min(100,(b.stagger||0)/(b.staggerMax||100)*100))+'%';$('bossStg').classList.toggle('full',b.staggerT>0);}
   else $('bossbar').classList.add('hidden');
 }
-function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;healPlayer(G.stats.life*0.45);burst(p.x,p.y,16,'#5f5',120);
+function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;playSfx('potion');healPlayer(G.stats.life*0.45);burst(p.x,p.y,16,'#5f5',120);
   if(hasPw('potionReset')){p.cd.fill(0);floatText(p.x,p.y-40,'Cooldowns reset','#ff9a3a',false);}}
 
 // ---------- input ----------

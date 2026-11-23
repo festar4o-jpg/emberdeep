@@ -35,7 +35,7 @@ function demonBlast(e){G.blasting=true;try{aoe(e.x,e.y,80,G.stats.explode/100,{s
   burst(e.x,e.y,16,'#ff3a2a',200);G.fx.push({type:'ring',x:e.x,y:e.y,r0:8,r1:85,t:0,max:0.25,col:'#ff4a2a'});}
 function aggroPack(e){if(e.aggro)return;for(const o of G.enemies)if(o.pack===e.pack)o.aggro=true;e.aggro=true;}
 function killEnemy(e){
-  e.dead=true;stainFloor(e);addCorpse(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y,e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);
+  e.dead=true;if(e.type!=='boss')playSfx(['bone','ice','chitin'].includes(matOf(e))?'shatter':'kill');stainFloor(e);addCorpse(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y,e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);
   const T0=ETYPES[e.type];
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
@@ -80,7 +80,7 @@ function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}
 // Dodge: a quick dash (about 140px) in the move direction (or facing), untouchable while it lasts.
 const DODGE_CD=1.4,DODGE_DUR=0.26,DODGE_SPD=540;
 function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
-  const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;
+  const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;playSfx(G.char&&G.char.cls==='arcanist'?'blink':'dodge');
   if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
     const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
     p.dodge={t:0,dur:0.14,a,blink:true};p.face=a;burst(x0,y0,14,'#c48bff',160);burst(p.x,p.y,14,'#c48bff',160);G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:40,t:0,max:0.2,col:'#c48bff'});return true;}
@@ -88,16 +88,16 @@ function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin
 const BLINK_DIST=175;
 function dmgPlayer(raw,src){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
-  if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
+  if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
-  const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
+  const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
   if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
   checkDeath(p);return true;
 }
-function checkDeath(p){if(p.hp<=0&&!p.dead){p.hp=0;p.dead=true;setTimeout(()=>{if(G.p!==p||!p.dead)return;G.paused=true;$('deathOv').classList.remove('hidden');},600);}}
+function checkDeath(p){if(p.hp<=0&&!p.dead){p.hp=0;p.dead=true;playSfx('death');setTimeout(()=>{if(G.p!==p||!p.dead)return;G.paused=true;$('deathOv').classList.remove('hidden');},600);}}
 // Lava ignores armor and block.
 function burnPlayer(v,col){const p=G.p;if(p.dead)return;const d=Math.max(1,Math.round(v));p.hp-=d;p.hurt=Math.max(p.hurt,0.12);floatText(p.x+rand(-6,6),p.y-p.r-8,d,col||'#ff9a3a',false);checkDeath(p);}
 function slowPlayer(amt,t){const p=G.p;p.slowAmt=Math.max(p.slowT>0?p.slowAmt:0,amt);p.slowT=Math.max(p.slowT||0,t);}
@@ -112,7 +112,7 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst
 
 function gainXp(v){
   const c=G.char;if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
-  while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
+  while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
     const newSk=SKILL_REQ.indexOf(c.lvl);toast('Level '+c.lvl+'!',newSk>0?'New skill available — tap ✨':'+1 skill point');
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
@@ -187,6 +187,7 @@ function update(dt){
   if(p.atk){p.atk.t+=dt;if(p.atk.t>=p.atk.dur)p.atk=null;}
   if(p.slowT>0){p.slowT-=dt;if(p.slowT<=0)p.slowAmt=0;}
   if(!p.dead){p.hp=Math.min(s.life,p.hp+s.regen*dt);p.res=Math.min(s.res,p.res+C.regen*dt);}
+  heartTick(dt,p.dead?0:p.hp,s.life); // sfx.js: heartbeat at low life
   // movement
   const [mx,my]=moveInput(),ml=Math.hypot(mx,my);if(p.dodgeCd>0)p.dodgeCd-=dt;
   if(p.dead){}
@@ -279,9 +280,9 @@ function update(dt){
   // loot
   for(const l of G.loot){l.t+=dt;if(p.dead||l.taken||(l.item&&lootHidden(l.item)))continue;const d=Math.hypot(l.x-p.x,l.y-p.y);
     if(l.gold&&d<60){l.x+=(p.x-l.x)*Math.min(1,dt*10);l.y+=(p.y-l.y)*Math.min(1,dt*10);}
-    if(d<32){if(l.gem)pickStone(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
+    if(d<32){if(l.gem)pickStone(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
       else if(autoSalvages(G.char,l.item)){const r=autoSalvage(G.char,l.item);l.taken=true;floatText(l.x,l.y-20,`+${r.gold}🪙 ${matText(r.mats)}`,RCOL[0],false);}
-      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;noteSetPiece(l.item);floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
+      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
       else if(G.bagFullT<=0){G.bagFullT=3;toast('Bag is full','Salvage items in 🎒');}}}
   G.loot=G.loot.filter(l=>!l.taken);
   // fx

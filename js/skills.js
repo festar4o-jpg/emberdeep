@@ -69,7 +69,8 @@ function skillCd(i){const sk=SKILLS[G.char.cls][i],w=G.char.cls==='warden';
 // Attack animation: style from the weapon archetype (swing, stab, heavy, flick, thrust); duration fits inside the attack interval.
 const ATK_DUR={swing:0.24,stab:0.14,heavy:0.46,flick:0.2,thrust:0.28};
 function startAtk(style,hand,i){const p=G.p,s=G.stats;if(!style){const w=wOf(G.char.equip.mainhand)||FIST;style=w.anim;}
-  const dur=Math.min(ATK_DUR[style]||0.24,i===0?skillCd(0)*0.95:0.5);p.atk={style,hand:hand||'mh',t:0,dur};}
+  const dur=Math.min(ATK_DUR[style]||0.24,i===0?skillCd(0)*0.95:0.5);p.atk={style,hand:hand||'mh',t:0,dur};
+  if(i===0&&G.char.cls==='warden')skillSfx('warden',0,style);} // sfx.js: the weapon's whoosh
 function tryCast(i){
   const p=G.p;if(G.paused||!p||p.dead)return;
   const r=rk(i);if(r<=0||p.cd[i]>0||p.leap)return;
@@ -81,6 +82,6 @@ function tryCast(i){
   p.cd[i]=skillCd(i);p.cdMax[i]=p.cd[i];
   if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);
     if(combo('Eye of the Storm'))for(let j=1;j<5;j++)if(j!==i&&p.cd[j]>0)p.cd[j]=Math.max(0,p.cd[j]-1);}
-  sk.cast(r);
+  sk.cast(r);skillSfx(G.char.cls,i); // sfx.js
   if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
 }

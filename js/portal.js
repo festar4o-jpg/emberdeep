@@ -71,14 +71,14 @@ function restoreInstance(zid,mode){const I=INST.z[zid];if(!I||!hasInstance(zid))
 function bossFightOn(){const b=G.boss&&!G.boss.dead?G.boss:G.zboss&&!G.zboss.dead?G.zboss:null;return !!(b&&b.aggro&&!G.p.dead);}
 function castPortal(){const p=G.p;if(!G.char||!p||G.paused||p.dead||G.inTown||p.tpCast)return false;
   if(bossFightOn()){toast('No portal now','Not during a boss fight');return false;}
-  p.tpCast={t:0};return true;}
+  p.tpCast={t:0};playSfx('tpcast');return true;}
 function portalInterrupt(){const p=G.p;if(p&&p.tpCast){p.tpCast=null;floatText(p.x,p.y-44,'Interrupted','#ff9a6a',false);}}
 // Off to town. Zones are kept for the return portal; the older depth levels are rebuilt on the way back.
-function openPortal(){const p=G.p,c=G.char;burst(p.x,p.y,30,'#7ab8ff',220);
+function openPortal(){const p=G.p,c=G.char;playSfx('portal');burst(p.x,p.y,30,'#7ab8ff',220);
   if(G.zone&&ZONES[G.zone]){c.tp={zid:G.zone,x:Math.round(p.x),y:Math.round(p.y)};saveInstance();}else c.tp=null;
   startTown(G.depth);}
 // Through the return portal in town.
-function takePortalBack(){const c=G.char;if(!c.tp||!ZONES[c.tp.zid])return;startZone(c.tp.zid,'tp');}
+function takePortalBack(){const c=G.char;if(!c.tp||!ZONES[c.tp.zid])return;playSfx('portal');startZone(c.tp.zid,'tp');}
 function portalTick(dt){const p=G.p,C=p.tpCast;
   if(keys.KeyT&&!portalTick.key)castPortal();portalTick.key=!!keys.KeyT;
   if(C){if(p.dead||G.inTown||bossFightOn())p.tpCast=null;

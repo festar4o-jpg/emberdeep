@@ -100,7 +100,7 @@ function dropStones(e,kind){const d=G.depth,[gc,rc]=STONE_DROP[kind];
   if(Math.random()<rc)dropStone(e.x+rand(-20,20),e.y+rand(-20,20),rollRune(d));}
 function dropStone(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,gem:s,t:0};G.loot.push(l);dropSfx(l);}
 // Walking over a gem or rune: straight into the pouch (no bag space needed).
-function pickStone(l){const c=G.char,s=l.gem;pouchAdd(c,s);l.taken=true;floatText(l.x,l.y-20,stoneName(s),stoneCol(s),false);
+function pickStone(l){const c=G.char,s=l.gem;pouchAdd(c,s);l.taken=true;playSfx('pickup');floatText(l.x,l.y-20,stoneName(s),stoneCol(s),false);
   if(s.r&&!BOOK.runes[s.r]){const before=Object.keys(RUNEBINDS).filter(recipeKnown);BOOK.runes[s.r]=true;storeBook();
     const now=Object.keys(RUNEBINDS).filter(k=>recipeKnown(k)&&!before.includes(k));
     toast(`New rune: ${RUNES[s.r].name}`,now.length?`Recipe revealed: ${now.map(k=>RUNEBINDS[k].name).join(', ')} 📖`:'Check the Runebind book in your 💎 pouch');}}

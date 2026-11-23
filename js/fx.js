@@ -108,8 +108,9 @@ const MAT={flesh:{blood:'#5e0a06',spray:'#8a1410'},bone:{spray:'#b8ae90',sparks:
 function part(x,y,vx,vy,life,col,s,extra){if(G.parts.length>420)return;const q={x,y,vx,vy,life,max:life,col,s};if(extra)Object.assign(q,extra);G.parts.push(q);}
 // Struck: a spray along the blow, sparks off armour, bone and ice, a splat that lingers on the floor; heavy blows
 // (crits, two-handers, big chunks of life) also freeze the action for a few frames (hit-stop) and shake the screen.
-function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const M=MAT[matOf(e)],p=G.p,a=Math.atan2(e.y-p.y,e.x-p.x),heavy=!!(crit||(opts&&opts.kb>=95)||d>=e.maxHp*0.25);
+function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const mat=matOf(e),M=MAT[mat],p=G.p,a=Math.atan2(e.y-p.y,e.x-p.x),heavy=!!(crit||(opts&&opts.kb>=95)||d>=e.maxHp*0.25);
   const ox=e.x-Math.cos(a)*e.r*0.4,oy=e.y-Math.sin(a)*e.r*0.4;
+  if(!(opts&&opts.splashed)){playSfx(mat);if(crit)playSfx('crit');} // sfx.js: a hit sound by material
   for(let k=0;k<(heavy?9:5);k++){const b=a+fr(-0.7,0.7),v=fr(60,200)*(heavy?1.3:1);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.25,0.5),M.spray,fr(1.5,3));}
   const sp=M.sparks||(e.elite||e.shieldT>0?0.5:0);
   for(let k=0;k<(sp?Math.round((heavy?8:4)*sp)+1:0);k++){const b=a+Math.PI+fr(-1.2,1.2),v=fr(150,340);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.12,0.28),M.sparkCol||'#ffe0a0',fr(1.2,2.2));}
@@ -142,7 +143,7 @@ const TRAIL={fire:[['#ffb040',0.7,1],['#2a1a12',0.35,0]],ice:[['#dff4ff',0.5,1]]
 function projTrail(q){const el=q._el!==undefined?q._el:(q._el=elementOf(q.col));const T=el&&TRAIL[el];if(!T)return;
   for(const [col,ch,hot] of T)if(fxRnd()<ch){const a=fr(0,TAU),v=fr(5,30);part(q.x+fr(-q.r,q.r)*0.6,q.y+fr(-q.r,q.r)*0.6,Math.cos(a)*v-q.vx*0.08,Math.sin(a)*v-q.vy*0.08,hot?fr(0.2,0.45):fr(0.5,0.9),col,hot?fr(1.2,2.4):fr(5,9),hot?null:{soft:1});}}
 // Explosion: a white-hot flash, a swelling fireball, a ring of smoke and flying embers (and light, see light.js).
-function fxExplosion(x,y,r,col){col=col||'#ff8a2a';G.fx.push({type:'boom',x,y,r,t:0,max:0.55,col});
+function fxExplosion(x,y,r,col){col=col||'#ff8a2a';playSfx('boom');G.fx.push({type:'boom',x,y,r,t:0,max:0.55,col});
   for(let k=0;k<22;k++){const a=fr(0,TAU),v=fr(100,320);part(x,y,Math.cos(a)*v,Math.sin(a)*v,fr(0.3,0.7),k%2?col:'#ffe0a0',fr(1.5,3));}dustPuff(x,y,r*0.5,6,'#3a2a20');}
 // Ground torn open (Earthshatter, Leap Slam): dark cracks glowing from inside, fading out.
 function fxCracks(x,y,r,col){const L=[];for(let k=0;k<9;k++){let a=k/9*TAU+fr(-0.2,0.2),px=0,py=0;const pts=[[0,0]];for(let s=0;s<4;s++){a+=fr(-0.4,0.4);const d=r*fr(0.18,0.3);px+=Math.cos(a)*d;py+=Math.sin(a)*d;pts.push([px,py]);}L.push(pts);}
