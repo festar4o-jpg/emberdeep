@@ -59,6 +59,7 @@ const WEAPONS={
   rod:{name:'Rod',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,pierce:1,anim:'flick',bases:['Sand Rod','Bog Rod','Ice Rod','Magma Rod']},
   thornstaff:{name:'Thornstaff',cls:'arcanist',act:3,hands:2,dmg:1.35,spd:0.85,spell:10,splash:35,anim:'thrust',bases:['Thornstaff','Frostthorn Staff','Emberthorn Staff']},
   runewand:{name:'Runewand',cls:'arcanist',act:4,hands:1,dmg:0.9,spd:1.25,skill:1,anim:'flick',bases:['Runewand','Ember Runewand']},
+  spellblade:{name:'Spellblade',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,spell:8,crit:2,anim:'flick',bases:['Spellblade','Bog Spellblade','Frost Spellblade','Sunfire Spellblade']}, // v1.0.71
   demonstaff:{name:'Demon Staff',cls:'arcanist',act:5,hands:2,dmg:1.45,spd:0.85,spell:15,explode:40,anim:'thrust',bases:['Demon Staff']}
 };
 const FIST={name:'Fists',hands:1,dmg:1,spd:1,arc:1.1,reach:72,anim:'swing'};
@@ -117,6 +118,7 @@ const ICON={
   demonblade:'<path d="M8 24L24 6l3-1-1 3-16 17z" fill="#3a0f10" stroke="#e0453a"/><path d="M13 19l-1-3M17 15l-1-3M21 11l-1-3" stroke="#e0453a" stroke-width="1.6" stroke-linecap="round"/><path d="M6 19.5l6.5 6.5" stroke="#8a1a1a" stroke-width="2.5" stroke-linecap="round"/><path d="M9 23l-4 4" stroke="#1a0a0a" stroke-width="3" stroke-linecap="round"/><circle cx="4.5" cy="27.5" r="1.8" fill="#ff5a3a"/>',
   rod:'<path d="M7 27L21 11" stroke="#b08a5a" stroke-width="3" stroke-linecap="round"/><path d="M24 3l3.5 5-3.5 5.5-3.5-5.5z" fill="#7fe0ff" stroke="#2e7ca8"/>',
   thornstaff:'<path d="M9 29L20 8" stroke="#5a4a2a" stroke-width="3" stroke-linecap="round"/><path d="M12 23l-3-1M15 17h3M17 13l-3-1" stroke="#8ae05a" stroke-width="1.6" stroke-linecap="round"/><circle cx="21.5" cy="6.5" r="4" fill="#8ae05a" stroke="#3a7a2a"/>',
+  spellblade:'<path d="M7 27l3-3" stroke="#3a2a4a" stroke-width="3" stroke-linecap="round"/><path d="M8 21l4 4" stroke="#8a7444" stroke-width="2"/><path d="M11 22L25 7l1 2-13 15z" fill="#b8a8e0" stroke="#5a4a7a" stroke-width="1"/><circle cx="24" cy="8" r="2.5" fill="#d8a0ff" opacity=".8"/>',
   runewand:'<path d="M8 26L20 12" stroke="#9fc4e8" stroke-width="3" stroke-linecap="round"/><path d="M11 22l2-1M14 18.5l2-1M17 15l2-1" stroke="#2e7ca8" stroke-width="1.2"/><circle cx="22" cy="9" r="3.5" fill="#7ff0ff" stroke="#2e7ca8"/>',
   demonstaff:'<path d="M9 29L20 10" stroke="#3a1a1a" stroke-width="3" stroke-linecap="round"/><circle cx="21.5" cy="8" r="4.5" fill="#e8dcc4" stroke="#5a1a1a"/><path d="M18.5 5C16 3 16 1 17 0M24.5 5C27 3 27 1 26 0" stroke="#8a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="20" cy="8" r="1" fill="#ff3a2a"/><circle cx="23" cy="8" r="1" fill="#ff3a2a"/>',
   charm_small:'<path d="M16 9l6 7-6 7-6-7z" fill="#6f8f5a" stroke="#2f3f24" stroke-width="1.4"/><circle cx="16" cy="16" r="2" fill="#d8f0b0"/>',

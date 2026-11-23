@@ -1,15 +1,18 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;} /* +% damage with this skill (G.sk: the skill this hit comes from) */const crit=Math.random()*100<s.crit;if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;}if(G.p.souls&&hasPw('soulHarvest'))d*=1+0.02*G.p.souls; /* +% damage with this skill (G.sk: the skill this hit comes from) */const crit=Math.random()*100<s.crit||G.sk===2&&hasPw('whirlCrit');if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100; /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
+  if(G.sk===4&&hasPw('shatterArmor'))e.brokenUntil=G.time+5;
+  if(G.sk===0&&hasPw('cleaveBleed')&&!opts.dot&&!opts.splashed){const dps=r.d*0.8/3;e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
+  if(G.sk===0&&hasPw('boltChain')&&!opts.chained&&!opts.splashed&&!opts.dot){const o=nearest(e.x,e.y,220,new Set([e]));if(o){G.fx.push({type:'bolt',pts:[{x:e.x,y:e.y},{x:o.x,y:o.y}],t:0,max:0.18});hitEnemy(o,mult*0.6,{chained:true});}}
   if(st.bleed>0&&!opts.dot&&Math.random()*100<st.bleed){const dps=r.d*0.8/3;e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
   if(st.stunCh>0&&!opts.dot&&!(e.stunCd>0)&&Math.random()*100<st.stunCh){e.stun=Math.max(e.stun,e.type==='boss'?st.stunDur*0.3:st.stunDur);e.stunCd=1.5;floatText(e.x,e.y-e.r-20,'Stun','#ffd54a',false);}
   if(!opts.quiet)floatText(e.x+rand(-8,8),e.y-e.r-6,r.d,r.crit?'#ffd54a':'#fff',r.crit);
@@ -41,6 +44,7 @@ function killEnemy(e){
   affixDeath(e);
   if(hasPw('bloodrage'))healPlayer(G.stats.life*0.02,true);
   if(G.stats.lpk)healPlayer(G.stats.lpk,true); // charms: Life per Kill
+  if(hasPw('soulHarvest')){G.p.souls=Math.min(10,(G.p.souls||0)+1);G.p.soulT=4;}
   if(e.frozen>0&&hasPw('shatter'))iceShards(e);
   if(T0.split&&(e.gen||0)<2)for(let k=0;k<2;k++){const a=rand(0,TAU);let x=e.x+Math.cos(a)*e.r*0.6,y=e.y+Math.sin(a)*e.r*0.6;if(blockedAt(x,y,10)){x=e.x;y=e.y;}
     const c=makeEnemy(e.type,x,y,G.depth,e.elite,e.pack,e.affs);c.chest=e.chest;c.gen=(e.gen||0)+1;c.r=Math.max(9,e.r*0.72);c.hp=c.maxHp=e.maxHp*0.45;c.dmg=e.dmg*0.7;c.xp=e.xp*0.35;c.spd=e.spd*1.1;
@@ -97,7 +101,11 @@ function dmgPlayer(raw,src,el){
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
   const E=el||src&&src.elem,sh=el?1:src&&src.elemS||1,rm=E?1-sh*resOf(G.stats,E)/100:1; // items.js: resistances (penalty included)
-  const d=Math.max(1,Math.round(raw*(1-red)*rm*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
+  let d=Math.max(1,Math.round(raw*(1-red)*rm*rand(0.9,1.1)));
+  if(p.barrier>0){const a=Math.min(p.barrier,d);p.barrier-=a;d-=a;if(!d){floatText(p.x,p.y-p.r-8,'Absorbed','#ffd27a',false);return true;}} // Warlord's Visage
+  if(hasPw('manaShield')&&p.res>0){const m=Math.min(p.res,Math.floor(d*0.25));p.res-=m;d-=m;} // Mantle of Sorrows
+  if(hasPw('thornBurst')&&G.time-(p.tbT||-9)>=1){p.tbT=G.time;aoe(p.x,p.y,110,0.6,{});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:115,t:0,max:0.3,col:'#8ac060'});}
+  p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,E&&sh>=0.5?RES_COL[E]:'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
@@ -195,7 +203,7 @@ function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
-  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;G.bagFullT-=dt;
+  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
   if(p.atk){p.atk.t+=dt;if(p.atk.t>=p.atk.dur)p.atk=null;}
   if(p.slowT>0){p.slowT-=dt;if(p.slowT<=0)p.slowAmt=0;}
   if(!p.dead){p.hp=Math.min(s.life,p.hp+s.regen*dt);p.res=Math.min(s.res,p.res+C.regen*dt);}
@@ -207,7 +215,7 @@ function update(dt){
     if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
+    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
     if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04*resMul('fres'));burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;

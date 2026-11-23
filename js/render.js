@@ -188,6 +188,7 @@ function drawWeapon(wt,glow){
     case 'demonblade':ln('#1a0a0a',3.5,-4,3);guard(3,5,3);if(glow)glowAt(20,14,'#ff3a2a');poly('#3a0f10','#e0453a',[[3,-2.5],[30,-2],[36,0],[30,2],[3,2.5]]);poly('#3a0f10','#e0453a',[[9,-2.4],[12,-6.5],[14,-2.3]]);poly('#3a0f10','#e0453a',[[19,-2.2],[22,-6.5],[24,-2.1]]);break;
     case 'rod':ln('#b08a5a',3,-3,18);if(glow)glowAt(22,11,'#7fe0ff');poly('#7fe0ff','#2e7ca8',[[18,0],[21.5,-3.5],[26,0],[21.5,3.5]]);break;
     case 'thornstaff':ln('#5a4a2a',4,-16,33);ctx.strokeStyle='#8ae05a';ctx.lineWidth=1.5;ctx.beginPath();for(const [x,d] of [[2,-1],[10,1],[18,-1],[26,1]]){ctx.moveTo(x,d*2);ctx.lineTo(x+3,d*5);}ctx.stroke();glowAt(37,glow?16:10,'#8ae05a');break;
+    case 'spellblade':ln('#3a2a4a',3,-4,3);guard(3,4,2.5);poly('#b8a8e0','#5a4a7a',[[3,-1.8],[24,-1.4],[29,0],[24,1.4],[3,1.8]]);glowAt(14,glow?9:4,'#d8a0ff');break;
     case 'runewand':ln('#9fc4e8',2.6,-3,15);ctx.fillStyle='#2e7ca8';for(const x of [2,7,12])ctx.fillRect(x,-0.6,2,1.2);glowAt(17,glow?10:5,'#7ff0ff');break;
     case 'demonstaff':ln('#3a1a1a',4,-16,31);if(glow)glowAt(36,16,'#ff3a2a');ctx.fillStyle='#e8dcc4';ctx.strokeStyle='#5a1a1a';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(36,0,5,0,TAU);ctx.fill();ctx.stroke();
       ctx.strokeStyle='#8a1a1a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(34,-4);ctx.quadraticCurveTo(33,-9,37,-11);ctx.moveTo(34,4);ctx.quadraticCurveTo(33,9,37,11);ctx.stroke();ctx.fillStyle='#ff3a2a';ctx.fillRect(37,-2.5,1.8,1.8);ctx.fillRect(37,0.7,1.8,1.8);break;

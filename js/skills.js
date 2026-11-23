@@ -8,7 +8,7 @@ function gainRes(v){G.p.res=Math.min(G.stats.res,G.p.res+v);}
 
 // Arcane Bolt look per weapon type: [speed, radius, colour].
 const BOLT={none:[600,6.5,'#c48bff'],wand:[600,5,'#c48bff'],scepter:[600,6.5,'#ff9a4a'],staff:[500,8.5,'#c48bff'],rod:[680,6,'#7fe0ff'],
-  thornstaff:[500,8.5,'#8ae05a'],runewand:[600,5,'#7ff0ff'],demonstaff:[500,9,'#ff4a3a']};
+  thornstaff:[500,8.5,'#8ae05a'],runewand:[600,5,'#7ff0ff'],demonstaff:[500,9,'#ff4a3a'],spellblade:[640,6,'#d8a0ff']};
 const SKILLS={
   warden:[
     {name:'Cleave',icon:'🪓',cd:0.5,cost:0,
@@ -30,7 +30,7 @@ const SKILLS={
       cast(r){const p=G.p;p.spin=(2+0.1*(r-1))*(hasPw('oathspin')?2:1);p.spinTick=0;p.spinSk=G.sk;p.spinMult=0.5+0.07*(r-1);}},
     {name:'War Cry',icon:'📯',cd:16,cost:0,
       desc:r=>`Roar: heal 20% Life, gain 30 Fury and +${pct(0.3+0.04*(r-1))} damage for 6s.`,
-      cast(r){const p=G.p;p.buffT=6;p.buffAmt=0.3+0.04*(r-1);healPlayer(G.stats.life*0.2);gainRes(30);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:160,t:0,max:0.5,col:'#ffcc55'});
+      cast(r){const p=G.p;p.buffT=6;p.buffAmt=0.3+0.04*(r-1);healPlayer(G.stats.life*0.2);gainRes(30);if(hasPw('warcryShield')){p.barrier=G.stats.life*0.25;p.barrierT=6;}G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:160,t:0,max:0.5,col:'#ffcc55'});
         for(const e of G.enemies)if(!e.dead&&dist(e,p)<200)e.stun=Math.max(e.stun,0.6);}},
     {name:'Earthshatter',icon:'🌋',cd:12,cost:50,
       desc:r=>`Split the earth around you for ${pct(3.2+0.4*(r-1))} damage and stun for 1.5s. Costs 50 Fury.`,
@@ -40,7 +40,8 @@ const SKILLS={
   arcanist:[
     {name:'Arcane Bolt',icon:'✴️',cd:0.38,cost:0,
       desc:r=>`Fire a bolt for ${pct(0.95+0.12*(r-1))} weapon damage. Each hit restores 2 Mana.`,
-      cast(r){const a=aimPoint(560),wt=G.stats.mh&&G.stats.mh.wt,B=BOLT[wt]||BOLT.none;shoot(a,B[0],B[1],B[2],{mult:0.95+0.12*(r-1),onhit:()=>gainRes(2),weapon:true,pierce:G.stats.pierce,explode:hasPw('blast')?55:0,home:hasPw('homing')});}},
+      cast(r){const a=aimPoint(560),wt=G.stats.mh&&G.stats.mh.wt,B=BOLT[wt]||BOLT.none;shoot(a,B[0],B[1],B[2],{mult:0.95+0.12*(r-1),onhit:()=>gainRes(2),weapon:true,pierce:G.stats.pierce,explode:hasPw('blast')?55:0,home:hasPw('homing')});
+        if(hasPw('arcaneFan')){const p=G.p,base=Math.atan2(a.y-p.y,a.x-p.x);for(const o of [-0.28,0.28])shoot({x:p.x+Math.cos(base+o)*300,y:p.y+Math.sin(base+o)*300},B[0],B[1]*0.8,B[2],{mult:(0.95+0.12*(r-1))*0.6,weapon:true});p.face=base;}}},
     {name:'Fireball',icon:'🔥',cd:0.9,cost:12,
       desc:r=>`Hurl a fireball that explodes for ${pct(1.7+0.22*(r-1))} damage in an area. Costs 12 Mana.`,
       cast(r){const a=aimPoint(600);
@@ -48,18 +49,20 @@ const SKILLS={
         else shoot(a,430,10,'#ff8a2a',{mult:1.7+0.22*(r-1),explode:78});}},
     {name:'Frost Nova',icon:'❄️',cd:6,cost:20,
       desc:r=>`Blast of frost around you: ${pct(0.8+0.1*(r-1))} damage and freezes enemies for ${(1.8+0.1*r).toFixed(1)}s. Costs 20 Mana.`,
-      cast(r){const p=G.p;aoe(p.x,p.y,150,0.8+0.1*(r-1),{freeze:1.8+0.1*r});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:155,t:0,max:0.4,col:'#9fe4ff'});burst(p.x,p.y,30,'#bff0ff',240);}},
+      cast(r){const p=G.p;aoe(p.x,p.y,150,0.8+0.1*(r-1),{freeze:1.8+0.1*r});if(hasPw('novaSpikes')){const f=p.face;for(let k=0;k<8;k++){const a=k*TAU/8;shoot({x:p.x+Math.cos(a)*300,y:p.y+Math.sin(a)*300},460,6,'#bfe8ff',{mult:0.5+0.05*(r-1)});}p.face=f;}G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:155,t:0,max:0.4,col:'#9fe4ff'});burst(p.x,p.y,30,'#bff0ff',240);}},
     {name:'Chain Lightning',icon:'⚡',cd:2,cost:18,
       desc:r=>`Lightning jumps between ${Math.min(8,3+Math.floor((r-1)/2))} enemies for ${pct(1.25+0.15*(r-1))} damage each. Costs 18 Mana.`,
       cast(r){const p=G.p;let cur=nearest(p.x,p.y,340);if(!cur){G.p.res+=18;G.p.cd[3]=0.2;return;}
         const hit=new Set(),pts=[{x:p.x,y:p.y}];const endless=hasPw('endless')&&p.res>G.stats.res*0.5,n=endless?30:Math.min(8,3+Math.floor((r-1)/2))+(hasPw('stormweave')?4:0);
         for(let k=0;k<n&&cur;k++){hit.add(cur);pts.push({x:cur.x,y:cur.y});hitEnemy(cur,1.25+0.15*(r-1),{});cur=nearest(cur.x,cur.y,210,endless?new Set([cur]):hit);} // endless: may bounce back, just not onto the same enemy twice in a row
+        if(hasPw('chainBlast')&&pts.length>1){const L=pts[pts.length-1];aoe(L.x,L.y,90,(1.25+0.15*(r-1))*1.5,{});fxExplosion(L.x,L.y,90,'#9fd8ff');}
         G.fx.push({type:'bolt',pts,t:0,max:0.22});}},
     {name:'Meteor',icon:'☄️',cd:10,cost:40,
       desc:r=>`Call down a meteor for ${pct(3.8+0.45*(r-1))} damage. Leaves burning ground for 3s. Costs 40 Mana.`,
       cast(r){const a=aimPoint(440);const x=a.x,y=a.y;G.fx.push({type:'tele',x,y,r:120,t:0,max:0.8,col:'#ff5a1a',own:1,meteor:1});
         G.delayed.push({sk:G.sk,t:0.8,fn:()=>{aoe(x,y,120,3.8+0.45*(r-1),{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120);burst(x,y,50,'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:'#ffb04a'});
-          G.hazards.push({sk:G.sk,x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});}}
+          G.hazards.push({sk:G.sk,x,y,r:110,t:3,tick:0,mult:0.3+0.04*(r-1)});}});
+        if(hasPw('meteorShower'))for(let k=0;k<3;k++){const a=rand(0,TAU),mx=x+Math.cos(a)*95,my=y+Math.sin(a)*95;G.delayed.push({sk:G.sk,t:1+k*0.15,fn:()=>{aoe(mx,my,70,(3.8+0.45*(r-1))*0.4,{});fxExplosion(mx,my,70);}});}}}
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}

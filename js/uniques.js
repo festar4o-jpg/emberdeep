@@ -14,6 +14,20 @@ const IGNITE_MULT=0.30,IGNITE_T=3;
 // Boss trophy power numbers.
 const BONE_KILLS=8,BONE_MULT=1.5,ASH_CH=0.35,ASH_MULT=0.4,ROT_MULT=0.3,ROT_MAX=6;
 const UPOW={
+  // v1.0.71 (G.sk: the skill a hit comes from, game.js)
+  cleaveBleed:{cls:'warden',t:'Cleave makes every enemy it hits bleed',d:()=>`Bleeds for ${pwHit(0.8/3*(1+0.12*(pwRank(0)-1)))} per second for 3s`},
+  warcryShield:{cls:'warden',t:'War Cry also raises a barrier that soaks damage for 6s',d:()=>`Absorbs ${pwLife(0.25)} damage (25% of your Life)`},
+  leapFire:{cls:'warden',t:'Leap Slam leaves burning ground where you land',d:()=>pwDet(0.35*2,'per second for 3s')},
+  whirlCrit:{cls:'warden',t:'Whirlwind hits always crit',d:()=>`Every spin hit is a crit: ${pwHit((0.5+0.07*(pwRank(2)-1))*(1+(G.stats?G.stats.critd:50)/100))} each`},
+  shatterArmor:{cls:'warden',t:'Earthshatter breaks armour: enemies it hits take 25% more damage for 5s',d:()=>'+25% damage taken for 5 seconds'},
+  boltChain:{cls:'arcanist',t:'Arcane Bolt jumps to a second enemy',d:()=>pwDet(0.6*(0.95+0.12*(pwRank(0)-1)),'to the next enemy within 220')},
+  novaSpikes:{cls:'arcanist',t:'Frost Nova also fires 8 ice shards outward',d:()=>pwDet(0.5+0.05*(pwRank(2)-1),'per shard')},
+  meteorShower:{cls:'arcanist',t:'Meteor calls down 3 smaller meteors around it',d:()=>pwDet(0.4*(3.8+0.45*(pwRank(4)-1)),'each, a moment later')},
+  chainBlast:{cls:'arcanist',t:"Chain Lightning's last jump explodes",d:()=>pwDet(1.5*(1.25+0.15*(pwRank(3)-1)),'in a small area')},
+  manaShield:{cls:'arcanist',t:'25% of damage you take is paid with Mana instead',d:()=>`Up to 25% of each hit, while you have ${G.stats?Math.round(G.stats.res*0.1):10}+ Mana`},
+  soulHarvest:{cls:null,t:'Each kill gives a Soul (up to 10): +2% damage per Soul; they fade one by one without kills',d:()=>'Up to +20% damage at 10 Souls; one fades each second after 4s without a kill'},
+  thornBurst:{cls:null,t:'When you are hit, thorns burst from you (once a second)',d:()=>pwDet(0.6,'to every enemy around you')},
+  arcaneFan:{cls:'arcanist',t:'Arcane Bolt fires two more bolts in a fan',d:()=>pwDet(0.6*(0.95+0.12*(pwRank(0)-1)),'per extra bolt')},
   shockwave:{cls:'warden',t:'When Cleave hits an enemy, it fires a shockwave forward that passes through enemies',d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to every enemy it passes (no hit, no shockwave)')},
   pull:{cls:'warden',t:'Whirlwind pulls nearby enemies in',d:()=>'Pulls from almost 3× Whirlwind\'s reach, 4 times per second (heavy monsters half as far, bosses a quarter)'},
   bloodleap:{cls:'warden',t:'Leap Slam has no cooldown but costs 8% of your Life instead of Fury',d:()=>`Costs ${pwLife(0.08)} Life per leap now · `+pwDet(1.8+0.22*(pwRank(1)-1),'and stuns')},
@@ -65,6 +79,20 @@ function pwSource(k){for(const u in UNIQUES)if(UNIQUES[u].pw.includes(k))return 
   if(typeof RUNEBINDS!=='undefined')for(const r in RUNEBINDS)if((RUNEBINDS[r].pw||[]).includes(k))return RUNEBINDS[r].name+' (rune word)';
   for(const s in SETS)if(SETS[s].full.some(f=>f.pw===k))return SETS[s].name+' (full set)';return '?';}
 const UNIQUES={
+  // v1.0.71: thirteen more, one new power each
+  butcher:{name:"The Butcher's Hook",type:'weapon',wt:'axe',cls:'warden',act:2,pw:['cleaveBleed']},
+  warlord:{name:"Warlord's Visage",type:'helm',cls:'warden',act:3,pw:['warcryShield']},
+  emberfall:{name:'Emberfall Sabatons',type:'boots',cls:'warden',act:4,pw:['leapFire']},
+  cyclone:{name:'Cyclone Edge',type:'weapon',wt:'greatsword',cls:'warden',act:4,strong:1,pw:['whirlCrit']},
+  quakeplate:{name:'Quakeplate',type:'body',kind:'plate',cls:'warden',act:3,pw:['shatterArmor']},
+  echoes:{name:'Wand of Echoes',type:'weapon',wt:'wand',cls:'arcanist',act:1,pw:['boltChain']},
+  winter:{name:'Tome of Endless Winter',type:'focus',kind:'tome',cls:'arcanist',act:2,pw:['novaSpikes']},
+  starcaller:{name:'Starcaller',type:'weapon',wt:'staff',cls:'arcanist',act:4,strong:1,pw:['meteorShower']},
+  stormband:{name:'Band of the Stormfront',type:'ring',cls:'arcanist',act:3,pw:['chainBlast']},
+  sorrows:{name:'Mantle of Sorrows',type:'body',kind:'robe',cls:'arcanist',act:4,pw:['manaShield']},
+  soulcage:{name:'Soulcage Pendant',type:'amulet',cls:null,act:3,pw:['soulHarvest']},
+  briar:{name:'The Briar Coat',type:'body',kind:'leather',cls:null,act:2,pw:['thornBurst']},
+  ninth:{name:'Edge of the Ninth Circle',type:'weapon',wt:'spellblade',cls:'arcanist',act:2,pw:['arcaneFan']},
   // the Hollow Sun's own (pinnacle.js): three powers each, never anywhere else
   dawnbreaker:{name:'Dawnbreaker',type:'weapon',wt:'greatsword',cls:'warden',act:5,boss:'sun',strong:1,pw:['cinderCleave','kingsWrath','coreFlare']},
   eclipseaegis:{name:'Aegis of the Eclipse',type:'shield',cls:'warden',act:5,boss:'sun',strong:1,pw:['counter','rimeSkin','lastBreath']},
