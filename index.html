@@ -190,7 +190,9 @@
     <b style="color:var(--gold)">Controls</b> <span class="fdim">joystick size</span>
     <div class="tabs" id="setJoy"></div>
     <div class="chk" id="setLefty"><span class="box"></span> Left-handed: joystick on the right, skills on the left</div>
-    <div class="chk" id="setSound"><span class="box"></span> Sound effects: combat, skills, pickups, portals and drop chimes</div>
+    <div class="chk" id="setSound"><span class="box"></span> Sound: music and effects</div>
+    <div class="vol">🔊 Effects <input type="range" id="setSfxVol" min="0" max="100" step="5"></div>
+    <div class="vol">🎵 Music <input type="range" id="setMusVol" min="0" max="100" step="5"></div>
     <div class="chk" id="setVib"><span class="box"></span> Vibration: crits, heavy hits, level-ups, boss kills and good drops</div>
   </div>
   <div class="help">
@@ -248,6 +250,7 @@
 <script src="js/sprites.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/sfx.js"></script>
+<script src="js/music.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/stash.js"></script>
 <script src="js/sockets.js"></script>

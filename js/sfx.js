@@ -5,13 +5,14 @@
 // Browsers only allow audio after a tap, so the audio context is created on the first touch or key press.
 // Everything goes through one bus (volume → compressor → speakers); the compressor keeps big fights from clipping.
 // Each sound has a minimum gap (GAP) and at most MAX_VOICES sources play at once, so crowds don't turn into noise.
-// Settings → Sound turns it all off.
+// Settings → Sound turns it all off; Effects volume sets the bus level (music.js has its own).
+// Cosmetic randomness only (fx.js fxRnd): sound never shifts gameplay rolls.
 let AC=null,BUS=null,NOISE=null,voices=0;
 const MAX_VOICES=40;
 function audio(){if(AC)return AC;const C=typeof window!=='undefined'&&(window.AudioContext||window.webkitAudioContext);if(!C)return null;
   try{AC=new C();const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=10;comp.ratio.value=6;comp.attack.value=0.003;comp.release.value=0.2;
     comp.connect(AC.destination);BUS=AC.createGain();BUS.gain.value=0.9;BUS.connect(comp);AC.comp=comp;
-    const n=Math.floor(AC.sampleRate*1),buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;NOISE=buf;}
+    const n=Math.floor(AC.sampleRate*1),buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=fxRnd()*2-1;NOISE=buf;}
   catch(e){AC=null;}return AC;}
 if(typeof addEventListener==='function')for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>{const a=audio();if(a&&a.state==='suspended')a.resume();},{passive:true});
 // A source finished: one voice free again.
@@ -22,10 +23,10 @@ function tone(a,f,t0,dur,vol,type,to){const o=a.createOscillator(),g=a.createGai
   g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);o.connect(g);g.connect(BUS);voiceEnd(o);o.start(t0);o.stop(t0+dur+0.05);}
 // A burst of filtered noise (whooshes, impacts, crackle): filter type ft at f Hz (sliding to fTo), resonance q, rise = attack time.
 function noise(a,t0,dur,vol,ft,f,fTo,q,rise){const s=a.createBufferSource(),b=a.createBiquadFilter(),g=a.createGain();s.buffer=NOISE;s.loop=true;
-  s.playbackRate.value=0.8+Math.random()*0.4;b.type=ft||'bandpass';b.frequency.setValueAtTime(f,t0);if(fTo)b.frequency.exponentialRampToValueAtTime(fTo,t0+dur);b.Q.value=q||1;
+  s.playbackRate.value=0.8+fxRnd()*0.4;b.type=ft||'bandpass';b.frequency.setValueAtTime(f,t0);if(fTo)b.frequency.exponentialRampToValueAtTime(fTo,t0+dur);b.Q.value=q||1;
   g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+(rise||0.006));g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  s.connect(b);b.connect(g);g.connect(BUS);voiceEnd(s);s.start(t0,Math.random()*0.5);s.stop(t0+dur+0.05);}
-const vr=(v,k=0.12)=>v*(1-k+Math.random()*k*2); // a little pitch variety so repeats don't sound mechanical
+  s.connect(b);b.connect(g);g.connect(BUS);voiceEnd(s);s.start(t0,fxRnd()*0.5);s.stop(t0+dur+0.05);}
+const vr=(v,k=0.12)=>v*(1-k+fxRnd()*k*2); // a little pitch variety so repeats don't sound mechanical
 // ---------- the sounds ----------
 const SFX={
   // drops: rare two bright notes · unique a low gong, then a rising golden arpeggio · set a deep chord with a green call · rune a clink
@@ -93,7 +94,7 @@ const GAP={swing:0.05,heavy:0.08,stab:0.05,flesh:0.045,bone:0.045,armor:0.06,ice
 // Sounds that may cut in even when the voice limit is reached.
 const SFX_MUST=new Set(['unique','set','rare','rune','warn','phase','levelup','death','bossdie','portal']);
 const sfxAt={};
-function playSfx(k,delay){if(SETTINGS.sound===false||!SFX[k])return false;const a=audio();if(!a||a.state!=='running')return false;
+function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===false||!(vol>0)||!SFX[k])return false;const a=audio();if(!a||a.state!=='running')return false;BUS.gain.value=0.9*vol*1.25;
   const now=a.currentTime;if(now-(sfxAt[k]??-9)<(GAP[k]??0.06))return false;if(voices>=MAX_VOICES&&!SFX_MUST.has(k))return false;
   sfxAt[k]=now;try{SFX[k](a,now+(delay||0)+0.005);}catch(e){return false;}return true;}
 // What a drop sounds like: nothing for common/magic items and gold.

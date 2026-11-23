@@ -57,6 +57,7 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 .filt .tabs{margin:8px 0;}.filt .tab{padding:8px 2px;}
 .fdim{color:var(--dim);font-size:13px;}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-bottom:6px;}
+.vol{display:flex;align-items:center;gap:10px;font-size:14px;margin:2px 0 8px;}.vol input{flex:1;max-width:240px;accent-color:var(--gold);height:28px;}
 .chk .box{width:18px;height:18px;border:1px solid var(--gold);border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gold);}
 .chk.on .box::after{content:'✓';}
 .tab.on{color:var(--gold);border-color:var(--gold);background:#3a2a1466;}
