@@ -111,7 +111,7 @@ function drawStoneLoot(l,bob){const s=l.gem,x=l.x,y=l.y+bob,col=stoneCol(s);
 // Ground loot comparison, cached per item for half a second (bestSlot can run stat calculations).
 function lootCmp(l){if(!(l.cmpT>G.time-0.5)||l.cmpT>G.time){l.cmpT=G.time;l.cmp=G.char?compareLoot(G.char,l.item):null;}return l.cmp;}
 // Label suffix: the tier numeral, with ▲/▼ against the tier you wear in that slot.
-function lootTag(it,cmp){if(!it.tier)return null;const n=TIER_NAME[it.tier-1];
+function lootTag(it,cmp){if(!it.tier)return null;const n=TIER_NAME[it.tier-1]+(it.myth?' Mythic':'');if(it.myth&&(!cmp||cmp.other))return {t:n,col:'#ffb347'};
   if(!cmp||cmp.other)return {t:n,col:'#8a7a62'};
   if(!cmp.cur||cmp.dt>0)return {t:n+' ▲',col:'#6f6'};if(cmp.dt<0)return {t:n+' ▼',col:'#f66'};return {t:n,col:'#cdb68a'};}
 // Tooltip card above the nearest item in reach: base stats and how they compare with what you wear.

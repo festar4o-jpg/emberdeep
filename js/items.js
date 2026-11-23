@@ -142,8 +142,8 @@ function itemIcon(it){return svgIcon(iconKey(it));}
 const ICON_IMG={};
 function iconImg(k){let im=ICON_IMG[k];if(!im){im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">${ICON[k]}</svg>`);ICON_IMG[k]=im;}return im;}
 function slotIcon(sl,cls){const arc=cls==='arcanist';return svgIcon(sl==='mainhand'?(arc?'wand':'sword'):sl==='offhand'?(arc?'orb':'shield'):sl==='body'?'plate':SLOT_TYPE[sl]);}
-const tierLabel=it=>it.tier?'Tier '+TIER_NAME[it.tier-1]:'';
-function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return (w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
+const tierLabel=it=>it.tier?'Tier '+TIER_NAME[it.tier-1]+(it.myth?' Mythic':''):'';
+function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return (w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;if(KINDS[it.slot]&&KINDS[it.slot][it.kind])return KINDS[it.slot][it.kind].name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
 // PoE-style rarity colours: normal white, magic blue, rare yellow, unique orange-brown; Runebind teal, set green. Currency (gold, gems, runes) is CURRENCY_COL.
 const RCOL=['#c8c8c8','#8888ff','#ffff77','#c8743a','#5fd0c0','#3fe05a'],CURRENCY_COL='#c8b48a';
 const RNAME=['Common','Magic','Rare','Unique','Runebind','Set']; // Runebinds (4) never drop: they're forged from runes. Set items are 5.
@@ -206,6 +206,34 @@ const BASES={shield:[['Buckler','Round Shield'],['Kite Shield','Sandstone Targe'
   belt:[['Sash','Leather Belt'],['Heavy Belt','Sand Sash'],['Girdle','Rotwood Cord'],['Frost Girdle','Plated Belt'],['Ember Girdle','Demon Chain']],
   boots:[['Boots','Sandals'],['Greaves','Dune Treads'],['Marsh Boots','Bog Waders'],['Frost Greaves','Ice Treads'],['Ember Greaves','Demon Hooves']],
   amulet:['Amulet','Pendant','Talisman','Choker'],ring:['Ring','Band','Signet']};
+// Base kinds (v1.0.69): helms, gloves, boots, belts and shields come in three kinds, each with its own built-in
+// stats (implicits) and armor, the way body armor (BODY) and foci (FOCUS) already did. arm: armor multiplier;
+// imp(bl): the implicits at base level bl; bases: one name per tier. Old items get the kind their name matches.
+const KINDS={
+  shield:{tower:{name:'Tower Shield',arm:1.4,imp:bl=>[{k:'block',v:Math.round(rand(6,9)+Math.min(6,bl*0.2))}],bases:['Plank Shield','Bronze Tower','Rotwood Pavise','Frostward Shield','Demon Aegis']},
+    kite:{name:'Kite Shield',arm:1,imp:bl=>[{k:'block',v:Math.round(rand(8,13)+Math.min(8,bl*0.25))}],bases:['Round Shield','Kite Shield','Heater','Tower Shield','Ember Bulwark']},
+    buckler:{name:'Buckler',arm:0.6,imp:bl=>[{k:'block',v:Math.round(rand(11,15)+Math.min(8,bl*0.25))},{k:'aspd',v:randi(3,5)}],bases:['Buckler','Sandstone Targe','Bog Buckler','Rime Buckler','Cinder Buckler']}},
+  helm:{greathelm:{name:'Greathelm',arm:1.3,imp:bl=>[{k:'life',v:Math.round(AFF.life.roll(bl)*0.5)}],bases:['Cap','Helm','Great Helm','Frost Helm','Demon Horns']},
+    circlet:{name:'Circlet',arm:0.55,imp:()=>[{k:'cdr',v:randi(3,5)}],bases:['Circlet','Desert Circlet','Thorn Circlet','Winged Helm','Cinder Crown']},
+    hood:{name:'Hood',arm:0.85,imp:()=>[{k:'crit',v:+rand(1.5,3).toFixed(1)}],bases:['Hood','Desert Hood','Bog Coif','Frost Hood','Ash Hood']}},
+  gloves:{gauntlets:{name:'Gauntlets',arm:1.3,imp:bl=>[{k:'loh',v:Math.round(rand(1,3)+bl*0.15)}],bases:['Gloves','Bronze Gauntlets','Gauntlets','Frost Gauntlets','Ember Gauntlets']},
+    wraps:{name:'Wraps',arm:0.6,imp:()=>[{k:'aspd',v:randi(3,6)}],bases:['Wraps','Sandsilk Wraps','Bogleather Gloves','Rime Grips','Ash Wraps']},
+    bracers:{name:'Bracers',arm:1,imp:bl=>[{k:'critd',v:Math.round(rand(6,10)+bl*0.2)}],bases:['Bracers','Sun Bracers','Bog Bracers','Rime Bracers','Demon Claws']}},
+  boots:{greaves:{name:'Greaves',arm:1.3,imp:()=>[{k:'move',v:randi(2,4)}],bases:['Boots','Greaves','Marsh Greaves','Frost Greaves','Ember Greaves']},
+    striders:{name:'Striders',arm:0.65,imp:()=>[{k:'move',v:randi(6,9)}],bases:['Sandals','Dune Striders','Bog Waders','Ice Striders','Ash Striders']},
+    treads:{name:'Treads',arm:1,imp:bl=>[{k:'move',v:randi(3,5)},{k:'regen',v:+(0.5+bl*0.06).toFixed(1)}],bases:['Treads','Dune Treads','Marsh Boots','Ice Treads','Demon Hooves']}},
+  belt:{sash:{name:'Sash',imp:bl=>[{k:'pot',v:bl>=12&&Math.random()<0.35?2:1}],bases:['Sash','Sand Sash','Rotwood Cord','Frost Sash','Ember Sash']},
+    girdle:{name:'Girdle',imp:bl=>[{k:'life',v:Math.round(AFF.life.roll(bl)*0.7)}],bases:['Girdle','Heavy Belt','Bog Girdle','Frost Girdle','Ember Girdle']},
+    chainbelt:{name:'Chain Belt',imp:bl=>[{k:'armor',v:Math.round(8+bl*2)}],bases:['Leather Belt','Studded Belt','Plated Belt','Rime Chain','Demon Chain']}}
+};
+const KIND_DEFAULT={shield:'kite',helm:'greathelm',gloves:'bracers',boots:'treads',belt:'girdle'};
+// The kind of an old item: the kind whose names include its base, else the slot's middle kind.
+function kindOfBase(slot,base){const b=String(base||'').replace(/^(Superior |Mythic )+/,''),K=KINDS[slot];for(const k in K)if(K[k].bases.includes(b))return k;return KIND_DEFAULT[slot];}
+// Mythic bases (v1.0.69): only from maps of Tier 5 and up (6% + 1% per tier above 5 of tiered drops). Tier V with 25%
+// stronger base damage or armor and one extra Mythic implicit for its slot. Shown as "Tier V Mythic".
+const MYTH_IMP={weapon:[['critd',15],['aspd',8],['dmg',12]],shield:[['block',5],['ares',8]],focus:[['spell',12],['cdr',5]],helm:[['maxres',1],['life',60]],
+  body:[['maxres',1],['ares',10]],gloves:[['aspd',7],['critd',12]],boots:[['move',5],['ares',8]],belt:[['pot',1],['potheal',20]]};
+let MYTH_NEXT=false; // rollDrop decides, the next genItem makes it
 const RARE_A=['Grim','Dusk','Blood','Storm','Ash','Doom','Bone','Rune','Shadow','Gloom','Cinder','Wraith'];
 const RARE_B={weapon:['Bite','Edge','Song','Fang','Reaver'],focus:['Eye','Whisper','Lens','Psalm'],shield:['Bulwark','Aegis','Wall','Guard'],helm:['Visage','Crown','Gaze','Brow'],body:['Ward','Shell','Hide','Carapace'],
   gloves:['Grip','Grasp','Fist','Touch'],belt:['Cord','Clasp','Lash','Binding'],boots:['Stride','Path','March','Step'],amulet:['Heart','Charm','Star','Ward'],ring:['Coil','Loop','Eye','Knot']};
@@ -262,6 +290,7 @@ let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
   const tier0=opt.act||tierOfLvl(ilvl);
+  {const r=G.char===c&&typeof inMap==='function'&&inMap()?c.mapRun:null;MYTH_NEXT=!!(r&&r.sig.tier>=5&&Math.random()<0.06+0.01*(r.sig.tier-5));} // Mythic bases from maps of Tier 5+
   const L=lootHere(),due=(c.namedSince||0)>=Math.min(NAMED_PITY,L.pity);const rp=(G.char===c&&G.stats?G.stats.rarity||0:0)+L.rar; /* maps.js: Nightmare and Hell loot */let rar=dropRarity(boost,rp);if(due&&rar!==3&&rar!==5)rar=Math.random()<0.5?3:5;
   if(minRarity>=3&&rar!==3)rar=3;else if(rar<minRarity)rar=minRarity;
   // Each slot must appear within its next (PITY+1-misses) drops. Sorted by that deadline, if the j-th slot's deadline is <= j
@@ -326,12 +355,12 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   else if(slot==='focus'){it.kind=FX&&FX.kind||pick(Object.keys(FOCUS));it.base=pick(FOCUS[it.kind].bases[it.tier-1]);
     it.imp=it.kind==='orb'?[{k:'spell',v:Math.round(rand(10,16)+Math.min(10,bl*0.3))}]:[{k:'cdr',v:randi(4,7)},rollAff('res',bl)];}
   else if(slot==='body'){it.kind=FX&&FX.kind||pick(Object.keys(BODY));const K=BODY[it.kind];it.base=pick(K.bases[it.tier-1]);it.arm=(6+bl*3)*K.arm*rand(0.9,1.1);if(K.imp)it.imp=[rollAff(K.imp,bl)];}
+  else if(KINDS[slot]){it.kind=FX&&FX.kind&&KINDS[slot][FX.kind]?FX.kind:pick(Object.keys(KINDS[slot]));const K=KINDS[slot][it.kind];it.base=K.bases[it.tier-1];it.imp=K.imp(bl);} // base kinds: their own implicits
   else it.base=pick(it.tier?BASES[slot][it.tier-1]:BASES[slot]);
-  if(ARM[slot])it.arm=(ARM[slot][0]+bl*ARM[slot][1])*rand(0.9,1.1);
-  // implicit properties (always present on that type); they scale with the base, affixes with item level
-  if(slot==='shield')it.imp=[{k:'block',v:Math.round(rand(8,13)+Math.min(8,bl*0.25))}];
-  if(slot==='boots')it.imp=[{k:'move',v:randi(3,6)}];
-  if(slot==='belt')it.imp=[Math.random()<0.5?{k:'pot',v:bl>=12&&Math.random()<0.35?2:1}:{k:'life',v:Math.round(AFF.life.roll(bl)*0.7)}];
+  if(ARM[slot])it.arm=(ARM[slot][0]+bl*ARM[slot][1])*rand(0.9,1.1)*(KINDS[slot]&&it.kind?KINDS[slot][it.kind].arm||1:1);
+  // Mythic (maps of Tier 5+): stronger base, one more implicit
+  if(MYTH_NEXT&&TIERED.has(slot)&&!U&&!SI&&it.tier===5){it.myth=true;if(it.dmin){it.dmin*=1.25;it.dmax*=1.25;}if(it.arm)it.arm*=1.25;const [k,v]=pick(MYTH_IMP[slot]);it.imp=(it.imp||[]).concat([{k,v,myth:1}]);}
+  MYTH_NEXT=false;
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
   const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>!AFF[k].cls||AFF[k].cls===cls);
   const keys=SI?SET_ITEMS[SI].affs.slice():U?pool.slice().sort(()=>Math.random()-0.5).slice(0,n):pickAffKeys(pool,n,rarity<=1?1:MAX_PRE,rarity<=1?1:MAX_SUF); // magic 1+1, rare 2+2
@@ -405,7 +434,8 @@ const scaledAff=a=>a.k!=='skill'&&AFF[a.k]&&!AFF[a.k].flat;
 // v1.0.48 items: does the base look like it carries a baked upgrade? (base above what its tier can roll)
 function baseInflated(it){if(!(it.upg>0)||!it.tier)return false;const bl=baseLvl(it.tier,it.ilvl),sup=it.sup?1.15:1;
   if(it.slot==='weapon'&&WEAPONS[it.wt]){const exp=(5+bl*2.4)*WEAPONS[it.wt].dmg*([1,1,1.1,1.25,1,1.2][it.rarity]||1)*sup;return (it.dmin+it.dmax)/2/exp>1.18;}
-  const A=it.slot==='body'&&BODY[it.kind]?(6+bl*3)*BODY[it.kind].arm:ARM[it.slot]?ARM[it.slot][0]+bl*ARM[it.slot][1]:0;return !!(A&&it.arm)&&it.arm/(A*sup)>1.13;}
+  const km=KINDS[it.slot]&&KINDS[it.slot][it.kind]?KINDS[it.slot][it.kind].arm||1:1,my=it.myth?1.25:1; /* base kinds and Mythic bases have more armor on purpose */
+  const A=it.slot==='body'&&BODY[it.kind]?(6+bl*3)*BODY[it.kind].arm:ARM[it.slot]?(ARM[it.slot][0]+bl*ARM[it.slot][1])*km:0;return !!(A&&it.arm)&&it.arm/(A*sup*my)>1.13;}
 function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='charm')it.uv=UPG_VER;return it;} /* charms are never upgraded */
   const al=affLvl(it.ilvl,it.tier);
   if(it.uv===2){const fits=a=>{const [lo,hi]=rollRange(a.k,al),m=affRm(it,a.k);return a.v>=lo*m-1.01&&a.v<=hi*m+1.01;};
@@ -435,6 +465,8 @@ function migrateItem(it){
   if(it.imp&&!Array.isArray(it.imp))delete it.imp;
   if(it.slot==='weapon'&&!WEAPONS[it.wt])it.wt=BASE_WT[it.base]||(it.cls==='arcanist'?'staff':'sword');
   if(it.slot==='focus'&&!FOCUS[it.kind])it.kind='orb';
+  if(KINDS[it.slot]&&!KINDS[it.slot][it.kind])it.kind=kindOfBase(it.slot,it.base); // v1.0.69: base kinds (implicits kept as they were)
+  if(it.myth!==true)delete it.myth;
   if(it.rarity===3&&!it.uq){const k=Object.keys(UNIQUES).find(k=>UNIQUES[k].name===it.name&&UNIQUES[k].type===it.slot&&(!UNIQUES[k].wt||UNIQUES[k].wt===it.wt));if(k)it.uq=k;}
   if(it.uq&&!UNIQUES[it.uq])delete it.uq;
   if(it.rarity===5&&!SET_ITEMS[it.si])it.rarity=2; // a set piece this version doesn't know stays as a rare

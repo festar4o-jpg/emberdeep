@@ -89,6 +89,7 @@ function upgradedBase(it){const t=it.tier,t2=t+1,b1=baseLvl(t,it.ilvl),b2=baseLv
   if(it.slot==='weapon'){const W=WEAPONS[it.wt];base=W.bases[t2-W.act];const r=(5+b2*2.4)/(5+b1*2.4);o.dmin=it.dmin*r;o.dmax=it.dmax*r;}
   else if(it.slot==='body'){base=sameIdx(BODY[it.kind].bases);o.arm=it.arm*(6+b2*3)/(6+b1*3);}
   else if(it.slot==='focus')base=sameIdx(FOCUS[it.kind].bases);
+  else if(KINDS[it.slot]&&KINDS[it.slot][it.kind])base=KINDS[it.slot][it.kind].bases[t2-1];
   else base=sameIdx(BASES[it.slot]);
   if(ARM[it.slot]&&it.arm)o.arm=it.arm*(ARM[it.slot][0]+b2*ARM[it.slot][1])/(ARM[it.slot][0]+b1*ARM[it.slot][1]);
   if(it.imp)o.imp=it.imp.map(a=>{a={...a};const d=b2-b1;
