@@ -349,7 +349,7 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
 function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=8; // 8: items reset to the v1.0.48 affix and upgrade rules (the v7 save is kept as a backup)
+const SAVE_VER=9; // 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -388,6 +388,8 @@ function migrateChar(c){
   const seen=new Set();for(const s of EQ_SLOTS){const it=eq[s];if(!it)continue;const id=it.uq?'u:'+it.uq:it.rb?'r:'+it.rb:null;
     if(!id)continue;if(seen.has(id)){eq[s]=null;c.bag.push(it);}else seen.add(id);}
   if(c.won==null)c.won=(c.maxDepth||1)>25; // anyone already past depth 25 has beaten the Cinder King
+  // v9: difficulties. Old heroes are in Normal; a won game has Nightmare open. The endless reach moves to c.endMax.
+  if(c.diff==null){c.diff=0;c.diffDone=c.won?1:0;c.dsave={};if((c.maxDepth||1)>25){c.endMax=c.maxDepth;c.maxDepth=25;}}
   if(c.actSeen==null){const d=c.depth||1;c.actSeen=stageOf(d)===1?d-1:d-stageOf(d)+1;} // depth N is already Act ceil(N/5); only show titles for acts not yet entered
   migrateCharms(c);matsOf(c); // crafting materials
   c.equip=eq;c.ver=SAVE_VER;return c;
@@ -447,7 +449,7 @@ function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/
 // min 0 = off, 'auto' = hide anything more than one tier below the act you're in,
 // 2..5 = hide below that tier. rares (default on) keeps rares and uniques visible. Untiered jewelry is never hidden.
 // Hidden items stay on the ground but aren't drawn and aren't picked up.
-const filterMin=c=>{const f=c&&c.filter;if(!f||!f.min)return 0;return f.min==='auto'?dropAct(G.depth||1)-1:f.min;};
+const filterMin=c=>{const f=c&&c.filter;if(!f||!f.min)return 0;return f.min==='auto'?dropAct(PD())-1:f.min;};
 function lootHidden(it){const c=G.char;if(!it||!it.tier||!c||it.sockets)return false; /* socketed bases always show (Runebind material) */const min=filterMin(c);if(!min||it.tier>=min)return false;
   return !(c.filter.rares!==false&&it.rarity>=2);}
 // ---------- ground loot comparison (labels and the tooltip for the nearest item) ----------

@@ -16,13 +16,13 @@ const AFFIXES={
 };
 // Affix count [min,max] per act; endless depths always get 3.
 const AFFIX_N=[[1,2],[1,2],[1,2],[2,3],[2,3]];
-function rollAffixes(depth){const a=actIdx(depth)+1,end=depth>25,pool=Object.keys(AFFIXES).filter(k=>end||AFFIXES[k].act<=a);
+function rollAffixes(depth){depth=powDepth(depth);const a=actIdx(depth)+1,end=depth>25,pool=Object.keys(AFFIXES).filter(k=>end||AFFIXES[k].act<=a);
   const [lo,hi]=end?[3,3]:AFFIX_N[a-1],n=randi(lo,hi),out=[];
   while(out.length<n&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   return out;}
 const hasAff=(e,k)=>!!(e&&e.affs&&e.affs.includes(k));
 // Affix strength step: 0 in act 1 … 4 in act 5, 5 in endless.
-const affLv=()=>Math.min(5,actIdx(G.depth)+(G.depth>25?1:0));
+const affLv=()=>Math.min(5,actIdx(G.depth)+(PD()>25?1:0));
 // Cheapest non-summoner monster of the act: what Summoner elites call in.
 function minionType(){return ACTS[actIdx(G.depth)].roster.map(r=>r[0]).filter(t=>t!=='summoner').sort((a,b)=>ETYPES[a].cost-ETYPES[b].cost)[0];}
 // Telegraphed blast that does not depend on its caster staying alive.
@@ -64,7 +64,7 @@ const SHRINES={
 const SHRINE_T=30;
 // Called at the end of calcStats: active shrine buffs.
 function shrineStats(s){const b=G.p&&G.p.shr;if(!b)return;
-  if(b.dmg>0)s.dmg+=40;if(b.speed>0){s.move+=30;s.aspd+=30;}if(b.armor>0)s.armor=s.armor*1.6+4*(G.depth||1);}
+  if(b.dmg>0)s.dmg+=40;if(b.speed>0){s.move+=30;s.aspd+=30;}if(b.armor>0)s.armor=s.armor*1.6+4*PD();}
 const shrineXp=v=>G.p&&G.p.shr&&G.p.shr.xp>0?v*1.5:v;
 function shrineText(){const b=G.p&&G.p.shr;if(!b)return '';return Object.keys(SHRINES).filter(k=>b[k]>0).map(k=>`${SHRINES[k].icon} ${SHRINES[k].short} ${Math.ceil(b[k])}s`).join('  ');}
 
@@ -104,7 +104,7 @@ function chestTick(f,dt){if(f.state!=='waves')return;
   f.waitT+=dt;if(f.waitT<1.5)return;f.waitT=0;
   if(f.wave<3)nextWave(f);else openChest(f);}
 // Reward: rare + magic guaranteed, more items in later acts, gold, stones and a charm roll.
-function openChest(f){f.state='open';const d=G.depth,a=actIdx(d)+1,c=G.char,n=3+a+(d>25?1:0),e={x:f.x,y:f.y};
+function openChest(f){f.state='open';const d=PD(),a=actIdx(d)+1,c=G.char,n=3+a+(d>25?1:0),e={x:f.x,y:f.y};
   for(let k=0;k<n;k++)dropItem(f.x+rand(-45,45),f.y+rand(-45,45),rollDrop(c,d+2,2,k===0?2:k===1?1:0,{act:dropAct(d)}));
   for(let k=0;k<4;k++)dropGold(f.x,f.y,Math.round(d*randi(6,10)*(1+0.15*a)));
   dropStones(e,'elite');dropStones(e,'elite');dropCharms(e,'elite');
@@ -123,8 +123,8 @@ AI.flee=(e,T,d,toP,step,chase,cdm,dt)=>{const a=actIdx(G.depth)+1;
   e.blinkCd=(e.blinkCd??2)-dt;if(d<90&&e.blinkCd<=0){e.blinkCd=blinkAway(e)?5:1;return;} // cornered: vanish and reappear further off
   const dir=flowAway(e)??toP+Math.PI;e.face=dir;step(dir+Math.sin(G.time*3+e.seed)*0.3,d<240?1:0.5);};
 function thiefEscape(e){e.dead=true;G.fx.push({type:'ring',x:e.x,y:e.y,r0:4,r1:50,t:0,max:0.4,col:'#c79bff'});burst(e.x,e.y,24,'#c79bff',180);toast('The thief escaped!','…with all that loot');}
-function thiefHit(e){if(Math.random()<0.3)dropGold(e.x,e.y,Math.round(G.depth*randi(1,3)));}
-function thiefLoot(e){const d=G.depth,a=actIdx(d)+1,c=G.char,n=3+Math.ceil(a/2)+(d>25?1:0);
+function thiefHit(e){if(Math.random()<0.3)dropGold(e.x,e.y,Math.round(PD()*randi(1,3)));}
+function thiefLoot(e){const d=PD(),a=actIdx(d)+1,c=G.char,n=3+Math.ceil(a/2)+(d>25?1:0);
   for(let k=0;k<12;k++)dropGold(e.x+rand(-40,40),e.y+rand(-40,40),Math.round(d*randi(8,14)*(1+0.1*a)));
   for(let k=0;k<n;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+1,1,k===0?2:0,{act:dropAct(d)}));
   dropStones(e,'elite');toast('Treasure Thief slain!','Its hoard spills out');G.shake=10;}

@@ -19,6 +19,18 @@ const ACTS=[
    roster:[['imp',4],['magmabrute',2],['summoner',1.4]]}
 ];
 const actIdx=d=>Math.floor((d-1)/5)%5,cycleOf=d=>Math.floor((d-1)/25)+1,stageOf=d=>(d-1)%5+1;
+// Difficulties (c.diff: 0 Normal, 1 Nightmare, 2 Hell; c.diffDone: how many are beaten, 1 = Normal). The depth number
+// (1-25 the story, 26+ the endless depths) says where you are; the power depth says how strong things are there:
+// Nightmare adds 25 and Hell 50, so they reuse the scaling the endless depths already had (monster life, damage and
+// XP, pack size, elite affixes, item level and Tier V bases, gems, gold, area level). The endless depths scale with
+// the highest difficulty beaten: Endless 1 is power depth 26 after Normal, 51 after Nightmare, 76 after Hell.
+// Monster builders (makeEnemy, rollPack, rollAffixes) take the depth and convert it themselves; loot and prices use PD().
+// res: the resistance penalty (v1.0.57); loot: the drop bonuses (v1.0.58).
+const DIFFS=[{name:'Normal',col:'#d9a441',elite:0},{name:'Nightmare',col:'#b070ff',elite:0.06},{name:'Hell',col:'#ff4a3a',elite:0.12}];
+const DIFF_N=DIFFS.length;
+const curDiff=()=>G.char&&G.char.diff||0;
+const powDepth=d=>{const c=G.char;if(!c)return d;return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
+const PD=()=>powDepth(G.depth||1);
 const roman=n=>['I','II','III','IV','V','VI','VII','VIII','IX','X'][n-1]||String(n);
 const depthLabel=d=>d>25?`Endless ${d-25}`:`${actIdx(d)+1}-${stageOf(d)}`;
 // grid: 0 floor, 1 wall, 2 void (chasm / lava lake: blocks walking, not projectiles). terrain: 1 poison, 2 lava, 3 bridge.
@@ -117,7 +129,7 @@ function genLevel(depth,mode){
     if(isBoss&&r===exit){let bx=(r.cx+0.5)*TILE,by=(r.cy-1)*TILE;if(blockedAt(bx,by,40))by=(r.cy+0.5)*TILE;const b=makeEnemy('boss',bx,by,depth,false,++packId);G.enemies.push(b);G.boss=b;continue;}
     if(bossOnly)continue;
     const packs=randi(1,2);
-    for(let k=0;k<packs;k++){const id=++packId;const eliteP=Math.random()<(depth<=5?0.2:Math.min(depth>25?0.45:0.3,0.1+depth*0.006)) /* Act 1: elite packs twice as often */,affs=eliteP?rollAffixes(depth):null;
+    for(let k=0;k<packs;k++){const id=++packId;const eliteP=Math.random()<(powDepth(depth)<=5?0.2:Math.min(powDepth(depth)>25?0.45:0.3,0.1+powDepth(depth)*0.006)) /* Act 1: elite packs twice as often */,affs=eliteP?rollAffixes(depth):null;
       const c=spot(r);rollPack(depth,eliteP).forEach((type,m)=>{const T=ETYPES[type];
         let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(type==='vinelasher'){const q=spot(r);x=q.x;y=q.y;}
         if(!safe(x,y,T.r)){x=c.x;y=c.y;}

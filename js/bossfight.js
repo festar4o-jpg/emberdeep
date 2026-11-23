@@ -19,15 +19,17 @@ const PHASE_AT=[0.7,0.35],TRANS_T=1.3,PUNISH_T=2.5,STAG_T=3,HIT_CAP=0.2,DPS_CAP=
 const ROMAN_PH=['I','II','III'];
 function bossInit(e){e.phase=0;e.stagger=0;e.staggerMax=100;e.staggers=0;e.punishes=0;e.homeX=e.x;e.homeY=e.y;e.maxHp*=BOSS_HP_K;e.hp=e.maxHp;}
 // ---------- area level and the level / gear difference ----------
-// Area level: twice the depth in the story (Act 1 = 2..10, Act 5 = 42..50), then +1 per endless depth.
+// Area level: twice the depth in the story (Act 1 = 2..10, Act 5 = 42..50), then +1 per endless depth. Shown and used
+// for the overlevel rule at the power depth (maps.js PD: Nightmare 51-75, Hell 76-100); the underlevel rule uses the
+// depth itself, against your level plus Paragon levels, so level-50 heroes aren't punished all through Nightmare and Hell.
 const areaLvl=d=>{d=d??G.depth;return d<=25?d*2:50+(d-25);};
 // Your damage against monsters: -5% per level beyond 3 over the area (down to 50%), and -12% per gear tier above the
 // act's tier beyond half a tier (down to 60%), averaged over your tiered gear.
 let OM_T=-1,OM_V=1;
 function overMul(){if(OM_T===G.time)return OM_V;OM_T=G.time;const c=G.char;if(!c||G.inTown)return OM_V=1;
-  const diff=c.lvl-areaLvl();let m=diff>3?Math.max(0.5,1-0.05*(diff-3)):1;
+  const diff=c.lvl-areaLvl(PD());let m=diff>3?Math.max(0.5,1-0.05*(diff-3)):1;
   const ts=EQ_SLOTS.map(s=>c.equip[s]).filter(it=>it&&it.tier);
-  if(ts.length){const over=ts.reduce((a,it)=>a+it.tier,0)/ts.length-dropAct(G.depth);if(over>0.5)m*=Math.max(0.6,1-0.12*(over-0.5));}
+  if(ts.length){const over=ts.reduce((a,it)=>a+it.tier,0)/ts.length-dropAct(PD());if(over>0.5)m*=Math.max(0.6,1-0.12*(over-0.5));}
   return OM_V=m;}
 // A boss fight can also change the damage you take (BOSSES[k].vs[cls][2]): while the boss lives and fights you.
 function bossTakenMul(){const b=G.boss;if(!b||b.dead||!b.aggro||!G.char)return 1;const V=(BOSSES[b.kind]||BOSSES[0]).vs,m=V&&V[G.char.cls];return m&&m[2]||1;}
@@ -37,7 +39,7 @@ let XG_T=-1,XG_V=false;
 function extremeGear(){if(XG_T===G.time)return XG_V;XG_T=G.time;const c=G.char;if(!c)return XG_V=false;const it=EQ_SLOTS.map(s=>c.equip[s]).filter(Boolean);
   const upg=it.length?it.reduce((a,x)=>a+(x.upg||0),0)/it.length:0;return XG_V=upg>=8||overMul()<0.9;}
 // Monsters hit harder when you are underleveled for the area: +5% per level beyond 2 under (up to double).
-const underMul=()=>{const c=G.char;if(!c||G.inTown)return 1;return Math.min(2,1+0.05*Math.max(0,areaLvl()-c.lvl-2));};
+const underMul=()=>{const c=G.char;if(!c||G.inTown)return 1;return Math.min(2,1+0.05*Math.max(0,areaLvl()-c.lvl-(c.para||0)-2));};
 // ---------- damage into a monster (hitEnemy) ----------
 function dmgTo(e,d,crit,opts){d*=overMul();if(e.type!=='boss')return Math.max(1,Math.round(d));
   const V=(BOSSES[e.kind]||BOSSES[0]).vs,cm=V&&G.char&&V[G.char.cls];if(cm)d*=cm[0]; /* class matchup: each boss favours one class */

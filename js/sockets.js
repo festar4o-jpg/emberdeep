@@ -95,7 +95,7 @@ function rollGem(depth){const a=dropAct(depth);return {g:pick(GEM_KEYS),q:clamp(
 function rollRune(depth){const mx=Math.min(RUNE_KEYS.length-1,dropAct(depth)*2-1+(depth>25?1:0));
   let r=Math.random()*(mx+1)*(mx+2)/2;for(let i=0;i<=mx;i++){r-=mx-i+1;if(r<0)return {r:RUNE_KEYS[i]};}return {r:RUNE_KEYS[0]};}
 const STONE_DROP={normal:[0.04,0.006],elite:[0.2,0.04],boss:[1,0.6]}; // [gem chance, rune chance]; bosses drop 2 gems
-function dropStones(e,kind){const d=G.depth,[gc,rc]=STONE_DROP[kind];
+function dropStones(e,kind){const d=PD(),[gc,rc]=STONE_DROP[kind];
   const n=kind==='boss'?2:Math.random()<gc?1:0;for(let k=0;k<n;k++)dropStone(e.x+rand(-30,30),e.y+rand(-30,30),rollGem(d));
   if(Math.random()<rc)dropStone(e.x+rand(-20,20),e.y+rand(-20,20),rollRune(d));}
 function dropStone(x,y,s){if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,gem:s,t:0};G.loot.push(l);dropSfx(l);}
@@ -184,7 +184,7 @@ function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS)
 // Bosses tab: what each act boss drops that nothing else does (farm them through the Waystone).
 function renderBossBook(){const c=G.char;
   $('bookSub').textContent=`Every act boss can drop its own trophy unique (${Math.round(TROPHY_CH*100)}%) and a set piece (${Math.round(BOSS_SET_CH*100)}%), on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
-  $('bookList').innerHTML=BOSS_UQ.map((k,a)=>{const U=UNIQUES[k],A=ACTS[a],reached=c&&(c.maxDepth||1)>=a*5+5;
+  $('bookList').innerHTML=BOSS_UQ.map((k,a)=>{const U=UNIQUES[k],A=ACTS[a],reached=c&&(c.diffDone?25:c.maxDepth||1)>=a*5+5;
     const sets=Object.keys(SETS).filter(s=>SETS[s].act<=a+1&&(!SETS[s].cls||!c||SETS[s].cls===c.cls)).map(s=>SETS[s].name);
     return `<div class="slot rb${reached?'':' unk'}"><div class="info"><b style="color:${A.col}">${esc(A.boss)}</b> <span class="fdim">Act ${a+1} · depth ${a+1}-5${reached?'':' · not reached yet'}</span>
       <div style="color:${RCOL[3]}">${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>

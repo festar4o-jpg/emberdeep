@@ -29,6 +29,19 @@ const actSides=a=>Object.keys(ZONES).filter(z=>ZONES[z].act===a&&ZONES[z].parent
 const zoneOfDepth=d=>d>=1&&d<=25?actZones(actIdx(d)+1)[stageOf(d)-1]||null:null;
 const zst=(c,z)=>{const S=c.zst||(c.zst={});return S[z]||(S[z]={});};
 const hasWp=(c,z)=>(c.wps||[]).includes(z);
+// ---------- difficulties (maps.js DIFFS): progress is kept per difficulty ----------
+// Waypoints, zone states, quests (so their rewards come again), the furthest story depth, the act titles seen and the
+// last zone: the active difficulty's on the character itself (c.wps, c.zst, c.q, c.maxDepth, c.actSeen, c.zone), the
+// others in c.dsave[d]. Beating Act 5 unlocks the next difficulty (c.diffDone); the Waystone switches between them.
+const DIFF_KEYS=['wps','zst','q','maxDepth','actSeen','zone'];
+const freshDiff=()=>({wps:[],zst:{},q:{},maxDepth:1,actSeen:0,zone:null});
+const diffState=(c,d)=>d===(c.diff||0)?c:(c.dsave&&c.dsave[d])||freshDiff();
+function setDiff(c,d){d=d|0;if(d<0||d>=DIFF_N||d===(c.diff||0)||d>(c.diffDone||0))return false;
+  const S=c.dsave||(c.dsave={}),cur={};for(const k of DIFF_KEYS)cur[k]=c[k];S[c.diff||0]=cur;
+  const nx=S[d]||freshDiff();for(const k of DIFF_KEYS)c[k]=nx[k];delete S[d];c.diff=d;
+  if(typeof clearInstances==='function'&&G.char===c)clearInstances(); // kept zones and the town portal belong to the old difficulty
+  return true;}
+const diffTag=()=>{const d=curDiff();return d&&(G.depth||1)<=25?DIFFS[d].name+' · ':'';};
 // Old saves: zones up to the deepest depth reached count as waypointed.
 function migrateZones(c){if(!Array.isArray(c.wps))c.wps=[];if(!c.zst||typeof c.zst!=='object')c.zst={};if(!c.q||typeof c.q!=='object')c.q={};
   for(let d=1;d<Math.min(26,c.maxDepth||1);d++){const z=zoneOfDepth(d);if(z&&!c.wps.includes(z))c.wps.push(z);}}
@@ -166,7 +179,7 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   // packs: more and denser deeper into the act
   const crowd=Z.act>1?Math.min(1,(Z.crowd||13)/L.regions.length):1; /* Acts 2-5: layouts with many small regions don't get more monsters for it (Act 1 is tuned as is) */
   for(const r of L.regions){if(!far(r)||r===L.start)continue;let n;if(crowd===1&&Z.act===1)n=Math.max(1,Math.round((Math.random()<0.5?1:2)*Z.density));else{const v=(Math.random()<0.5?1:2)*Z.density*crowd;n=Math.floor(v)+(Math.random()<v%1?1:0);}
-    for(let k=0;k<n;k++){const id=++packId,elite=Math.random()<(Z.elite??0.2),affs=elite?rollAffixes(depth):null,c=spot(r);
+    for(let k=0;k<n;k++){const id=++packId,elite=Math.random()<(Z.elite??0.2)+DIFFS[curDiff()].elite,affs=elite?rollAffixes(depth):null,c=spot(r);
       rollPack(depth,elite).forEach((type,m)=>{let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(!safe(x,y,ETYPES[type].r)){x=c.x;y=c.y;}G.enemies.push(makeEnemy(type,x,y,depth,elite&&m<4,id,affs));});}}
   const freeRegs=()=>shuffle(L.regions.filter(r=>!used.has(r)&&far(r)));
   // zone boss: near the exit for a boss gate (it guards the way), otherwise somewhere deep
@@ -205,13 +218,13 @@ const FEAT_LABEL={wp:'🌀 Waypoint',hchest:'Open the hidden chest',seal:'✦ Li
 function zoneFeat(kind,x,y){return {kind,x,y,r:22,done:false,use:FEAT_USE[kind],label:FEAT_LABEL[kind],zdraw:FEAT_DRAW[kind]};}
 const FEAT_USE={
   wp(f){unlockWp();playSfx('waypoint');openWay();},
-  hchest(f){f.done=true;playSfx('chest');const c=G.char,d=G.depth,n=f.hoard?5:2;for(let k=0;k<n;k++)dropItem(f.x+rand(-40,40),f.y+rand(-30,40),rollDrop(c,d+1,f.hoard?2:1,k===0?2:0,{act:dropAct(d)}));
+  hchest(f){f.done=true;playSfx('chest');const c=G.char,d=PD(),n=f.hoard?5:2;for(let k=0;k<n;k++)dropItem(f.x+rand(-40,40),f.y+rand(-30,40),rollDrop(c,d+1,f.hoard?2:1,k===0?2:0,{act:dropAct(d)}));
     for(let k=0;k<(f.hoard?8:4);k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),Math.round(d*randi(4,9)));dropStones({x:f.x,y:f.y},'elite');burst(f.x,f.y,24,'#f2d04a',200);toast(f.hoard?ZONES[G.zone].hoardName||'A hoard!':'A hidden cache!','');},
   seal(f){f.done=true;playSfx('shrine');const S=zst(G.char,G.zone);S.seals=(S.seals||0)+1;burst(f.x,f.y,30,'#9ab0ff',220);G.fx.push({type:'ring',x:f.x,y:f.y,r0:10,r1:140,t:0,max:0.6,col:'#9ab0ff'});
     if(S.seals>=3){G.portal.active=true;toast('All seals lit','The way on is open');}else toast(`Seal lit (${S.seals}/3)`,'');saveChar();},
   captive(f){if(G.enemies.some(e=>!e.dead&&e.pack==='captive')){toast('Guards nearby','Deal with them first');return;}
     f.done=true;const c=G.char,K=CAPTIVES[ZONES[G.zone].captive]||CAPTIVES.pilgrim;burst(f.x,f.y,24,'#f2d04a',160);toast(K.free,K.say);questDone(K.quest);
-    for(let k=0;k<3;k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),G.depth*12);dropItem(f.x,f.y+30,rollDrop(c,G.depth+1,1,2,{act:dropAct(G.depth)}));}
+    for(let k=0;k<3;k++)dropGold(f.x+rand(-30,30),f.y+rand(-20,30),PD()*12);dropItem(f.x,f.y+30,rollDrop(c,PD()+1,1,2,{act:dropAct(PD())}));}
 };
 const FEAT_DRAW={
   wp(f){const on=hasWp(G.char,G.zone),t=G.time;ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(f.x,f.y+10,24,9,0,0,TAU);ctx.fill();
@@ -256,9 +269,9 @@ function zoneDescend(){const Z=ZONES[G.zone];
 function zoneBossDown(e){const zid=G.zone,Z=ZONES[zid],B=ZBOSS[e.zb],c=G.char;if(zid)zst(c,zid).boss=true;
   if(Z&&Z.gate==='boss'){G.portal.active=true;toast(`${B.name} falls`,'The way on is open');}else toast(`${B.name} falls`,'');
   if(B.quest)questDone(B.quest);G.shake=Math.max(G.shake,12);
-  const d=G.depth;for(let k=0;k<2;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+2,2,k===0?2:0,{act:dropAct(d)})); // 2 items, the first rare or better
+  const d=PD();for(let k=0;k<2;k++)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),rollDrop(c,d+2,2,k===0?2:0,{act:dropAct(d)})); // 2 items, the first rare or better
   dropGold(e.x,e.y,d*30);dropGold(e.x+20,e.y,d*20);dropStones(e,'boss');saveChar();}
-function superDown(e){const c=G.char,d=G.depth;for(let k=0,n=Math.random()<0.5?2:1;k<n;k++)dropItem(e.x+rand(-30,30),e.y+rand(-30,30),rollDrop(c,d+1,2,k===0?2:0,{act:dropAct(d)}));for(let k=0;k<3;k++)dropGold(e.x+rand(-20,20),e.y,d*8);}
+function superDown(e){const c=G.char,d=PD();for(let k=0,n=Math.random()<0.5?2:1;k<n;k++)dropItem(e.x+rand(-30,30),e.y+rand(-30,30),rollDrop(c,d+1,2,k===0?2:0,{act:dropAct(d)}));for(let k=0;k<3;k++)dropGold(e.x+rand(-20,20),e.y,d*8);}
 // ---------- quests (Act 1) ----------
 const QUESTS={
   a1q1:{act:1,name:'The Gravedigger',goal:'Slay Old Grieve in The Mourning Fields',story:'"He digs our dead back up, and sells what he finds. End him."',reward:'sp',rtext:'+1 skill point'},
@@ -272,7 +285,7 @@ function questDone(id){const c=G.char;migrateZones(c);if(!QUESTS[id]||c.q[id])re
 function claimQuest(id){const c=G.char,Q=QUESTS[id];if(c.q[id]!=='done')return false;c.q[id]='claimed';
   if(Q.reward==='sp'){c.skillPts++;$('skDot').classList.remove('hidden');}
   else if(Q.reward==='pot'){c.potUp=(c.potUp||0)+1;refreshStats();G.p.potions=Math.min(potMax(),G.p.potions+1);}
-  else if(Q.reward==='uq'){const it=rollDrop(c,Math.max(5*Q.act,c.lvl),3,3,{act:Q.act,top:true});if(c.bag.length<30)c.bag.push(it);else dropItem(G.p.x,G.p.y,it);toast('Reward: '+it.name,'');}
+  else if(Q.reward==='uq'){const qd=powDepth(5*Q.act),it=rollDrop(c,Math.max(qd,c.lvl),3,3,{act:dropAct(qd),top:true}); /* Nightmare and Hell: a unique on their scale */if(c.bag.length<30)c.bag.push(it);else dropItem(G.p.x,G.p.y,it);toast('Reward: '+it.name,'');}
   else if(Q.reward==='stones'){const e={x:G.p.x,y:G.p.y};for(let k=0;k<3;k++)dropStones(e,'boss');dropGold(G.p.x,G.p.y+30,Q.act*120);}
   toast('Reward claimed',Q.rtext);saveChar();return true;}
 function openQuests(){if(!G.char)return;migrateZones(G.char);$('questOv').classList.remove('hidden');renderQuests();setPause();}
@@ -291,7 +304,7 @@ function drawElder(){const E=G.elder;if(!E)return;const t=G.time,W=E.who;softSha
 function elderTick(){const p=G.p;G.elderNear=!!(G.inTown&&G.elder&&p&&Math.hypot(p.x-G.elder.x,p.y-G.elder.y)<70);}
 // HUD line: zone name, area level, objective.
 function zoneHud(){const Z=ZONES[G.zone];if(!Z)return null;const left=G.enemies.filter(e=>!e.dead).length;
-  return `Act ${Z.act} · ${Z.name} · Lv ${areaLvl(Z.depth)} · ${zoneGoal()} · ${left} foes`;}
+  return `${diffTag()}Act ${Z.act} · ${Z.name} · Lv ${areaLvl(powDepth(Z.depth))} · ${zoneGoal()} · ${left} foes`;}
 // ---------- minimap ----------
 function minimapZone(s){if(!G.zone||G.inTown)return;const S=G.sidePortal;
   if(S&&G.explored[tileIdx(S.x,S.y)]){mctx.fillStyle='#e0c060';mctx.beginPath();mctx.arc(S.x/TILE*s,S.y/TILE*s,5,0,TAU);mctx.fill();}

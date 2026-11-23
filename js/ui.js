@@ -30,8 +30,8 @@ function updateHud(){
   $('dodgeBtn').querySelector('.cd').style.setProperty('--p',p.dodgeCd>0?p.dodgeCd/DODGE_CD:0);
   $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
   const left=G.enemies.filter(e=>!e.dead).length;
-  const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(D)}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
+  const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`${diffTag()}Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
+  $('depthTxt').textContent=G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(PD())}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
   const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);
@@ -97,7 +97,12 @@ tap('bagBtn',toggleInv);tap('skBtn',toggleSkills);tap('menuBtn',toggleMenu);
 tap('resumeBtn',toggleMenu);
 tap('quitBtn',()=>{saveChar();G.paused=true;G.char=null;G.p=null;G.mapCv=null;$('menuOv').classList.add('hidden');$('hud').classList.add('hidden');showTitle();});
 tap('actOv',hideActTitle);
-function showVictory(){const c=G.char;
+// d: the difficulty just beaten. Each opens the next one; the endless depths grow to match the highest beaten.
+const WIN_TXT=[
+  ['ACT V COMPLETE','The Cinder King is ash and the Ember Core falls silent.<br>Yet the dark remembers. <b style="color:#b070ff">Nightmare</b> is open: choose it at any Waystone.<br>Far below, the Endless Depths await.','Descend into the Endless Depths'],
+  ['NIGHTMARE CONQUERED','The Cinder King falls a second time, and the world shudders.<br><b style="color:#ff4a3a">Hell</b> is open at every Waystone.<br>The Endless Depths now run as deep as Nightmare.','Descend into the Endless Depths'],
+  ['HELL CONQUERED','Nothing is left to burn. You walked through Hell and out again.<br>The Endless Depths now match Hell itself.','Descend into the Endless Depths']];
+function showVictory(d=0){const c=G.char,W=WIN_TXT[Math.min(d,WIN_TXT.length-1)];$('winAct').textContent=W[0];$('winSub').innerHTML=W[1];$('winGo').textContent=W[2];
   $('winStats').innerHTML=[['Hero',`${esc(c.name)}, Level ${lvlLabel(c)} ${CLASSES[c.cls].name}`],['Monsters slain',c.kills||0],['Deaths',c.deaths||0],['Gold',c.gold]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
@@ -111,7 +116,7 @@ function anyPanel(){return ['questOv','invOv','skOv','menuOv','itemOv','deathOv'
 function setPause(){const panel=anyPanel();G.paused=panel||!G.char;for(let i=0;i<5;i++)held[i]=false;if(panel)G.texts=[];}
 let actTimer=0;
 function showActTitle(d){const A=ACTS[actIdx(d)],cy=cycleOf(d);
-  $('actN').textContent=d>25?'THE ENDLESS DEPTHS':'ACT '+roman(actIdx(d)+1);$('actT').textContent=A.name;$('actS').textContent=d>25?`Endless ${d-25}: the deep grows stronger`:A.sub;
+  $('actN').textContent=d>25?'THE ENDLESS DEPTHS':(curDiff()?DIFFS[curDiff()].name.toUpperCase()+' · ':'')+'ACT '+roman(actIdx(d)+1);$('actN').style.color=d<=25&&curDiff()?DIFFS[curDiff()].col:'';$('actT').textContent=A.name;$('actS').textContent=d>25?`Endless ${d-25}: the deep grows stronger`:A.sub;
   const o=$('actOv');o.style.setProperty('--act',A.col);o.classList.remove('hidden');releaseInputs();setPause();clearTimeout(actTimer);actTimer=setTimeout(hideActTitle,3800);}
 function hideActTitle(){clearTimeout(actTimer);const o=$('actOv');if(o.classList.contains('hidden'))return;o.classList.add('hidden');setPause();}
 function toggleMenu(){if(!G.char)return;$('menuOv').classList.toggle('hidden');if(!$('menuOv').classList.contains('hidden')){renderFilter();renderSettings();$('townBtn').classList.toggle('hidden',!!G.inTown);}setPause();}
@@ -126,7 +131,7 @@ function renderFilter(){
   $('filtSalv').classList.toggle('on',!!f.autoSalv);$('filtSalv').onclick=()=>setFilter({autoSalv:!f.autoSalv});
   const hidden=G.loot.filter(l=>l.item&&!l.taken&&lootHidden(l.item)).length;
   $('filtInfo').textContent=!f.min?'Showing every item.':min<=1?'Auto hides items more than one tier below the act you are in. Nothing to hide yet.':
-    `Hiding Tier ${TIER_NAME.slice(0,min-1).join(', ')} ${f.rares!==false?'white and magic items':'items'}${f.min==='auto'?` (auto: you're in Tier ${TIER_NAME[dropAct(G.depth)-1]} lands)`:''}. Rings, amulets and socketed items always show.`+(hidden?` ${hidden} hidden here.`:'');
+    `Hiding Tier ${TIER_NAME.slice(0,min-1).join(', ')} ${f.rares!==false?'white and magic items':'items'}${f.min==='auto'?` (auto: you're in Tier ${TIER_NAME[dropAct(PD())-1]} lands)`:''}. Rings, amulets and socketed items always show.`+(hidden?` ${hidden} hidden here.`:'');
 }
 
 // ---------- inventory UI ----------
@@ -140,7 +145,7 @@ function renderInv(){
   $('eqgrid').innerHTML=EQ_SLOTS.map(sl=>sl==='offhand'&&twoH?`<div class="cell empty blocked">${itemIcon(c.equip.mainhand)}<span class="lbl">Off Hand</span><span class="tag">2H</span></div>`:setCell(c,sl)).join('');
   [...$('eqgrid').children].forEach((el,i)=>el.onclick=()=>{const sl=EQ_SLOTS[i],it=c.equip[sl];if(sl==='offhand'&&twoH){toast('Off Hand blocked','Your two-handed weapon needs both hands');return;}if(it)openItem(it,sl);});
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
-  const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*100);
+  const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*PD()))*100);
   $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],[['Item Rarity','+'+Math.round(s.rarity||0)+'%']],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('goldv').textContent=c.gold;$('bagCount').textContent=`${c.bag.length}/30`;
   const cells=[];for(let i=0;i<Math.max(30,c.bag.length);i++)cells.push(cellHtml(c.bag[i]));$('bag').innerHTML=cells.join('');
@@ -239,7 +244,7 @@ function equipFromBag(c,it,sl){const cur=c.equip[sl],drop=sl==='mainhand'&&is2h(
 function closeItem(){$('itemOv').classList.add('hidden');setPause();}
 
 // ---------- merchant ----------
-function potionPrice(){return 15+G.depth*3;} // v1.0.51: was 20+4/depth
+function potionPrice(){return 15+PD()*3;} // v1.0.51: was 20+4/depth
 function rollShop(d){
   const c=G.char,out=[];
   for(const t of typesFor(c.cls).sort(()=>Math.random()-0.5).slice(0,8)){const it=genItem(d,c.cls,1,t,1);out.push({it,price:Math.round(salvageValue(it)*(3/SALV_GOLD)*rand(0.9,1.1))});}
@@ -324,7 +329,7 @@ function renderSettings(){
     el.onchange=()=>{SETTINGS[k]=+el.value/100;storeSettings();};}}
 function showTitle(){
   $('titleOv').classList.remove('hidden');
-  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
+  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${c.diff&&c.depth<=25?DIFFS[c.diff].name+' ':''}${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.endMax||c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
   $('slots').querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>startGame(SAVES[+b.dataset.play]));
   $('slots').querySelectorAll('[data-del]').forEach(b=>{let armed=false;b.onclick=()=>{if(!armed){armed=true;b.textContent='Delete?';setTimeout(()=>{armed=false;b.textContent='✕';},2500);return;}SAVES.splice(+b.dataset.del,1);storeSaves();showTitle();};});
   $('newBtn').classList.toggle('dis',SAVES.length>=6);

@@ -188,7 +188,7 @@ const ETYPES={
 };
 // Elite affixes live in encounters.js (AFFIXES).
 // A pack is filled from the act roster until its budget runs out; budget grows slowly with depth.
-function rollPack(depth,elite){const A=ACTS[actIdx(depth)],st=stageOf(depth),Z=G.zone&&typeof ZONES!=='undefined'&&ZONES[G.zone];
+function rollPack(depth,elite){const A=ACTS[actIdx(depth)],st=stageOf(depth),Z=G.zone&&typeof ZONES!=='undefined'&&ZONES[G.zone];depth=powDepth(depth); /* maps.js: difficulty */
   const ros=(Z&&Z.roster&&Z.act===actIdx(depth)+1?Z.roster:A.roster).filter( /* zones may bring their own monster mix */r=>!r[2]||st>=r[2]||cycleOf(depth)>1),tot=ros.reduce((a,r)=>a+r[1],0);
   let budget=Math.min(depth>25?12:9,3.6+depth*0.22)*(elite?0.8:1);const out=[];
   for(let guard=0;budget>0.35&&out.length<12&&guard<40;guard++){let w=Math.random()*tot,t=ros[0][0];for(const r of ros){w-=r[1];if(w<0){t=r[0];break;}}
@@ -197,12 +197,13 @@ function rollPack(depth,elite){const A=ACTS[actIdx(depth)],st=stageOf(depth),Z=G
   return out;}
 
 function makeEnemy(type,x,y,depth,elite,pack,affs){
+  const cyc=cycleOf(depth);depth=powDepth(depth); // maps.js: Nightmare and Hell scale like the deeper depths
   const T=ETYPES[type],en=Math.max(0,depth-25),hpM=(1+0.4*(depth-1)+0.02*(depth-1)*(depth-1))*(1+0.03*en),dM=(1+0.25*(depth-1))*(1+0.02*en); // endless depths add a little extra per depth
   const act1=depth<=5?1.3:1,A=ACTS[actIdx(depth)],af=elite&&affs?affs.slice():[],fast=af.includes('fast');
   const e={type,col:T.col,x,y,r:T.r+(elite?3:0),hp:T.hp*hpM*(elite?2.4:1),dmg:T.dmg*dM*act1*(elite?1.35:1),spd:T.spd*(fast?1.35:1)*(elite?1.05:1),cdMul:fast?0.7:1,dr:T.dr||0,affs:af,
     hx:x,hy:y,cd:rand(0.5,1.5),wind:0,stun:0,frozen:0,flash:0,aggro:false,dead:false,elite,pack,face:0,seed:rand(0,TAU),dir:Math.random()<0.5?1:-1,
     xp:T.xp*(1+0.15*(depth-1))*(elite?3*(1+0.2*Math.max(0,af.length-1)):1),name:T.name,dash:0,act:null,stateT:rand(2,3.5)};
   if(T.ai==='burrow'){e.hidden=true;e.under=true;}
-  if(type==='boss'){e.hp=T.hp*hpM;e.dmg=T.dmg*dM;e.name=A.boss+(cycleOf(depth)>1?' '+roman(cycleOf(depth)):'');e.col=A.bossCol;e.phase=0;e.kind=actIdx(depth);const B=BOSSES[e.kind];e.hp*=B.hp;e.dmg*=B.dmg;e.spd*=B.spd;e.dr=B.dr||0;e.cd=1.5;e.maxHp=e.hp;bossInit(e);} /* js/bossfight.js: phases, stagger, life x BOSS_HP_K */
+  if(type==='boss'){e.hp=T.hp*hpM;e.dmg=T.dmg*dM;e.name=A.boss+(cyc>1?' '+roman(cyc):'');e.col=A.bossCol;e.phase=0;e.kind=actIdx(depth);const B=BOSSES[e.kind];e.hp*=B.hp;e.dmg*=B.dmg;e.spd*=B.spd;e.dr=B.dr||0;e.cd=1.5;e.maxHp=e.hp;bossInit(e);} /* js/bossfight.js: phases, stagger, life x BOSS_HP_K */
   e.maxHp=e.hp;return e;
 }

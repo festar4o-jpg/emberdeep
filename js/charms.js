@@ -26,7 +26,7 @@ function genCharm(ilvl,cls,size){
 }
 // Own roll, separate from item drops (so slot weights and bad-luck protection are untouched).
 const CHARM_DROP={normal:0.015,elite:0.06,boss:0.5};
-function dropCharms(e,kind){if(Math.random()<CHARM_DROP[kind])dropItem(e.x+rand(-20,20),e.y+rand(-20,20),genCharm(G.depth,G.char.cls,rollCharmSize(kind==='boss')));}
+function dropCharms(e,kind){if(Math.random()<CHARM_DROP[kind])dropItem(e.x+rand(-20,20),e.y+rand(-20,20),genCharm(PD(),G.char.cls,rollCharmSize(kind==='boss')));}
 // Stats from the pouch; a grand charm's skill only counts for the class it was made for.
 function addCharmStats(c,s){for(const it of charmsOf(c))for(const a of it.affs){if(a.k==='skill'){if(it.cls===c.cls)s.skill[a.s]+=a.v;}else s[a.k]+=a.v;}}
 function charmIn(it){const c=G.char,i=c.bag.indexOf(it);if(i<0||!charmFits(c,it))return false;c.bag.splice(i,1);charmsOf(c).push(it);refreshStats();saveChar();return true;}

@@ -50,20 +50,20 @@ function killEnemy(e){
   if(e.type==='thief'){thiefLoot(e);return;}
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk); // gems, runes, charms
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
-  if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*G.depth*(e.elite?3:1)));
-  if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+(G.depth>25?1:0);
-    for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,G.depth+L.ilvl,3,min,{act:dropAct(G.depth),top:true}));}
-    dropGold(e.x,e.y,G.depth*L.gold);dropGold(e.x+20,e.y,G.depth*L.gold*0.5);
+  if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
+  if(e.type==='boss'){const L=(BOSSES[e.kind]||BOSSES[0]).loot,n=L.n+(PD()>25?1:0);
+    for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,PD()+L.ilvl,3,min,{act:dropAct(PD()),top:true}));}
+    dropGold(e.x,e.y,PD()*L.gold);dropGold(e.x+20,e.y,PD()*L.gold*0.5);
     if(actIdx(G.depth)===4)emberCoreDrop(e);
     if(G.depth<=25)questDone(`a${actIdx(G.depth)+1}q4`); /* zones.js: each act's last quest */
     G.portal.active=true;G.p.potions=Math.max(potFloor(),G.p.potions);G.shake=20;
-    if(G.depth===25&&!c.won){c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory();},1800);}
+    if(G.depth===25&&(c.diffDone||0)<=(c.diff||0)){const d=c.diff||0;c.diffDone=d+1;c.won=true;toast(e.name+' falls!','');setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory(d);},1800);} // maps.js: the next difficulty opens
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){if(Math.random()<Math.min(1,ELITE_DROP+(e.affs.length>=3?0.05:0)))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,G.depth+1,1,0,{act:dropAct(G.depth)}));}
-  else if(Math.random()<normalDrop(T))dropItem(e.x,e.y,rollDrop(c,G.depth,0,0,{act:dropAct(G.depth)}));
+  else if(e.elite){if(Math.random()<Math.min(1,ELITE_DROP+(e.affs.length>=3?0.05:0)))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
+  else if(Math.random()<normalDrop(T))dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
 }
 // Item drop chances (v1.0.50): normal monsters 6.5-13% (tougher kinds more), champion/magic pack members 35%
 // (40% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
@@ -89,7 +89,7 @@ const BLINK_DIST=175;
 function dmgPlayer(raw,src){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
-  const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*G.depth));
+  const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
   const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
@@ -132,7 +132,7 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 
 // ---------- start / depth ----------
 function newChar(name,cls){
-  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0};
+  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
   const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
@@ -151,7 +151,7 @@ function startGame(c){
 function startDepth(d,mode){
   if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js / acts.js: acts built of zones */
   G.zone=null;G.sidePortal=null;G.zboss=null;
-  const c=G.char;G.depth=d;c.depth=d;c.town=0;c.maxDepth=Math.max(c.maxDepth,d);
+  const c=G.char;G.depth=d;c.depth=d;c.town=0;if(d>25)c.endMax=Math.max(c.endMax||0,d);else c.maxDepth=Math.max(c.maxDepth,d); // endless reach: one for all difficulties
   resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   genLevel(d,G.levelMode);G.cam.x=p.x;G.cam.y=p.y;
@@ -270,7 +270,7 @@ function update(dt){
   for(const h of G.ehaz){h.t-=dt;if(Math.random()<dt*3)G.parts.push({x:h.x+rand(-h.r,h.r)*0.6,y:h.y+rand(-h.r,h.r)*0.6,vx:0,vy:-25,life:0.6,max:0.6,col:h.kind==='poison'?'#b8ff5a':'#ffa040',s:3});
     if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt;p.dotCol=h.kind==='poison'?'#9fe04a':h.kind==='frost'?'#bfe8ff':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);else if(h.kind==='frost')slowPlayer(0.4,0.4);}}
   G.ehaz=G.ehaz.filter(h=>h.t>0);
-  if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*G.depth))*0.5);
+  if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*PD()))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
   for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}

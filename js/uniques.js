@@ -161,10 +161,10 @@ const inSetZone=S=>!S.zone||(!G.inTown&&G.depth>0&&actIdx(G.depth)+1===S.zone);
 const setItemsFor=(type,cls,act)=>Object.keys(SET_ITEMS).filter(k=>{const I=SET_ITEMS[k],S=SETS[I.set];return I.type===type&&S.act<=act&&(!S.cls||S.cls===cls)&&inSetZone(S);});
 // Boss trophies: every act boss can drop its own unique (and only it drops it), and has a good chance at a set piece.
 // The endless depths add 10%. (Item Rarity doesn't change these: they are extra drops, not the rarity of a drop.)
-function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1,plus=G.depth>25?0.1:0;
-  if(U&&Math.random()<Math.min(1,TROPHY_CH*mul+plus)){const it=genItem(G.depth+3,c.cls,0,U.type,3,U.wt,dropAct(G.depth),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
-  if(Math.random()<Math.min(1,BOSS_SET_CH*mul+plus)){const act=dropAct(G.depth),ks=Object.keys(SET_ITEMS).filter(si=>{const S=SETS[SET_ITEMS[si].set];return S.act<=act&&(!S.cls||S.cls===c.cls)&&inSetZone(S);});
-    if(ks.length)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(G.depth+3,c.cls,0,null,0,null,act,pick(ks)));}}
+function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1,plus=PD()>25?0.1:0;
+  if(U&&Math.random()<Math.min(1,TROPHY_CH*mul+plus)){const it=genItem(PD()+3,c.cls,0,U.type,3,U.wt,dropAct(PD()),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
+  if(Math.random()<Math.min(1,BOSS_SET_CH*mul+plus)){const act=dropAct(PD()),ks=Object.keys(SET_ITEMS).filter(si=>{const S=SETS[SET_ITEMS[si].set];return S.act<=act&&(!S.cls||S.cls===c.cls)&&inSetZone(S);});
+    if(ks.length)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(PD()+3,c.cls,0,null,0,null,act,pick(ks)));}}
 // Trophy powers that trigger on a kill.
 function trophyKill(e){const p=G.p;if(p.dead)return;
   if(hasPw('kingsPyre')){p.pyreN=Math.min(10,(p.pyreT>0?p.pyreN||0:0)+1);p.pyreT=4;}
@@ -177,7 +177,7 @@ function ashChain(e){let o=null,bd=170;for(const x of G.enemies){if(x===e||x.dea
 function rimeSkin(src){if(!src||src.dead||G.time-(src.rimeAt??-99)<4)return;src.rimeAt=G.time;src.frozen=Math.max(src.frozen||0,src.type==='boss'?0.5:1.5);
   floatText(src.x,src.y-src.r-16,'Frozen','#bfe4ff',false);burst(src.x,src.y,10,'#dff4ff',140);}
 // The act 5 boss: 40% chance of one extra Relics of the Ember Core piece.
-function emberCoreDrop(e){if(Math.random()>=0.4)return;const si=pick(SETS.embercore.items);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(G.depth+3,G.char.cls,0,null,0,null,5,si));}
+function emberCoreDrop(e){if(Math.random()>=0.4)return;const si=pick(SETS.embercore.items);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(PD()+3,G.char.cls,0,null,0,null,5,si));}
 const setOf=it=>it&&it.rarity===5&&SET_ITEMS[it.si]?SET_ITEMS[it.si].set:null;
 // Different pieces of each set among these items (worn equipment): {setKey: count}.
 function setCounts(items){const seen={},n={};for(const it of items){const s=setOf(it);if(!s||seen[it.si])continue;seen[it.si]=1;n[s]=(n[s]||0)+1;}return n;}
