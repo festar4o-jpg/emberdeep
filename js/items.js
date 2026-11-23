@@ -8,15 +8,15 @@ const SLOT_NAME={mainhand:'Main Hand',offhand:'Off Hand',helm:'Helm',body:'Body'
 // Item types: which slots they fit, drop weight (w = % of drops; shield and focus share the off-hand 10%, one per class), and affix pool.
 const TYPES={
   weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','loh','life','res','spell']},
-  shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh']},
+  shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh','resist','ares']},
   focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','res','cdr','crit','regen','life']},
-  helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen']},
-  body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr']},
-  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor']},
-  belt:{name:'Belt',slots:['belt'],w:10,pool:['life','pot','armor','regen','res']},
-  boots:{name:'Boots',slots:['boots'],w:10,pool:['move','life','armor','regen','cdr']},
+  helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen','resist']},
+  body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr','resist']},
+  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor','resist']},
+  belt:{name:'Belt',slots:['belt'],w:10,pool:['life','pot','armor','regen','res','resist']},
+  boots:{name:'Boots',slots:['boots'],w:10,pool:['move','life','armor','regen','cdr','resist']},
   amulet:{name:'Amulet',slots:['amulet'],w:6,pool:null}, // null = any affix
-  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell']}
+  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell','resist','ares']}
 };
 // ---------- base tiers: each act adds a tier (Tier I in act 1 … Tier V in act 5) ----------
 // A base's tier sets its base level, which drives base damage, armor and implicit values; item level only nudges it
@@ -158,6 +158,8 @@ const CLASSES={
     desc:'Fragile spellcaster. Hurls fire, frost and lightning from a distance. Uses Mana.'}
 };
 
+// One resistance roll at affix level l (see the resistances in AFF).
+const resRoll=l=>rand(3,6)+l*0.25+Math.max(0,l-25)*0.35;
 const AFF={
   life:{t:'+{v} Life',pre:'Hale',suf:'of the Bear',roll:l=>rand(6,12)+l*3.5},
   res:{t:'+{v} Max Fury/Mana',pre:'Spirited',suf:'of the Mind',roll:l=>rand(5,10)+l*0.8},
@@ -173,9 +175,21 @@ const AFF={
   // flat: never multiplied (upgrades on rings and amulets)
   block:{t:'+{v}% Block Chance',pre:'Warding',suf:'of the Bulwark',roll:l=>rand(3,6)+Math.min(4,l*0.1),flat:1},
   spell:{t:'+{v}% Spell Damage',pre:'Arcane',suf:'of Sorcery',roll:l=>rand(5,10)+l*0.4,cls:'arcanist'},
-  pot:{t:'+{v} Potion Charges',pre:"Brewer's",suf:'of Plenty',roll:l=>rand(1,1.6)+(l>=15?0.6:0),flat:1}
+  pot:{t:'+{v} Potion Charges',pre:"Brewer's",suf:'of Plenty',roll:l=>rand(1,1.6)+(l>=15?0.6:0),flat:1},
+  // resistances (v1.0.57): they grow with item level, faster past 25, so Nightmare and Hell gear (item level 26-75+)
+  // rolls enough to win back their penalty: Tier I ~4-7%, Tier V ~9-12%, Nightmare up to ~27%, Hell up to ~42%
+  // (All Resistances: half). Small in Normal on purpose, so the Normal boss fights keep their tuning.
+  // 'resist' is not a stat: a pool entry that rolls one of the four (so armour keeps its old stats as often as before).
+  fres:{t:'+{v}% Fire Resistance',pre:'Tempered',suf:'of the Salamander',roll:resRoll,flat:1,res:1},
+  cres:{t:'+{v}% Cold Resistance',pre:'Furred',suf:'of the Yeti',roll:resRoll,flat:1,res:1},
+  lres:{t:'+{v}% Lightning Resistance',pre:'Grounded',suf:'of the Storm',roll:resRoll,flat:1,res:1},
+  pres:{t:'+{v}% Poison Resistance',pre:'Antidotal',suf:'of the Serpent',roll:resRoll,flat:1,res:1},
+  ares:{t:'+{v}% All Resistances',pre:'Warded',suf:'of the Elements',roll:l=>resRoll(l)*0.5,flat:1,res:1},
+  resist:{t:'',pre:'',suf:'',roll:()=>0,flat:1,meta:1}
 };
-const AFF_KEYS=Object.keys(AFF);
+const RES_KEYS=['fres','cres','lres','pres'],RES_CAP=75;
+const RES_NAME={fres:'Fire',cres:'Cold',lres:'Lightning',pres:'Poison'},RES_COL={fres:'#ff9a3a',cres:'#9fd8ff',lres:'#ffe45a',pres:'#9fe04a'};
+const AFF_KEYS=Object.keys(AFF).filter(k=>!AFF[k].meta);
 // Per-tier base names (Tier I … V); amulets and rings are untiered.
 const BASES={shield:[['Buckler','Round Shield'],['Kite Shield','Sandstone Targe'],['Heater','Rotwood Pavise'],['Tower Shield','Frostward Shield'],['Ember Bulwark','Demon Aegis']],
   helm:[['Cap','Hood'],['Helm','Desert Circlet'],['Great Helm','Bog Coif'],['Frost Helm','Winged Helm'],['Cinder Crown','Demon Horns']],
@@ -260,7 +274,7 @@ function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
   for(const k of DROP_KEYS)ds[k]=k===slot?0:ds[k]+1;
   DROP_R=rar;try{return genItem(ilvl,icls,boost,type,0,undefined,tier);}finally{DROP_R=null;}
 }
-function rollAff(k,ilvl,rm=1){const a=AFF[k];const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
+function rollAff(k,ilvl,rm=1){if(k==='resist')k=pick(RES_KEYS);const a=AFF[k];const v=a.roll(ilvl)*rm;return {k,v:a.dec?+v.toFixed(1):Math.max(1,Math.round(v))};}
 // tier: base tier 1..5 for tiered types (default: the tier of the item level's act). forceSet: make this set piece.
 // forceUq: make this unique (boss trophies, which never come from the normal unique pool).
 function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,forceUq){
@@ -416,7 +430,7 @@ function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
-  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
+  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
@@ -442,8 +456,10 @@ function calcStats(c,swap,at){
   shrineStats(s);
   return s;
 }
+// Resistance to one element after the difficulty's penalty (maps.js resPenalty), at most 75%; can go below 0.
+function resOf(s,k){return Math.min(RES_CAP,(s[k]||0)+(s.ares||0)-resPenalty());}
 function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15);
-  const def=s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10;return off*Math.sqrt(def)*(1+s.move/400);}
+  const def=(s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10)*(1+RES_KEYS.reduce((a,k)=>a+Math.max(0,Math.min(RES_CAP,(s[k]||0)+(s.ares||0))),0)/600);return off*Math.sqrt(def)*(1+s.move/400);}
 // ---------- loot filter (per character, set in the menu) ----------
 // c.filter = {min, rares, autoSalv}: autoSalv salvages plain white items on pickup (see smith.js).
 // min 0 = off, 'auto' = hide anything more than one tier below the act you're in,

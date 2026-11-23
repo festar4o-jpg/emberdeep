@@ -65,7 +65,11 @@ const SUPERU={
 };
 ETYPES.zboss={name:'Zone Boss',r:28,hp:850,dmg:9,spd:70,range:26,cd:1.6,xp:90,col:'#7a6a5a',ai:'zboss',drop:1,heavy:1,shape:'zboss'};
 ETYPES.nest={name:'Monster Nest',r:24,hp:70,dmg:0,spd:0,range:0,cd:4,xp:30,col:'#5a4a3a',ai:'nest',drop:0.6,shape:'nest'};
-function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);
+// Zone boss elements ([resistance key, share of their hits]; physical when not listed).
+const ZB_ELEM={weaver:['pres',0.5],abbess:['fres',0.6],lamplighter:['fres',0.6],wight:['cres',0.6],vael:['lres',0.6],nefrem:['fres',0.6],broodmother:['pres',0.6],
+  bog:['pres',0.6],thornfather:['pres',0.5],gloomhag:['lres',0.6],silt:['cres',0.5],leechking:['pres',0.6],frostjaw:['cres',0.5],avwitch:['cres',0.7],matriarch:['cres',0.6],
+  vosk:['lres',0.5],ymra:['cres',0.6],pyrrhus:['fres',0.7],overseer:['fres',0.5],coil:['fres',0.7],ixa:['fres',0.7],slavemaster:['fres',0.5]};
+function makeZoneBoss(id,x,y,depth){const B=ZBOSS[id],e=makeEnemy('zboss',x,y,depth,false,'zb-'+id,null);if(ZB_ELEM[id]){e.elem=ZB_ELEM[id][0];e.elemS=ZB_ELEM[id][1];}
   e.zb=id;e.kind=id;e.name=B.name;e.r=B.r;e.hp=e.maxHp=e.maxHp*B.hp;e.dmg*=B.dmg;e.spd=B.spd;e.cd=2;return e;}
 function makeSuper(id,x,y,depth,pack){const S=SUPERU[id],e=makeEnemy(S.base,x,y,depth,true,pack,S.affs.slice());
   e.su=id;e.name=S.name;e.hp=e.maxHp=e.maxHp*(S.hp||2.2);e.dmg*=1.15;e.r+=2;return e;}

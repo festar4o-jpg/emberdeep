@@ -26,11 +26,13 @@ const actIdx=d=>Math.floor((d-1)/5)%5,cycleOf=d=>Math.floor((d-1)/25)+1,stageOf=
 // the highest difficulty beaten: Endless 1 is power depth 26 after Normal, 51 after Nightmare, 76 after Hell.
 // Monster builders (makeEnemy, rollPack, rollAffixes) take the depth and convert it themselves; loot and prices use PD().
 // res: the resistance penalty (v1.0.57); loot: the drop bonuses (v1.0.58).
-const DIFFS=[{name:'Normal',col:'#d9a441',elite:0},{name:'Nightmare',col:'#b070ff',elite:0.06},{name:'Hell',col:'#ff4a3a',elite:0.12}];
+const DIFFS=[{name:'Normal',col:'#d9a441',elite:0,res:0},{name:'Nightmare',col:'#b070ff',elite:0.06,res:20},{name:'Hell',col:'#ff4a3a',elite:0.12,res:50}];
 const DIFF_N=DIFFS.length;
 const curDiff=()=>G.char&&G.char.diff||0;
 const powDepth=d=>{const c=G.char;if(!c)return d;return d+25*(d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1));};
 const PD=()=>powDepth(G.depth||1);
+// Resistance penalty where you are: the difficulty's (Nightmare 20, Hell 50); the endless depths take the highest beaten.
+const resPenalty=()=>{const c=G.char;if(!c)return 0;const d=G.depth||1,k=d<=25?(c.diff||0):Math.max(0,(c.diffDone||0)-1);return DIFFS[k].res||0;};
 const roman=n=>['I','II','III','IV','V','VI','VII','VIII','IX','X'][n-1]||String(n);
 const depthLabel=d=>d>25?`Endless ${d-25}`:`${actIdx(d)+1}-${stageOf(d)}`;
 // grid: 0 floor, 1 wall, 2 void (chasm / lava lake: blocks walking, not projectiles). terrain: 1 poison, 2 lava, 3 bridge.

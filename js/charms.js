@@ -9,7 +9,7 @@ const CHARM={
   large:{name:'Large Charm',slots:3,m:0.8,n:[2,2],w:13},
   grand:{name:'Grand Charm',slots:3,m:0.5,n:[1,1],w:2}
 };
-const CHARM_POOL=['life','res','dmg','armor','crit','critd','aspd','cdr','move','loh','regen','spell'];
+const CHARM_POOL=['life','res','dmg','armor','crit','critd','aspd','cdr','move','loh','regen','spell','resist'];
 const charmSlots=it=>CHARM[it.size].slots;
 const charmsOf=c=>Array.isArray(c.charms)?c.charms:(c.charms=[]);
 const charmUsed=c=>charmsOf(c).reduce((a,it)=>a+charmSlots(it),0);

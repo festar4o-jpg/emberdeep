@@ -86,12 +86,14 @@ function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin
     p.dodge={t:0,dur:0.14,a,blink:true};p.face=a;burst(x0,y0,14,'#c48bff',160);burst(p.x,p.y,14,'#c48bff',160);G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:40,t:0,max:0.2,col:'#c48bff'});return true;}
   p.dodge={t:0,dur:DODGE_DUR,a};burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
 const BLINK_DIST=175;
-function dmgPlayer(raw,src){
+// el: the hit's element (a resistance key) when not the attacker's own (src.elem, src.elemS share of the hit).
+function dmgPlayer(raw,src,el){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul(); /* bossfight.js: underleveled for the area, boss matchup */
   if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
-  const d=Math.max(1,Math.round(raw*(1-red)*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
-  floatText(p.x,p.y-p.r-8,d,'#ff5a5a',false);
+  const E=el||src&&src.elem,sh=el?1:src&&src.elemS||1,rm=E?1-sh*resOf(G.stats,E)/100:1; // items.js: resistances (penalty included)
+  const d=Math.max(1,Math.round(raw*(1-red)*rm*rand(0.9,1.1)));p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
+  floatText(p.x,p.y-p.r-8,d,E&&sh>=0.5?RES_COL[E]:'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
   if(hasPw('frostward'))autoNova();if(hasPw('rimeSkin'))rimeSkin(src);if(hasPw('lastBreath'))lastBreath();
@@ -102,6 +104,8 @@ function checkDeath(p){if(p.hp<=0&&!p.dead){p.hp=0;p.dead=true;playSfx('death');
 function burnPlayer(v,col){const p=G.p;if(p.dead)return;const d=Math.max(1,Math.round(v));p.hp-=d;p.hurt=Math.max(p.hurt,0.12);floatText(p.x+rand(-6,6),p.y-p.r-8,d,col||'#ff9a3a',false);checkDeath(p);}
 function slowPlayer(amt,t){const p=G.p;p.slowAmt=Math.max(p.slowT>0?p.slowAmt:0,amt);p.slowT=Math.max(p.slowT||0,t);}
 // Enemy ground hazards (poison clouds, fire patches) damage the player over time.
+// A hazard's damage taken through its element's resistance.
+const HAZ_RES={fire:'fres',frost:'cres',poison:'pres'},resMul=k=>k?1-resOf(G.stats,k)/100:1;
 function addEHaz(x,y,r,t,dps,kind){if(G.ehaz.length>70)G.ehaz.shift();G.ehaz.push({x,y,r,t,max:t,dps,kind});}
 function healPlayer(v,silent){const p=G.p;if(p.dead)return;const before=p.hp;p.hp=Math.min(G.stats.life,p.hp+v);if(!silent&&p.hp-before>=1)floatText(p.x,p.y-p.r-20,'+'+Math.round(p.hp-before),'#5f5',false);}
 function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home});}
@@ -198,7 +202,7 @@ function update(dt){
     if(t>=1){p.leap=null;aoe(p.x,p.y,95,L.mult,{stun:1});G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
-    if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04);burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;
+    if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04*resMul('fres'));burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;
     if(t===T_POISON&&Math.random()<dt*8)G.parts.push({x:p.x+rand(-12,12),y:p.y+rand(-6,10),vx:0,vy:-30,life:0.5,max:0.5,col:'#9fe04a',s:3});}
   if(!G.inTown&&Math.random()<0.5){const i=Math.floor(p.x/TILE)+randi(-9,9),j=Math.floor(p.y/TILE)+randi(-7,7);
     if(i>=0&&j>=0&&i<MW&&j<MH){const k=j*MW+i,t=G.terrain[k],lava=t===T_LAVA||G.grid[k]===2&&ACTS[actIdx(G.depth)].gen==='ember';
@@ -268,7 +272,7 @@ function update(dt){
   // enemy ground hazards: poison clouds slow and hurt, fire patches burn (armor halves it)
   let dot=0;
   for(const h of G.ehaz){h.t-=dt;if(Math.random()<dt*3)G.parts.push({x:h.x+rand(-h.r,h.r)*0.6,y:h.y+rand(-h.r,h.r)*0.6,vx:0,vy:-25,life:0.6,max:0.6,col:h.kind==='poison'?'#b8ff5a':'#ffa040',s:3});
-    if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt;p.dotCol=h.kind==='poison'?'#9fe04a':h.kind==='frost'?'#bfe8ff':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);else if(h.kind==='frost')slowPlayer(0.4,0.4);}}
+    if(!p.dead&&!p.leap&&Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r*0.4){dot+=h.dps*dt*resMul(HAZ_RES[h.kind]);p.dotCol=h.kind==='poison'?'#9fe04a':h.kind==='frost'?'#bfe8ff':'#ff9a3a';if(h.kind==='poison')slowPlayer(0.3,0.3);else if(h.kind==='frost')slowPlayer(0.4,0.4);}}
   G.ehaz=G.ehaz.filter(h=>h.t>0);
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*PD()))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}

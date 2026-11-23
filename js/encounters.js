@@ -26,15 +26,15 @@ const affLv=()=>Math.min(5,actIdx(G.depth)+(PD()>25?1:0));
 // Cheapest non-summoner monster of the act: what Summoner elites call in.
 function minionType(){return ACTS[actIdx(G.depth)].roster.map(r=>r[0]).filter(t=>t!=='summoner').sort((a,b)=>ETYPES[a].cost-ETYPES[b].cost)[0];}
 // Telegraphed blast that does not depend on its caster staying alive.
-function affStrike(x,y,r,delay,dmg,col,onHit){G.fx.push({type:'tele',x,y,r,t:0,max:delay,col});
-  later(delay,()=>{const p=G.p;if(Math.hypot(p.x-x,p.y-y)<r+p.r*0.5&&dmgPlayer(dmg,null)&&onHit)onHit();G.fx.push({type:'ring',x,y,r0:r*0.3,r1:r,t:0,max:0.25,col});burst(x,y,14,col,180);});}
+function affStrike(x,y,r,delay,dmg,col,onHit,el){G.fx.push({type:'tele',x,y,r,t:0,max:delay,col});
+  later(delay,()=>{const p=G.p;if(Math.hypot(p.x-x,p.y-y)<r+p.r*0.5&&dmgPlayer(dmg,null,el)&&onHit)onHit();G.fx.push({type:'ring',x,y,r0:r*0.3,r1:r,t:0,max:0.25,col});burst(x,y,14,col,180);});}
 // Runs every frame for an aggroed, active elite with affixes (d = distance to the player).
 function affixTick(e,d,dt){const L=affLv(),T=e.affT||(e.affT={});
   const ready=(k,cd)=>{T[k]=(T[k]??rand(1,cd))-dt;if(T[k]>0)return false;T[k]=cd*rand(0.85,1.15);return true;};
   for(const k of e.affs){
     if(k==='shielded'){if(!(e.shieldT>0)&&ready(k,7-L*0.4)){e.shieldT=1.8+L*0.25;G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r+16,t:0,max:0.3,col:'#9ab0ff'});}}
     else if(k==='teleporter'){if(ready(k,6-L*0.5)){if(d>200||d<70){if(blinkNear(e))e.cd=Math.max(e.cd,0.5);}else T[k]=0.4;}}
-    else if(k==='frozen'){if(d<420&&ready(k,5.5-L*0.4)){const p=G.p;affStrike(p.x+rand(-25,25),p.y+rand(-25,25),70+L*4,1.2,e.dmg*0.7,'#bfe8ff',()=>slowPlayer(0.3+L*0.05,1.5));}}
+    else if(k==='frozen'){if(d<420&&ready(k,5.5-L*0.4)){const p=G.p;affStrike(p.x+rand(-25,25),p.y+rand(-25,25),70+L*4,1.2,e.dmg*0.7,'#bfe8ff',()=>slowPlayer(0.3+L*0.05,1.5),'cres');}}
     else if(k==='summoner'){if(ready(k,9-L*0.6)){const t=minionType(),n=(t==='scarab'?3:2)+(L>=3?1:0);bossSummon(e,t,n,n+2);}}
     else if(k==='molten'){T.molten=(T.molten||0)-dt;if(T.molten<=0){T.molten=0.4;addEHaz(e.x,e.y,26,2.5+L*0.2,e.dmg*0.35,'fire');}}
     else if(k==='waller'){if(d<260&&ready(k,8-L*0.5))raiseWall(e,L);}
@@ -44,7 +44,7 @@ function affixTick(e,d,dt){const L=affLv(),T=e.affT||(e.affT={});
 function reflectHit(e,dealt){const L=affLv();e.reflAcc=(e.reflAcc||0)+Math.min(dealt*(0.08+0.02*L),e.dmg*0.6);
   if(G.time-(e.reflLast||-9)<0.25||e.reflAcc<1)return;e.reflLast=G.time;const v=e.reflAcc;e.reflAcc=0;burnPlayer(v,'#ff5ad0');
   G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r+12,t:0,max:0.2,col:'#ff5ad0'});}
-function affixDeath(e){if(hasAff(e,'explodes')){const L=affLv();affStrike(e.x,e.y,80+L*5,1,e.dmg*(1.1+0.1*L),'#ff6a3a');}}
+function affixDeath(e){if(hasAff(e,'explodes')){const L=affLv();affStrike(e.x,e.y,80+L*5,1,e.dmg*(1.1+0.1*L),'#ff6a3a',null,'fres');}}
 // Waller: a short line of stone rises just behind the player (away from the elite), then crumbles.
 function raiseWall(e,L){const p=G.p,a=Math.atan2(p.y-e.y,p.x-e.x),cx=p.x+Math.cos(a)*TILE*1.6,cy=p.y+Math.sin(a)*TILE*1.6,px=-Math.sin(a),py=Math.cos(a),n=5+(L>=3?2:0);
   const P=G.portal,pk=tileIdx(P.x,P.y),busy=[p,...G.enemies.filter(o=>!o.dead),...G.feats];let any=false;

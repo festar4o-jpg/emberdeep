@@ -22,7 +22,7 @@ const near=(r)=>{const p=G.p;for(let k=0;k<12;k++){const a=rand(0,TAU),d=rand(0,
 const BIG=e=>e.dmg*4; // a big attack: about half your life with act-appropriate gear
 const BOSSES=[
   { // Act 1: Varrok the Hollow, a crypt lord who raises the dead. Teaches dodging: Grave Cleave.
-    hp:0.75,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
+    elem:['cres',0.4],hp:0.75,dmg:1,pace:1,spd:0.9,enrage:'tears open the graves!',
     vs:{warden:[1.35,'Old bone shatters under steel'],arcanist:[0.55,'Grave wards blunt your spells']},
     loot:{n:2,rare:1,unique:0,ilvl:2,gold:60},
     phases:[
@@ -34,7 +34,7 @@ const BOSSES=[
     {name:'Raise Dead',w:2,cd:2,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#9ab0d8'};e.act=()=>{bossSummon(e,'grunt',e.phase?4:3,6);if(e.phase)bossSummon(e,'archer',1,7);};}},
     {name:'Grave Hands',w:3,cd:1.6,fn(e){const n=e.phase?7:5;e.busy=0.5;for(let i=0;i<n;i++)bossLater(e,i*0.15,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(110);groundStrike(e,x,y,58,0.9,e.dmg*0.9,'#9ab0d8');});}}]},
   { // Act 2: The Ash Tyrant, a fast brute of chained charges and falling ash
-    hp:1.45,dmg:1.05,pace:0.95,spd:1.2,enrage:'whips up the sandstorm!',
+    elem:['lres',0.5],hp:1.45,dmg:1.05,pace:0.95,spd:1.2,enrage:'whips up the sandstorm!',
     vs:{warden:[1.3,'Steel finds the cracks in his ash-hardened hide'],arcanist:[0.75,'Keep your distance: his charges are deadly up close']},
     loot:{n:3,rare:1,unique:0,ilvl:3,gold:75},
     phases:[
@@ -50,7 +50,7 @@ const BOSSES=[
     {name:'Blink Slam',w:2,cd:1,big:1,fn(e){if(!blinkNear(e))return;bigAttack(e,1.1,()=>{e.tele={r:130,col:'#e0a860'};},()=>{if(dist(e,G.p)<130+G.p.r)dmgPlayer(BIG(e)*0.85,e);G.shake=Math.max(G.shake,10);burst(e.x,e.y,24,'#c8a070',220);fxCracks(e.x,e.y,130,'#ffb060');
         if(e.phase)ring(e,12,240,'#f0c878',e.dmg*0.45,6,rand(0,TAU));});}}]},
   { // Act 3: Mother of Rot, slow, fills the arena with poison and spawn
-    hp:1.37,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
+    elem:['pres',0.6],hp:1.37,dmg:1.05,pace:0.95,spd:0.6,enrage:'bursts with festering rot!',
     vs:{warden:[1.0,'Steel cuts through rotting flesh'],arcanist:[0.9,'Her rot drinks your magic, but you keep your distance',0.86]},
     loot:{n:3,rare:1,unique:0,ilvl:3,gold:90},
     phases:[
@@ -63,7 +63,7 @@ const BOSSES=[
     {name:'Spore Nova',w:2,cd:1.3,fn(e){const off=rand(0,TAU);ring(e,18,170,'#a8e060',e.dmg*0.5,7,off,0,{slow:0.35});if(e.phase)bossLater(e,0.35,()=>ring(e,18,170,'#a8e060',e.dmg*0.5,7,off+TAU/36,0,{slow:0.35}));e.busy=0.6;}},
     {name:'Brood',w:2,cd:1.8,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#9fe04a'};e.act=()=>bossSummon(e,'sporetoad',e.phase?4:3,7);}}]},
   { // Act 4: Rimeheart, the Frozen King, ice lances, avalanches, a warded shield and a floor that shatters
-    hp:2.7,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
+    elem:['cres',0.6],hp:2.7,dmg:1.15,pace:0.85,spd:0.75,dr:0.15,
     vs:{warden:[0.95,'Ice armour turns your blades, but your plate holds the cold out',0.95],arcanist:[1.15,'Fire and lightning crack his ice']},enrage:'calls down the endless winter!',
     loot:{n:4,rare:2,unique:0,ilvl:4,gold:110},
     phases:[
@@ -75,7 +75,7 @@ const BOSSES=[
     {name:'Frost Ring',w:2,cd:1.2,fn(e){const off=rand(0,TAU);ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off,0,{slow:0.4});if(e.phase)bossLater(e,0.4,()=>ring(e,24,200,'#bfe8ff',e.dmg*0.5,6,off+TAU/48,0,{slow:0.4}));e.busy=0.6;}},
     {name:'Shardlings',w:2,cd:1.6,fn(e){e.wind=0.8;e.tele={r:e.r+30,col:'#8fd0f8'};e.act=()=>bossSummon(e,'shardling',e.phase?4:3,6);}}]},
   { // Act 5: The Cinder King: Cataclysm with one safe wedge, meteors, burning charges; a molten shield; the Core melts down
-    hp:9.0,dmg:0.85,pace:0.8,spd:1,enrage:'ignites the Core!',
+    elem:['fres',0.6],hp:9.0,dmg:0.85,pace:0.8,spd:1,enrage:'ignites the Core!',
     vs:{warden:[1.75,'His molten armour breaks under steel, but your plate burns',1.6],arcanist:[0.75,'Living flame shrugs off your spells, but your wards resist his fire',0.75]},
     loot:{n:4,rare:1,unique:1,ilvl:5,gold:140},
     phases:[
@@ -196,6 +196,11 @@ function rollPack(depth,elite){const A=ACTS[actIdx(depth)],st=stageOf(depth),Z=G
     const n=t==='scarab'?randi(4,6):t==='imp'?2:1;for(let k=0;k<n;k++)out.push(t);budget-=ETYPES[t].cost*n;}
   return out;}
 
+// Elements (v1.0.57): what part of a monster's hits is fire, cold, lightning or poison ([resistance key, share]); the
+// rest is physical (armour only). Resistances cut the elemental part (items.js resOf). Zone bosses: ZB_ELEM (zones.js),
+// act bosses: BOSSES[k].elem. Hazards and elite affixes pass their own element to dmgPlayer.
+const ELEM_OF={dustmage:['lres',1],sporetoad:['pres',1],vinelasher:['pres',1],scarab:['pres',0.4],frostwraith:['cres',1],icegolem:['cres',0.5],shardling:['cres',0.6],
+  imp:['fres',1],magmabrute:['fres',0.6],summoner:['fres',1]};
 function makeEnemy(type,x,y,depth,elite,pack,affs){
   const cyc=cycleOf(depth);depth=powDepth(depth); // maps.js: Nightmare and Hell scale like the deeper depths
   const T=ETYPES[type],en=Math.max(0,depth-25),hpM=(1+0.4*(depth-1)+0.02*(depth-1)*(depth-1))*(1+0.03*en),dM=(1+0.25*(depth-1))*(1+0.02*en); // endless depths add a little extra per depth
@@ -204,6 +209,7 @@ function makeEnemy(type,x,y,depth,elite,pack,affs){
     hx:x,hy:y,cd:rand(0.5,1.5),wind:0,stun:0,frozen:0,flash:0,aggro:false,dead:false,elite,pack,face:0,seed:rand(0,TAU),dir:Math.random()<0.5?1:-1,
     xp:T.xp*(1+0.15*(depth-1))*(elite?3*(1+0.2*Math.max(0,af.length-1)):1),name:T.name,dash:0,act:null,stateT:rand(2,3.5)};
   if(T.ai==='burrow'){e.hidden=true;e.under=true;}
-  if(type==='boss'){e.hp=T.hp*hpM;e.dmg=T.dmg*dM;e.name=A.boss+(cyc>1?' '+roman(cyc):'');e.col=A.bossCol;e.phase=0;e.kind=actIdx(depth);const B=BOSSES[e.kind];e.hp*=B.hp;e.dmg*=B.dmg;e.spd*=B.spd;e.dr=B.dr||0;e.cd=1.5;e.maxHp=e.hp;bossInit(e);} /* js/bossfight.js: phases, stagger, life x BOSS_HP_K */
+  const EL=ELEM_OF[type];if(EL){e.elem=EL[0];e.elemS=EL[1];}
+  if(type==='boss'){e.hp=T.hp*hpM;e.dmg=T.dmg*dM;e.name=A.boss+(cyc>1?' '+roman(cyc):'');e.col=A.bossCol;e.phase=0;e.kind=actIdx(depth);const B=BOSSES[e.kind];if(B.elem){e.elem=B.elem[0];e.elemS=B.elem[1];}e.hp*=B.hp;e.dmg*=B.dmg;e.spd*=B.spd;e.dr=B.dr||0;e.cd=1.5;e.maxHp=e.hp;bossInit(e);} /* js/bossfight.js: phases, stagger, life x BOSS_HP_K */
   e.maxHp=e.hp;return e;
 }
