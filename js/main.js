@@ -4,10 +4,13 @@
 let last=performance.now();
 function frame(now){
   const gap=now-last,dt=Math.min(0.05,gap/1000);last=now;const t0=performance.now();
+  const idle=G.paused||portraitBlocked(); // a menu is open, the game is paused or the phone is upright
   if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
-  else if(G.char&&G.p&&!G.paused&&!portraitBlocked())update(dt);
-  render();musicTick(dt); // music.js
-  if(G.char&&G.p){updateHud();G.mmT-=dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}
+  else if(G.char&&G.p&&!idle)update(dt);
+  // perf.js: while idle nothing moves, so the scene behind the menu is only redrawn IDLE_DRAW_MS apart (battery)
+  if(!idle||now-PERF.idleAt>=IDLE_DRAW_MS){PERF.idleAt=now;PERF.draws++;render();
+    if(G.char&&G.p){updateHud();G.mmT-=idle?IDLE_DRAW_MS/1000:dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}}
+  musicTick(dt); // music.js
   perfFrame(gap,performance.now()-t0); // perf.js: FPS counter
   requestAnimationFrame(frame);
 }

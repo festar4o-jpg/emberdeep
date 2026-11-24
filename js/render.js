@@ -10,6 +10,10 @@ function resizeTo(w,h){CW=w;CH=h;} // tests: pretend a screen size
 function placeJoy(on){const j=$('joy'),k=$('knob');if(on){j.style.left=joy.ox+'px';j.style.top=joy.oy+'px';j.style.opacity=1;return;}
   const x=clamp(CW*0.2,150,230);j.style.left=(SETTINGS.lefty?CW-x:x)+'px';j.style.top=(CH-105)+'px';j.style.opacity=0.35;k.style.transform='translate(0,0)';}
 
+// Burning / rotting ground glow, painted once per kind and reused.
+const HAZ_GLOW={};
+function hazGlow(rot){const k=rot?'rot':'fire';let c=HAZ_GLOW[k];if(c)return c;const S=128;c=mkCanvas(S,S);const x=c.getContext('2d'),g=x.createRadialGradient(S/2,S/2,S*0.02,S/2,S/2,S/2);
+  g.addColorStop(0,rot?'#8fd04066':'#ff6a1a66');g.addColorStop(1,rot?'#6ab02000':'#ff3a0a00');x.fillStyle=g;x.fillRect(0,0,S,S);return HAZ_GLOW[k]=c;}
 function render(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#060403';ctx.fillRect(0,0,cv.width,cv.height);
   if(!G.mapCv||!G.p)return;
@@ -37,7 +41,7 @@ function render(){
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
   if(G.inTown&&G.bench&&onScreen(G.bench.x,G.bench.y,90))drawBench(); // currency.js
   // hazards & telegraphs
-  for(const h of G.hazards){const g=ctx.createRadialGradient(h.x,h.y,5,h.x,h.y,h.r);g.addColorStop(0,h.rot?'#8fd04066':'#ff6a1a66');g.addColorStop(1,h.rot?'#6ab02000':'#ff3a0a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();}
+  for(const h of G.hazards){if(!onScreen(h.x,h.y,h.r))continue;ctx.drawImage(hazGlow(h.rot),h.x-h.r,h.y-h.r,h.r*2,h.r*2);} // one glow sprite per kind, drawn to size (no new gradient each frame)
   for(const f of G.fx)if((f.type==='tele'||f.type==='tline')&&!f.own)drawWarning(f,f.t/f.max); // fx.js: enemy attacks, red/orange
   drawSplats(); // fx.js: blood that fades
   for(const f of G.fx)if(f.type==='tline'&&f.own){const t=f.t/f.max;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.strokeStyle=f.col;ctx.globalAlpha=0.7;ctx.lineWidth=2;ctx.strokeRect(0,-f.w/2,f.len,f.w);ctx.globalAlpha=0.2;ctx.fillStyle=f.col;ctx.fillRect(0,-f.w/2,f.len*t,f.w);ctx.restore();ctx.globalAlpha=1;}

@@ -18,30 +18,35 @@ function buildSkillBar(){
   $('skDot').classList.toggle('hidden',!canLearnAny());
 }
 function canLearnAny(){const c=G.char;if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
+// HUD writes go through hud(): a page write only when the value changed (each write can make the page redo its layout).
+// k: 'text' / 'html' / 'title', '-name' a CSS variable, '.name' a class on/off, anything else a style property.
+const HUDC=new WeakMap(),r2=v=>Math.round(v*100)/100,pc=v=>Math.round(v*1000)/10+'%';
+function hud(el,k,v){if(!el)return;let m=HUDC.get(el);if(!m){m={};HUDC.set(el,m);}if(m[k]===v)return;m[k]=v;
+  if(k==='text')el.textContent=v;else if(k==='html')el.innerHTML=v;else if(k==='title')el.title=v;else if(k[0]==='-')el.style.setProperty(k,v);else if(k[0]==='.')el.classList.toggle(k.slice(1),!!v);else el.style[k]=v;}
 function updateHud(){
   const p=G.p,s=G.stats,c=G.char,C=CLASSES[c.cls];ailHudTick(); // ailments.js: status badges
-  $('nmTxt').textContent=`${c.name} · Lv ${lvlLabel(c)} ${C.name}`;
+  hud($('nmTxt'),'text',`${c.name} · Lv ${lvlLabel(c)} ${C.name}`);
   // life / resource bars fill from the left; life pulses below 30%
-  const hpF=clamp(p.hp/s.life,0,1);
-  $('hpb').firstElementChild.style.height=hpF*100+'%';$('hpb').lastElementChild.innerHTML=`${Math.ceil(Math.max(0,p.hp))}<small>${Math.round(s.life)}</small>`; // current over max: fits the orb
-  $('hpb').classList.toggle('low',hpF<0.3&&!p.dead);
-  $('mpb').firstElementChild.style.height=clamp(p.res/s.res*100,0,100)+'%';$('mpb').lastElementChild.innerHTML=`${Math.floor(p.res)}<small>${Math.round(s.res)}</small>`;
-  $('hpb').title=`Life ${Math.ceil(p.hp)} / ${Math.round(s.life)}`;$('mpb').title=`${C.res} ${Math.floor(p.res)} / ${Math.round(s.res)}`;
-  $('dodgeBtn').querySelector('.cd').style.setProperty('--p',p.dodgeCd>0?p.dodgeCd/DODGE_CD:0);
-  $('xpb').firstElementChild.style.width=(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0)*100:c.xp/xpNeed(c.lvl)*100)+'%';$('xpb').classList.toggle('para',c.lvl>=MAX_LVL);
-  const left=G.enemies.filter(e=>!e.dead).length;
+  const hpF=clamp(p.hp/s.life,0,1),hp=$('hpb'),mp=$('mpb');
+  hud(hp.firstElementChild,'height',pc(hpF));hud(hp.lastElementChild,'html',`${Math.ceil(Math.max(0,p.hp))}<small>${Math.round(s.life)}</small>`); // current over max: fits the orb
+  hud(hp,'.low',hpF<0.3&&!p.dead);
+  hud(mp.firstElementChild,'height',pc(clamp(p.res/s.res,0,1)));hud(mp.lastElementChild,'html',`${Math.floor(p.res)}<small>${Math.round(s.res)}</small>`);
+  hud(hp,'title',`Life ${Math.ceil(p.hp)} / ${Math.round(s.life)}`);hud(mp,'title',`${C.res} ${Math.floor(p.res)} / ${Math.round(s.res)}`);
+  hud($('dodgeBtn').querySelector('.cd'),'--p',r2(p.dodgeCd>0?p.dodgeCd/DODGE_CD:0));
+  const xb=$('xpb');hud(xb.firstElementChild,'width',pc(c.lvl>=MAX_LVL?(c.pxp||0)/paraNeed(c.para||0):c.xp/xpNeed(c.lvl)));hud(xb,'.para',c.lvl>=MAX_LVL);
+  let left=0;for(const e of G.enemies)if(!e.dead)left++;
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`${diffTag()}Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
-  $('depthTxt').textContent=G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(PD())}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`; /* area level (bossfight.js) */
-  const bt=shrineText();if($('buffTxt').textContent!==bt)$('buffTxt').textContent=bt;
+  hud($('depthTxt'),'text',G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(PD())}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`); /* area level (bossfight.js) */
+  hud($('buffTxt'),'text',shrineText());
   const sk=SKILLS[c.cls];
-  for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);el.classList.toggle('locked',r<=0);el.classList.toggle('nores',r>0&&p.res<sk[i].cost);
-    const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;el.children[0].style.setProperty('--p',f);el.children[1].textContent=(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'';}
-  $('potCnt').textContent=p.potions;$('potBtn').classList.toggle('locked',p.potions<=0);$('potBtn').querySelector('.cd').style.setProperty('--p',p.potCd>0?p.potCd:0);
-  const b=G.boss&&!G.boss.dead?G.boss:G.zboss&&!G.zboss.dead&&G.zboss.aggro?G.zboss:null;if(b&&!b.dead&&b.aggro){$('bossbar').classList.remove('hidden');
+  for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);hud(el,'.locked',r<=0);hud(el,'.nores',r>0&&p.res<sk[i].cost);
+    const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;hud(el.children[0],'--p',r2(f));hud(el.children[1],'text',(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'');}
+  const pb=$('potBtn');hud($('potCnt'),'text',String(p.potions));hud(pb,'.locked',p.potions<=0);hud(pb.querySelector('.cd'),'--p',r2(p.potCd>0?p.potCd:0));
+  const b=G.boss&&!G.boss.dead?G.boss:G.zboss&&!G.zboss.dead&&G.zboss.aggro?G.zboss:null,bb=$('bossbar');if(b&&!b.dead&&b.aggro){hud(bb,'.hidden',false);
     const st=b.transT>0||b.introT>0?'IMMUNE':b.shieldT>0?'SHIELDED':b.staggerT>0?'STAGGERED':b.punishT>0?'EXPOSED':b.enraged?'ENRAGED':''; /* bossfight.js states */
-    $('bossName').textContent=b.name+(b.phase!=null?` · Phase ${ROMAN_PH[b.phase]}`:'')+(st?` · ${st}`:'');$('bossbar').querySelector('.bar>i').style.width=(b.hp/b.maxHp*100)+'%';
-    $('bossStg').firstElementChild.style.width=(b.staggerT>0?100:Math.min(100,(b.stagger||0)/(b.staggerMax||100)*100))+'%';$('bossStg').classList.toggle('full',b.staggerT>0);}
-  else $('bossbar').classList.add('hidden');
+    hud($('bossName'),'text',b.name+(b.phase!=null?` · Phase ${ROMAN_PH[b.phase]}`:'')+(st?` · ${st}`:''));hud(bb.querySelector('.bar>i'),'width',pc(b.hp/b.maxHp));
+    const sg=$('bossStg');hud(sg.firstElementChild,'width',pc(b.staggerT>0?1:Math.min(1,(b.stagger||0)/(b.staggerMax||100))));hud(sg,'.full',b.staggerT>0);}
+  else hud(bb,'.hidden',true);
 }
 function usePotion(){const p=G.p;if(G.paused||p.dead||p.potions<=0||p.potCd>0||p.hp>=G.stats.life)return;p.potions--;p.potCd=1;playSfx('potion');healPlayer(G.stats.life*0.45*(1+(G.stats.potheal||0)/100)); /* charms: Potion Healing */burst(p.x,p.y,16,'#5f5',120);
   if(hasPw('potionReset')){p.cd.fill(0);floatText(p.x,p.y-40,'Cooldowns reset','#ff9a3a',false);}}
