@@ -97,7 +97,7 @@ function rollGem(depth){const a=dropAct(depth);return {g:pick(GEM_KEYS),q:clamp(
 // Each act unlocks two more runes; rarer runes are less likely.
 function rollRune(depth){const mx=Math.min(RUNE_KEYS.length-1,dropAct(depth)*2-1+(depth>25?1:0));
   let r=Math.random()*(mx+1)*(mx+2)/2;for(let i=0;i<=mx;i++){r-=mx-i+1;if(r<0)return {r:RUNE_KEYS[i]};}return {r:RUNE_KEYS[0]};}
-const STONE_DROP={normal:[0.04,0.006],elite:[0.2,0.04],boss:[1,0.6]}; // [gem chance, rune chance]; bosses drop 2 gems
+const STONE_DROP={normal:[0.028,0.004],elite:[0.14,0.028],boss:[1,0.6]}; // v1.0.99: normal and elite 30% less // [gem chance, rune chance]; bosses drop 2 gems
 function dropStones(e,kind){const d=PD(),S=lootHere().stone,[gc,rc]=STONE_DROP[kind].map(v=>Math.min(1,v*S));
   const n=kind==='boss'?2:Math.random()<gc?1:0;for(let k=0;k<n;k++)dropStone(e.x+rand(-30,30),e.y+rand(-30,30),rollGem(d));
   if(Math.random()<rc)dropStone(e.x+rand(-20,20),e.y+rand(-20,20),rollRune(d));}
@@ -209,12 +209,11 @@ function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS)
       ${kn?(S.bonus||[]).map(([n,l])=>`<div>(${n}) ${txt(l)}</div>`).join('')+(S.full&&S.full.length?`<div style="color:#3fe05a">Full set: ${txt(S.full)}</div>`:''):''}</div></div>`;}).join('');}
 // Bosses tab: what each act boss drops that nothing else does (farm them through the Waystone).
 function renderBossBook(){const c=G.char;
-  $('bookSub').textContent=`Every act boss can drop its own trophy unique (${Math.round(TROPHY_CH*100)}%) and a set piece (${Math.round(BOSS_SET_CH*100)}%), on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
-  $('bookList').innerHTML=BOSS_UQ.map((k,a)=>{const U=UNIQUES[k],A=ACTS[a],reached=c&&(c.diffDone?25:c.maxDepth||1)>=a*5+5;
+  $('bookSub').textContent=`Every act boss has its own uniques that nothing else drops: each kill has a ${Math.round(BOSS_UQ_CH*100)}% chance at one of them (those your class can use), and a ${Math.round(BOSS_SET_CH*100)}% chance at a set piece, on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
+  $('bookList').innerHTML=BOSS_LOOT.map((L,a)=>{const A=ACTS[a],reached=c&&(c.diffDone?25:c.maxDepth||1)>=a*5+5,ks=c?bossLootFor(a,c.cls):L;
     const sets=Object.keys(SETS).filter(s=>SETS[s].act<=a+1&&(!SETS[s].cls||!c||SETS[s].cls===c.cls)).map(s=>SETS[s].name);
     return `<div class="slot rb${reached?'':' unk'}"><div class="info"><b style="color:${A.col}">${esc(A.boss)}</b> <span class="fdim">Act ${a+1} · depth ${a+1}-5${reached?'':' · not reached yet'}</span>
-      <div style="color:${RCOL[3]}">${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>
-      ${U.pw.map(p=>`<div class="fdim">✦ ${esc(UPOW[p].t)}</div>`).join('')}
+      ${ks.map(k=>{const U=UNIQUES[k];return `<div style="color:${RCOL[3]}">${BOOK.uqs[k]?'✓ ':''}${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>${U.pw.map(p=>`<div class="fdim">✦ ${esc(UPOW[p].t)}</div>`).join('')}`;}).join('')}
       ${a===4?`<div class="fdim">Also: 40% extra Relics of the Ember Core piece</div>`:''}
       <div class="fdim">Set pieces from: ${sets.map(esc).join(', ')||'none'}</div></div></div>`;}).join('');}
 tap('pouchBtn',()=>openPouch(null));

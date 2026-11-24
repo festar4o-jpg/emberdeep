@@ -13,6 +13,9 @@ const AURA_MULT=0.10,TRAIL_MULT=0.12,CINDER_MULT=0.14,WILD_MULT=0.20;
 const IGNITE_MULT=0.30,IGNITE_T=3;
 // Boss trophy power numbers.
 const BONE_KILLS=8,BONE_MULT=1.5,ASH_CH=0.35,ASH_MULT=0.4,ROT_MULT=0.3,ROT_MAX=6;
+// v1.0.99 boss uniques: Ossuary Mantle, Tyrant's Stride, Plaguebearer's Locket, Rimebound Seal, Grasp of the Cinder King
+const BONE_WARD=2,BONE_WARD_MAX=10,BONE_WARD_T=5,FURY_HITS=3,FURY_MUL=1.5,FURY_T=3,PLAGUE_CH=20,PLAGUE_R=110,
+  BITE_SLOW=0.3,BITE_MUL=1.2,EMBER_EVERY=4,EMBER_MULT=0.8,EMBER_R=70;
 const UPOW={
   // v1.0.71 (G.sk: the skill a hit comes from, game.js)
   cleaveBleed:{cls:'warden',t:'Cleave makes every enemy it hits bleed',d:()=>`Bleeds for ${pwHit(0.8/3*(1+0.12*(pwRank(0)-1)))} per second for 3s`},
@@ -59,11 +62,16 @@ const UPOW={
   // set power (Bulwark of the Hollow King; its own shield means it can't meet The Last Door)
   kingsWrath:{cls:'warden',t:'Blocking an attack gives you 30% more damage for 3s',d:()=>`${Math.round(G.stats.block)}% block chance · +30% damage for 3s after each block`},
   coreFlare:{t:'Every 5s a Core Flare erupts around you, burning nearby enemies',d:()=>pwDet(1.6,'around you')+' · then '+pwDet(0.4,'per second for 2s')},
-  // boss trophy powers (each only on its act boss's own unique: see BOSS_UQ)
+  // boss trophy powers (each only on its act boss's own unique: see BOSS_LOOT)
   boneNova:{t:`Every ${BONE_KILLS} kills, a Bone Nova bursts from you`,d:()=>pwDet(BONE_MULT,`to every enemy around you · ${G.p&&G.p.boneN||0}/${BONE_KILLS} kills`)},
   ashChain:{t:`${Math.round(ASH_CH*100)}% of your hits lash a second enemy nearby with a chain of ash`,d:()=>pwDet(ASH_MULT,'to the second enemy')},
   rotBurst:{t:'Enemies you kill burst into a rot cloud that eats at other enemies',d:()=>pwDet(2*ROT_MULT,'per second for 3s in the cloud')+` · up to ${ROT_MAX} clouds`},
   rimeSkin:{t:'An enemy that hits you is frozen solid (each enemy every 4s at most)',d:()=>'Frozen for 1.5s (bosses 0.5s): frozen enemies can\'t move or attack'},
+  boneWard:{t:`Each kill adds a bone shard: ${BONE_WARD}% less damage taken per shard, up to ${BONE_WARD_MAX}; they fade ${BONE_WARD_T}s after your last kill`,d:()=>{const n=G.p&&G.p.wardT>0?G.p.wardN||0:0;return `Up to ${BONE_WARD*BONE_WARD_MAX}% less damage · now ${n} shards (${BONE_WARD*n}%)`;}},
+  dodgeFury:{t:`After you dodge, your next ${FURY_HITS} hits deal ${Math.round((FURY_MUL-1)*100)}% more damage (for ${FURY_T}s)`,d:()=>`${G.p&&G.p.dfT>0?G.p.dfN||0:0} empowered hits left`},
+  plagueSpread:{t:`+${PLAGUE_CH}% chance to Poison, and a poisoned enemy that dies passes its poison to every enemy nearby`,d:()=>`Spreads to enemies within ${PLAGUE_R / TILE | 0} tiles`},
+  coldBite:{t:`Your hits Chill enemies (${Math.round(BITE_SLOW*100)}% slower), and Chilled or Frozen enemies take ${Math.round((BITE_MUL-1)*100)}% more damage from you`,d:()=>`Chilled for 2s (${Math.round(BITE_SLOW*100)}% slower) · +${Math.round((BITE_MUL-1)*100)}% damage to them · this Chill never builds a Freeze on its own`},
+  emberStrike:{t:`Every ${EMBER_EVERY}th hit erupts in fire around its target`,d:()=>pwDet(EMBER_MULT,`to enemies around the target · ${G.p&&G.p.emberN||0}/${EMBER_EVERY}`)},
   kingsPyre:{t:'Each kill stokes the Pyre: +3% damage per stack, up to 10 stacks; they fade 4s after your last kill',d:()=>`Up to +30% damage · now ${G.p&&G.p.pyreT>0?G.p.pyreN||0:0} stacks (+${3*(G.p&&G.p.pyreT>0?G.p.pyreN||0:0)}%)`}
 };
 // Combos: a unique and a Runebind (or set) with matching powers do something extra when both are worn.
@@ -92,34 +100,34 @@ const UNIQUES={
   matrongirdle:{name:"The Matron's Rotting Girdle",type:'belt',cls:null,act:5,boss:'rot',pw:['rotBurst','potionReset']},
   cartographer:{name:"The Cartographer's Eye",type:'amulet',cls:null,act:5,boss:'map',mt:11,strong:1,pw:['ouroboros','ashChain']},
   // v1.0.71: thirteen more, one new power each
-  butcher:{name:"The Butcher's Hook",type:'weapon',wt:'axe',cls:'warden',act:2,pw:['cleaveBleed']},
-  warlord:{name:"Warlord's Visage",type:'helm',cls:'warden',act:3,pw:['warcryShield']},
+  butcher:{name:"The Butcher's Hook",type:'weapon',wt:'axe',cls:'warden',act:2,boss:1,pw:['cleaveBleed']},
+  warlord:{name:"Warlord's Visage",type:'helm',cls:'warden',act:3,boss:2,pw:['warcryShield']},
   emberfall:{name:'Emberfall Sabatons',type:'boots',cls:'warden',act:4,pw:['leapFire']},
-  cyclone:{name:'Cyclone Edge',type:'weapon',wt:'greatsword',cls:'warden',act:4,strong:1,pw:['whirlCrit']},
+  cyclone:{name:'Cyclone Edge',type:'weapon',wt:'greatsword',cls:'warden',act:4,boss:3,strong:1,pw:['whirlCrit']},
   quakeplate:{name:'Quakeplate',type:'body',kind:'plate',cls:'warden',act:3,pw:['shatterArmor']},
-  echoes:{name:'Wand of Echoes',type:'weapon',wt:'wand',cls:'arcanist',act:1,pw:['boltChain']},
+  echoes:{name:'Wand of Echoes',type:'weapon',wt:'wand',cls:'arcanist',act:1,boss:0,pw:['boltChain']},
   winter:{name:'Tome of Endless Winter',type:'focus',kind:'tome',cls:'arcanist',act:2,pw:['novaSpikes']},
-  starcaller:{name:'Starcaller',type:'weapon',wt:'staff',cls:'arcanist',act:4,strong:1,pw:['meteorShower']},
+  starcaller:{name:'Starcaller',type:'weapon',wt:'staff',cls:'arcanist',act:4,boss:3,strong:1,pw:['meteorShower']},
   stormband:{name:'Band of the Stormfront',type:'ring',cls:'arcanist',act:3,pw:['chainBlast']},
   sorrows:{name:'Mantle of Sorrows',type:'body',kind:'robe',cls:'arcanist',act:4,pw:['manaShield']},
   soulcage:{name:'Soulcage Pendant',type:'amulet',cls:null,act:3,pw:['soulHarvest']},
   briar:{name:'The Briar Coat',type:'body',kind:'leather',cls:null,act:2,pw:['thornBurst']},
-  ninth:{name:'Edge of the Ninth Circle',type:'weapon',wt:'spellblade',cls:'arcanist',act:2,pw:['arcaneFan']},
+  ninth:{name:'Edge of the Ninth Circle',type:'weapon',wt:'spellblade',cls:'arcanist',act:2,boss:1,pw:['arcaneFan']},
   // the Hollow Sun's own (pinnacle.js): three powers each, never anywhere else
   dawnbreaker:{name:'Dawnbreaker',type:'weapon',wt:'greatsword',cls:'warden',act:5,boss:'sun',strong:1,pw:['cinderCleave','kingsWrath','coreFlare']},
   eclipseaegis:{name:'Aegis of the Eclipse',type:'shield',cls:'warden',act:5,boss:'sun',strong:1,pw:['counter','rimeSkin','lastBreath']},
   hollowheart:{name:'Heart of the Hollow Sun',type:'weapon',wt:'staff',cls:'arcanist',act:5,boss:'sun',strong:1,pw:['skyfall','stormweave','coreFlare']},
   corona:{name:'The Last Corona',type:'amulet',cls:null,act:5,boss:'sun',strong:1,pw:['burnAura','kingsPyre','ignite']},
-  tremorblade:{name:'Tremorblade',type:'weapon',wt:'sword',cls:'warden',act:1,pw:['shockwave']},
+  tremorblade:{name:'Tremorblade',type:'weapon',wt:'sword',cls:'warden',act:1,boss:0,pw:['shockwave']},
   maelstrom:{name:'Maelstrom Grips',type:'gloves',cls:'warden',act:2,pw:['pull']},
   bloodleap:{name:'Bloodleap Greaves',type:'boots',cls:'warden',act:3,pw:['bloodleap']},
   lastdoor:{name:'The Last Door',type:'shield',cls:'warden',act:4,pw:['counter']},
-  worldbreaker:{name:'Worldbreaker',type:'weapon',wt:'maul',cls:'warden',act:5,strong:1,pw:['quake','faultline']},
+  worldbreaker:{name:'Worldbreaker',type:'weapon',wt:'maul',cls:'warden',act:5,boss:4,strong:1,pw:['quake','faultline']},
   scattering:{name:'Orb of Scattered Flame',type:'focus',kind:'orb',cls:'arcanist',act:1,pw:['split']},
   rimeheart:{name:'Rimeheart Vestment',type:'body',kind:'robe',cls:'arcanist',act:2,pw:['frostward']},
-  stormcaller:{name:'Stormcaller',type:'weapon',wt:'rod',cls:'arcanist',act:3,pw:['endless']},
+  stormcaller:{name:'Stormcaller',type:'weapon',wt:'rod',cls:'arcanist',act:3,boss:2,pw:['endless']},
   fallingsky:{name:'Eye of the Falling Sky',type:'helm',cls:'arcanist',act:4,pw:['skyfall']},
-  litany:{name:'Litany of Ash',type:'weapon',wt:'demonstaff',cls:'arcanist',act:5,strong:1,pw:['blast','homing']},
+  litany:{name:'Litany of Ash',type:'weapon',wt:'demonstaff',cls:'arcanist',act:5,boss:4,strong:1,pw:['blast','homing']},
   coalheart:{name:'Coal Heart',type:'ring',cls:null,act:1,pw:['burnAura']},
   deepheart:{name:'Heart of the Deep',type:'amulet',cls:null,act:2,pw:['lastBreath']},
   ashwalker:{name:'Ashwalker Treads',type:'boots',cls:null,act:3,pw:['fireTrail']},
@@ -130,11 +138,20 @@ const UNIQUES={
   tyrantchain:{name:'Shackles of the Ash Tyrant',type:'gloves',cls:null,act:2,boss:1,pw:['ashChain']},
   rotbrood:{name:'Brood of the Rot Mother',type:'ring',cls:null,act:3,boss:2,pw:['rotBurst']},
   frozenshard:{name:'Shard of the Frozen King',type:'amulet',cls:null,act:4,boss:3,pw:['rimeSkin']},
-  cinderbrand:{name:'Brand of the Cinder King',type:'belt',cls:null,act:5,boss:4,pw:['kingsPyre']}
+  cinderbrand:{name:'Brand of the Cinder King',type:'belt',cls:null,act:5,boss:4,pw:['kingsPyre']},
+  // v1.0.99: one more of its own per act boss (each act boss's table: its trophy, these, and a Warden and an Arcanist unique)
+  ossuary:{name:'Ossuary Mantle',type:'body',kind:'plate',cls:null,act:1,boss:0,pw:['boneWard']},
+  tyrantstride:{name:"Tyrant's Stride",type:'boots',cls:null,act:2,boss:1,pw:['dodgeFury']},
+  plaguelocket:{name:"Plaguebearer's Locket",type:'amulet',cls:null,act:3,boss:2,pw:['plagueSpread']},
+  rimeseal:{name:'Rimebound Seal',type:'ring',cls:null,act:4,boss:3,pw:['coldBite']},
+  cindergrasp:{name:'Grasp of the Cinder King',type:'gloves',cls:null,act:5,boss:4,pw:['emberStrike']}
 };
-const BOSS_UQ=Object.keys(UNIQUES).filter(k=>typeof UNIQUES[k].boss==='number').sort((a,b)=>UNIQUES[a].boss-UNIQUES[b].boss);
-// Chance per kill of an act boss: its own trophy unique, and a set piece (any set that can drop in that act).
-const TROPHY_CH=0.35,BOSS_SET_CH=0.3;
+// Act boss drop tables (v1.0.99, like Diablo 2 / PoE2 bosses): BOSS_LOOT[act] = the uniques only that act's boss drops
+// (any cycle; never other monsters, the shop or the set/unique guarantee). Each kill: BOSS_UQ_CH for one of them,
+// picked among those your class can use (class uniques only for their class); and BOSS_SET_CH for a set piece.
+const BOSS_LOOT=[0,1,2,3,4].map(a=>Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss===a));
+const BOSS_UQ_CH=0.4,BOSS_SET_CH=0.3;
+const bossLootFor=(a,cls)=>(BOSS_LOOT[a]||[]).filter(k=>!UNIQUES[k].cls||UNIQUES[k].cls===cls);
 // ---------- set items (rarity 5, green) ----------
 // A set has 2–6 pieces in any slots. Each piece is a named item with its own fixed stat list (values rolled, like a
 // unique's affixes). Wearing n different pieces of a set turns on, in green:
@@ -204,14 +221,30 @@ const SET_ITEMS={
 // zone 5: in a dungeon depth of act 5 (any cycle), not in town (so no shop) and not anywhere else.
 const inSetZone=S=>!S.zone||(!G.inTown&&G.depth>0&&actIdx(G.depth)+1===S.zone);
 const setItemsFor=(type,cls,act)=>Object.keys(SET_ITEMS).filter(k=>{const I=SET_ITEMS[k],S=SETS[I.set];return I.type===type&&S.act<=act&&(!S.cls||S.cls===cls)&&inSetZone(S);});
-// Boss trophies: every act boss can drop its own unique (and only it drops it), and has a good chance at a set piece.
+// Boss trophies: every act boss can drop one of its own uniques (BOSS_LOOT), and has a good chance at a set piece.
 // The endless depths add 10%. (Item Rarity doesn't change these: they are extra drops, not the rarity of a drop.)
-function bossTrophy(e){const k=BOSS_UQ[actIdx(G.depth)],U=UNIQUES[k],c=G.char,mul=1,plus=PD()>25?0.1:0;
-  if(U&&Math.random()<Math.min(1,TROPHY_CH*mul+plus)){const it=genItem(PD()+3,c.cls,0,U.type,3,U.wt,dropAct(PD()),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
+function bossTrophy(e){const c=G.char,ks=bossLootFor(actIdx(G.depth),c.cls),k=ks.length?pick(ks):null,U=k&&UNIQUES[k],mul=1,plus=PD()>25?0.1:0;
+  if(U&&Math.random()<Math.min(1,BOSS_UQ_CH*mul+plus)){const it=genItem(PD()+3,c.cls,0,U.type,3,U.wt,dropAct(PD()),null,k);dropItem(e.x+rand(-40,40),e.y+rand(-40,40),it);toast('Boss trophy!',U.name);}
   if(Math.random()<Math.min(1,BOSS_SET_CH*mul+plus)){const act=dropAct(PD()),ks=Object.keys(SET_ITEMS).filter(si=>{const S=SETS[SET_ITEMS[si].set];return S.act<=act&&(!S.cls||S.cls===c.cls)&&inSetZone(S);});
     if(ks.length)dropItem(e.x+rand(-40,40),e.y+rand(-40,40),genItem(PD()+3,c.cls,0,null,0,null,act,pick(ks)));}}
+// v1.0.99 boss unique powers. Hooks: game.js hitEnemy (bossPwHitMul, bossPwAfter), killEnemy (plagueSpread),
+// dmgPlayer (boneWardMul), tryDodge (Tyrant's Stride), bossPwTick (timers, from game.js), calcStats (Locket's poison chance).
+const boneWardMul=()=>{const p=G.p;return p&&p.wardT>0&&hasPw('boneWard')?1-BONE_WARD*(p.wardN||0)/100:1;};
+const direct=o=>!o.dot&&!o.splashed&&!o.haz&&!o.chained;
+function bossPwHitMul(e,o){let m=1;const p=G.p;
+  if(p.dfT>0&&p.dfN>0&&direct(o)&&hasPw('dodgeFury')){m*=FURY_MUL;if(--p.dfN<=0)p.dfT=0;}
+  if((e.chillT>0||e.frozen>0)&&hasPw('coldBite'))m*=BITE_MUL;return m;}
+function bossPwAfter(e,o){if(!direct(o))return;const p=G.p;
+  if(hasPw('coldBite')&&!e.dead&&e.hp>0)chillHit(e,BITE_SLOW,2,true);
+  if(hasPw('emberStrike')){p.emberN=(p.emberN||0)+1;if(p.emberN>=EMBER_EVERY){p.emberN=0;const x=e.x,y=e.y;fxExplosion(x,y,EMBER_R);aoe(x,y,EMBER_R,EMBER_MULT,{splashed:true});}}}
+function plagueSpread(e){if(!e.pois||!e.pois.length)return;const live=e.pois.filter(q=>q.t>0);if(!live.length)return;
+  for(const o of G.enemies){if(o===e||o.dead||o.hidden||Math.hypot(o.x-e.x,o.y-e.y)>PLAGUE_R+o.r)continue;
+    if(!o.pois)o.pois=[];for(const q of live)o.pois.push({dps:q.dps,t:q.t});if(o.pois.length>AIL_POISON_MAX)o.pois.splice(0,o.pois.length-AIL_POISON_MAX);}
+  G.fx.push({type:'ring',x:e.x,y:e.y,r0:8,r1:PLAGUE_R,t:0,max:0.3,col:AIL_COL.poison});}
+function bossPwTick(p,dt){if(p.wardT>0){p.wardT-=dt;if(p.wardT<=0)p.wardN=0;}if(p.dfT>0){p.dfT-=dt;if(p.dfT<=0)p.dfN=0;}}
 // Trophy powers that trigger on a kill.
 function trophyKill(e){const p=G.p;if(p.dead)return;
+  if(hasPw('boneWard')){p.wardN=Math.min(BONE_WARD_MAX,(p.wardT>0?p.wardN||0:0)+1);p.wardT=BONE_WARD_T;}
   if(hasPw('kingsPyre')){p.pyreN=Math.min(10,(p.pyreT>0?p.pyreN||0:0)+1);p.pyreT=4;}
   if(hasPw('rotBurst')){const own=G.hazards.filter(h=>h.rot);if(own.length>=ROT_MAX)G.hazards.splice(G.hazards.indexOf(own[0]),1);G.hazards.push({sk:G.sk,x:e.x,y:e.y,r:75,t:3,tick:0.5,mult:ROT_MULT,rot:true,quiet:true});}
   if(hasPw('boneNova')){p.boneN=(p.boneN||0)+1;if(p.boneN>=BONE_KILLS){p.boneN=0;G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:180,t:0,max:0.4,col:'#e8e0c0'});burst(p.x,p.y,30,'#e8e0c0',260);aoe(p.x,p.y,175,BONE_MULT,{splashed:true});}}}

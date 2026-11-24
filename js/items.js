@@ -272,17 +272,18 @@ const OWN_CLASS_CHANCE=0.8; // weapons and off-hands: 80% for your class, 20% fo
 const PITY=15;              // a slot missing from the last 15 drops is guaranteed next
 const dropSlotOf=it=>it.slot==='shield'||it.slot==='focus'?'offhand':it.slot;
 function pickDropSlot(){let r=Math.random()*DROP_TOT;for(const k of DROP_KEYS){r-=DROP_W[k];if(r<0)return k;}return 'weapon';}
-// Item rarity of a monster/boss drop (v1.0.50, Diablo 2 / PoE style): white 50%, magic 30%, rare 10%, set 5%, unique 5%.
+// Item rarity of a monster/boss drop (v1.0.50, Diablo 2 / PoE style; v1.0.99 made named items rarer):
 // boost (champions 1, super uniques and zone bosses 2, act bosses 3) moves odds from white to the better rarities.
-const DROP_RAR=[50,30,10,0,0,5],DROP_UQ=5;
+// v1.0.99 (toned down, closer to Diablo 2 / PoE2): white 67%, magic 25%, rare 6%, unique 1%, set 1% (was 50/30/10/5/5)
+const DROP_RAR=[67,25,6,0,0,1],DROP_UQ=1;
 // Item Rarity (rar %, the Wanderer's Fortune set bonus; like Magic Find) multiplies the weights of magic, rare, set and unique
 // against white: +25% makes every better rarity 25% more likely next to white. It never adds drops.
 function dropRarity(boost=0,rar=0){const b=Math.max(0,boost),m=1+Math.max(0,rar)/100,w=[Math.max(5,DROP_RAR[0]-14*b),(DROP_RAR[1]+3*b)*m,(DROP_RAR[2]+6*b)*m,(DROP_UQ+2.5*b)*m,0,(DROP_RAR[5]+2.5*b)*m];
   let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let i=0;i<6;i++){r-=w[i];if(r<0)return i;}return 0;}
 // Bad-luck protection: after NAMED_PITY kills without a NEW set piece or unique (one no hero has found yet: sockets.js
 // BOOK), the next item drop is one you haven't found, made for your class when one is left (newNamed). Duplicates
-// neither reset the count nor satisfy it. Nightmare and Hell shorten it (maps.js DIFFS loot.pity: 160, 120).
-const NAMED_PITY=200;
+// neither reset the count nor satisfy it. Nightmare and Hell shorten it (maps.js DIFFS loot.pity: 280, 210).
+const NAMED_PITY=350; // v1.0.99: was 200
 // Smart loot: this share of set/unique drops is picked from the items made for your class (its own uniques and sets);
 // the rest roll normally (slot first), which mostly also gives items you can wear.
 const SMART_LOOT=0.6;
@@ -584,6 +585,7 @@ function calcStats(c,swap,at){
   const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
   s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);for(const k of ['igniteCh','shockCh','poisonCh'])s[k]=Math.min(s[k],AIL_CH_CAP);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)
+  if(s.pw.plagueSpread)s.poisonCh=Math.min(AIL_CH_CAP,s.poisonCh+PLAGUE_CH); // uniques.js: Plaguebearer's Locket
   perkStats(c,s,eq); // subclasses.js: Iron Hide, Heavy Crit
   shrineStats(s);
   if(typeof mapStats==='function')mapStats(s); // sigils.js: a map's modifiers on you

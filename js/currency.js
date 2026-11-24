@@ -111,7 +111,8 @@ function useCur(k,it){if(curCount(k)<1||curBlock(k,it))return null;let msg='';co
   playSfx(k==='star'?'unique':'rune');return msg;}
 // ---------- drops ----------
 // Chance per kill (normal, champion pack member, champion, zone boss, act boss: those always drop some), x DIFFS loot.cur.
-const CUR_DROP={normal:0.03,elite:0.12,su:0.6,zboss:1.5,boss:2.5,chest:0.8};
+const CUR_DROP={normal:0.021,elite:0.084, // v1.0.99: normal and elite 30% less
+  su:0.6,zboss:1.5,boss:2.5,chest:0.8};
 // Abyssal Embers drop only where Hell's rules apply: Hell, the endless depths after Nightmare, maps.
 function rollCurKey(){const d=PD(),w=k=>k==='corrupt'&&diffHere()<2?0:CURS[k].w*(k==='star'?1+d/40:1);let r=Math.random()*CUR_KEYS.reduce((a,k)=>a+w(k),0);
   for(const k of CUR_KEYS){r-=w(k);if(r<0)return k;}return 'spark';}

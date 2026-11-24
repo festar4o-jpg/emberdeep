@@ -6,7 +6,7 @@ function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e); /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e)*bossPwHitMul(e,opts); /* uniques.js: Tyrant's Stride, Rimebound Seal */ /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -24,6 +24,7 @@ function hitEnemy(e,mult,opts={}){
   if(opts.stun&&e.type!=='boss')e.stun=Math.max(e.stun,opts.stun);
   if(opts.stun&&e.type==='boss')e.stun=Math.max(e.stun,opts.stun*0.3);
   if(opts.freeze)e.frozen=Math.max(e.frozen,e.type==='boss'?opts.freeze*0.35:opts.freeze);
+  bossPwAfter(e,opts); // uniques.js: Rimebound Seal chill, Grasp of the Cinder King
   perkHitAfter(e,opts); // subclasses.js: Storm Siphon (before this hit's own shock)
   applyAilments(e,r.d,opts); // ailments.js: Ignite, Shock, Chill, Poison
   if(opts.kb&&!ETYPES[e.type].heavy){const a=Math.atan2(e.y-G.p.y,e.x-G.p.x);moveEnt(e,Math.cos(a)*opts.kb*0.3,Math.sin(a)*opts.kb*0.3);}
@@ -45,6 +46,7 @@ function killEnemy(e){
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
   if(hasPw('bloodrage'))healPlayer(G.stats.life*0.02,true);
+  if(hasPw('plagueSpread'))plagueSpread(e); // uniques.js: Plaguebearer's Locket
   perkKill();pyreBurst(e); // subclasses.js: Kill Rush, Pyre Burst
   if(G.stats.lpk)healPlayer(G.stats.lpk,true); // charms: Life per Kill
   if(hasPw('soulHarvest')){G.p.souls=Math.min(10,(G.p.souls||0)+1);G.p.soulT=4;}
@@ -90,7 +92,7 @@ function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}
 // Dodge: a quick dash (about 140px) in the move direction (or facing), untouchable while it lasts.
 const DODGE_CD=1.4,DODGE_DUR=0.26,DODGE_SPD=540;
 function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||playerFrozen()||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
-  const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;playSfx(G.char&&G.char.cls==='arcanist'?'blink':'dodge');
+  const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;if(hasPw('dodgeFury')){p.dfN=FURY_HITS;p.dfT=FURY_T;} /* uniques.js: Tyrant's Stride */playSfx(G.char&&G.char.cls==='arcanist'?'blink':'dodge');
   if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
     const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
     p.dodge={t:0,dur:0.14,a,blink:true};p.face=a;burst(x0,y0,14,'#c48bff',160);burst(p.x,p.y,14,'#c48bff',160);G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:40,t:0,max:0.2,col:'#c48bff'});return true;}
@@ -101,7 +103,8 @@ function dmgPlayer(raw,src,el){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul();
   if(G.stats.evade>0&&Math.random()*100<G.stats.evade){floatText(p.x,p.y-p.r-8,'Evade','#a8e0c0',false);return false;} // v1.0.70: evasion
   raw*=1-(G.stats.dr||0)/100; // less damage taken /* bossfight.js: underleveled for the area, boss matchup */
-  raw*=modTakenMul()*playerShockMul()*perkTakenMul(); // subclasses.js: Last Stand // skillmods.js: Iron Landing, Ice Armour; ailments.js: Shocked
+  raw*=modTakenMul()*playerShockMul()*perkTakenMul()*boneWardMul(); // uniques.js: Ossuary Mantle
+  // subclasses.js: Last Stand // skillmods.js: Iron Landing, Ice Armour; ailments.js: Shocked
   const blk=G.stats.block+(p.spin>0&&hasMod('bladeward')?25:0);
   if(blk>0&&Math.random()*100<blk){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');perkBlock(src); /* subclasses.js: Block Heal, Block Stun */if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
@@ -209,7 +212,7 @@ function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
-  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt);perkTick(p,dt); /* skillmods.js, ailments.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
+  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt);perkTick(p,dt);bossPwTick(p,dt); /* skillmods.js, ailments.js, subclasses.js, uniques.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
   if(p.atk){p.atk.t+=dt;if(p.atk.t>=p.atk.dur)p.atk=null;}
   if(p.slowT>0){p.slowT-=dt;if(p.slowT<=0)p.slowAmt=0;}
   if(!p.dead){p.hp=Math.min(s.life,p.hp+s.regen*dt);p.res=Math.min(s.res,p.res+C.regen*dt);}

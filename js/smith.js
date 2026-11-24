@@ -25,7 +25,8 @@ const matsOf=c=>{const m=c.mats&&typeof c.mats==='object'?c.mats:(c.mats={});
 const matText=m=>MAT_KEYS.filter(k=>m[k]).map(k=>`${m[k]}${MATS[k].ic}`).join(' ');
 // v1.0.50: about 40% as many items drop as before, so white, blue and yellow items give 2.5x the materials (5 instead of 2),
 // keeping the materials per act (and so the smith's costs) where they were.
-const RARITY_MAT=['scrap','dust','essence','primal','primal','primal'],RARITY_MAT_N=[5,5,5,1,1,1];
+// v1.0.99: rares, magic items, uniques and set items drop less often (items.js DROP_RAR), so each gives more.
+const RARITY_MAT=['scrap','dust','essence','primal','primal','primal'],RARITY_MAT_N=[5,6,8,3,3,3];
 // Act the item comes from (1..5, endless items count as act 5), and the yield multiplier: x1 in Act 1 up to x3 in Act 5.
 const itemAct=it=>clamp(Math.floor(((it.ilvl||1)-1)/5)+1,1,5);
 const salvageMul=it=>1+0.5*(itemAct(it)-1);
