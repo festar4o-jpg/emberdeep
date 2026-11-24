@@ -13,7 +13,7 @@ const CHARM={
   large:{name:'Large Charm',slots:3,m:0.8,n:[2,2],max:3,w:13},
   grand:{name:'Grand Charm',slots:3,m:0.5,n:[1,1],max:2,w:2}
 };
-const CHARM_POOL=['life','res','dmg','armor','crit','critd','aspd','cdr','move','loh','regen','spell','resist','rarity','gold','xp','lpk','potheal','maxres'];
+const CHARM_POOL=['life','res','dmg','armor','crit','critd','aspd','cspd','cdr','move','loh','regen','spell','resist','rarity','gold','xp','lpk','potheal','maxres'];
 // What a charm of this size can roll, and a stat's value multiplier on it (nom: the same on every size).
 const charmPool=(it,cls)=>CHARM_POOL.filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&(!AFF[k].lg||it.size==='large'||it.size==='grand'));
 const charmRm=(it,k)=>AFF[k].nom?1:CHARM[it.size].m;
@@ -51,7 +51,7 @@ function genCharm(ilvl,cls,size){
 const CHARM_DROP={normal:0.01,elite:0.04,boss:0.5}; // v1.0.99: normal and elite about 30% less
 function dropCharms(e,kind){if(Math.random()<CHARM_DROP[kind]*lootHere().drop)dropItem(e.x+rand(-20,20),e.y+rand(-20,20),genCharm(PD(),G.char.cls,rollCharmSize(kind==='boss')));}
 // Stats from the pouch; a grand charm's skill only counts for the class it was made for.
-function addCharmStats(c,s){for(const it of charmsOf(c))for(const a of it.affs){if(a.k==='skill'){if(it.cls===c.cls)s.skill[a.s]+=a.v;}else if(a.k==='allsk')s.skill=s.skill.map(x=>x+a.v);else s[a.k]=(s[a.k]||0)+a.v;}}
+function addCharmStats(c,s){for(const it of charmsOf(c))for(const a of it.affs){if(a.k==='skill'){if(it.cls===c.cls)s.skill[a.s]+=a.v;}else if(a.k==='allsk')s.skill=s.skill.map(x=>x+a.v);else{const k=spdKey(a.k,c.cls);s[k]=(s[k]||0)+a.v;}}}
 // Only one of each unique charm in the pouch.
 const ucharmClash=(c,it)=>!!it.uc&&charmsOf(c).some(x=>x.uc===it.uc&&x!==it);
 function charmIn(it){const c=G.char,i=c.bag.indexOf(it);if(i<0||!charmFits(c,it)||ucharmClash(c,it))return false;c.bag.splice(i,1);charmsOf(c).push(it);refreshStats();saveChar();return true;}

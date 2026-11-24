@@ -65,14 +65,14 @@ function raiseWall(e,L){const p=G.p,a=Math.atan2(p.y-e.y,p.x-e.x),cx=p.x+Math.co
 // ---------- shrines: one touch, 30 s buff ----------
 const SHRINES={
   dmg:{name:'Shrine of Fury',buff:'+40% Damage',col:'#ff5a3a',icon:'⚔',short:'Fury'},
-  speed:{name:'Shrine of Haste',buff:'+30% Move & Attack Speed',col:'#ffe060',icon:'»',short:'Haste'},
+  speed:{name:'Shrine of Haste',buff:'+30% Move, Attack & Cast Speed',col:'#ffe060',icon:'»',short:'Haste'},
   armor:{name:'Shrine of Stone',buff:'+60% Armor',col:'#9ab0ff',icon:'⛨',short:'Stone'},
   xp:{name:'Shrine of Wisdom',buff:'+50% Experience',col:'#7fe0a0',icon:'✦',short:'Wisdom'}
 };
 const SHRINE_T=30;
 // Called at the end of calcStats: active shrine buffs.
 function shrineStats(s){const b=G.p&&G.p.shr;if(!b)return;
-  if(b.dmg>0)s.dmg+=40;if(b.speed>0){s.move+=30;s.aspd+=30;}if(b.armor>0)s.armor=s.armor*1.6+4*PD();}
+  if(b.dmg>0)s.dmg+=40;if(b.speed>0){s.move+=30;s.aspd+=30;s.cspd+=30;}if(b.armor>0)s.armor=s.armor*1.6+4*PD();}
 const shrineXp=v=>G.p&&G.p.shr&&G.p.shr.xp>0?v*1.5:v;
 function shrineText(){const b=G.p&&G.p.shr;if(!b)return '';return Object.keys(SHRINES).filter(k=>b[k]>0).map(k=>`${SHRINES[k].icon} ${SHRINES[k].short} ${b[k]>9000?'(map)':Math.ceil(b[k])+'s'}`).join('  ');}
 

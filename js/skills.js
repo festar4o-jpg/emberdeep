@@ -11,7 +11,7 @@ const BOLT={none:[600,6.5,'#c48bff'],wand:[600,5,'#c48bff'],scepter:[600,6.5,'#f
   thornstaff:[500,8.5,'#8ae05a'],runewand:[600,5,'#7ff0ff'],demonstaff:[500,9,'#ff4a3a'],spellblade:[640,6,'#d8a0ff']};
 const SKILLS={
   warden:[
-    {name:'Cleave',icon:'🪓',cd:0.5,cost:0,
+    {name:'Cleave',icon:'🪓',cd:0.59,cost:0, // v1.0.100: 15% slower (was 0.5)
       desc:r=>`Swing in a wide arc for ${pct(1+0.12*(r-1))} weapon damage. Each hit generates 7 Fury.`,
       cast(r){const p=G.p,s=G.stats;const t=nearest(p.x,p.y,170);if(t)p.face=Math.atan2(t.y-p.y,t.x-p.x);
         let hand='mh';if(s.oh){p.hand=p.hand==='mh'?'oh':'mh';hand=p.hand;}
@@ -41,7 +41,7 @@ const SKILLS={
           shatterMods(p.x,p.y,165,m,r);}});}}
   ],
   arcanist:[
-    {name:'Arcane Bolt',icon:'✴️',cd:0.38,cost:0,
+    {name:'Arcane Bolt',icon:'✴️',cd:0.45,cost:0, // v1.0.100: 15% slower (was 0.38)
       desc:r=>`Fire a bolt for ${pct(0.95+0.12*(r-1))} weapon damage. Each hit restores 2 Mana.`,
       cast(r){const a=aimPoint(560),wt=G.stats.mh&&G.stats.mh.wt,B=BOLT[wt]||BOLT.none,oc=boltCharge(),sip=hasMod('siphon'); // skillmods.js: Overcharge, Siphon, Pierce
         shoot(a,B[0],B[1]*(oc?1.6:1),oc?'#ffe27a':B[2],{mult:(0.95+0.12*(r-1))*(oc?3:1),onhit:()=>{gainRes(2);if(sip)healPlayer(G.stats.life*0.01,true);},weapon:true,pierce:G.stats.pierce+(hasMod('pierce')?2:0),explode:hasPw('blast')?55:0,home:hasPw('homing')});
@@ -79,7 +79,8 @@ function skillCd(i){const sk=SKILLS[G.char.cls][i],w=G.char.cls==='warden';
   const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush
   if(!w&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
   if(w&&i===1&&hasMod('longleap'))return Math.max(0.5,(sk.cd-1.5)*(1-G.stats.cdr/100));
-  return i===0?sk.cd/(G.stats.wspd*(1+G.stats.aspd/100)*mod):sk.cd*(1-G.stats.cdr/100);}
+  if(!w&&i===1)return sk.cd*(1-G.stats.cdr/100)/(1+(G.stats.cspd||0)/100); // v1.0.101: Cast Speed also speeds up Fireball
+  return i===0?sk.cd/(G.stats.wspd*(1+(w?G.stats.aspd:(G.stats.cspd||0))/100)*mod):sk.cd*(1-G.stats.cdr/100);} // Warden: Attack Speed, Arcanist: Cast Speed
 // Attack animation: style from the weapon archetype (swing, stab, heavy, flick, thrust); duration fits inside the attack interval.
 const ATK_DUR={swing:0.24,stab:0.14,heavy:0.46,flick:0.2,thrust:0.28};
 function startAtk(style,hand,i){const p=G.p,s=G.stats;if(!style){const w=wOf(G.char.equip.mainhand)||FIST;style=w.anim;}

@@ -28,7 +28,7 @@ const CURS={
   storm:{name:'Catalyst of Storms',ic:'ϟ',col:'#ffe45a',w:1.5,cat:['lres'],desc:'Next craft: one new stat is Lightning Resistance'},
   venom:{name:'Catalyst of Venom',ic:'☣',col:'#9fe04a',w:1.5,cat:['pres'],desc:'Next craft: one new stat is Poison Resistance'},
   bulwark:{name:'Catalyst of the Bulwark',ic:'⛨',col:'#c8b088',w:2,cat:['life','armor','block'],desc:'Next craft: one new stat is a defence (Life, Armor or Block)'},
-  haste:{name:'Catalyst of Haste',ic:'➶',col:'#a8e0c0',w:2,cat:['aspd','move','cdr'],desc:'Next craft: one new stat is a speed (Attack, Move or Cooldown)'},
+  haste:{name:'Catalyst of Haste',ic:'➶',col:'#a8e0c0',w:2,cat:['aspd','cspd','move','cdr'],desc:'Next craft: one new stat is a speed (Attack or Cast, Move or Cooldown)'},
   fury:{name:'Catalyst of Fury',ic:'⚔',col:'#ff6a5a',w:2,cat:['dmg','crit','critd'],desc:'Next craft: one new stat is an attack stat (Damage, Crit, Crit Damage)'},
   corrupt:{name:'Abyssal Ember',ic:'✺',col:'#d0303a',w:1.2,desc:'Corrupts an item: a gamble that can make it stronger (or change nothing); a corrupted item can never be changed again'},
   crucible:{name:'Sunfire Crucible',ic:'☀',col:'#ffcc55',w:0,desc:'Burns +1 to All Skills into a white, magic or rare item, once (only the Hollow Sun drops it)'},

@@ -197,7 +197,7 @@ const SET_ITEMS={
   fbcirclet:{name:'Frostbound Circlet',set:'frostbound',type:'helm',affs:['life','cdr','res']},
   fbrobe:{name:'Frostbound Robe',set:'frostbound',type:'body',kind:'robe',affs:['life','res','cdr']},
   fbslippers:{name:'Frostbound Slippers',set:'frostbound',type:'boots',affs:['move','life','regen']},
-  swwand:{name:"Stormweaver's Wand",set:'stormweaver',type:'weapon',wt:'wand',affs:['spell','crit','aspd']},
+  swwand:{name:"Stormweaver's Wand",set:'stormweaver',type:'weapon',wt:'wand',affs:['spell','crit','cspd']},
   sworb:{name:"Stormweaver's Orb",set:'stormweaver',type:'focus',kind:'orb',affs:['spell','res','cdr']},
   swtorc:{name:"Stormweaver's Torc",set:'stormweaver',type:'amulet',affs:['spell','critd','life']},
   mwhood:{name:"Marshwalker's Hood",set:'marshwalker',type:'helm',affs:['life','regen','res']},
@@ -265,8 +265,8 @@ function activeSetStats(items){const n=setCounts(items),out=[],seen={};
   for(const it of items){const k=setOf(it);if(!k||seen[it.si])continue;seen[it.si]=1;for(const [need,list] of SET_ITEMS[it.si].sb||[])if(n[k]>=need)out.push(...list);}
   return out;}
 function addSetStats(items,s){const n=setCounts(items);s.fullSets=Object.keys(n).filter(k=>n[k]>=SETS[k].items.length); // for the dungeon aura
-  for(const a of activeSetStats(items)){if(a.pw)s.pw[a.pw]=true;else if(a.k==='skill')s.skill[a.s]+=a.v;else s[a.k]=(s[a.k]||0)+a.v;}}
-const setStatText=a=>a.pw?UPOW[a.pw].t:SET_STAT[a.k]?SET_STAT[a.k].replace('{v}',a.v):affText(a,1,G.char&&G.char.cls);
+  for(const a of activeSetStats(items)){if(a.pw)s.pw[a.pw]=true;else if(a.k==='skill')s.skill[a.s]+=a.v;else{const k=spdKey(a.k,s.cls);s[k]=(s[k]||0)+a.v;}}}
+const setStatText=a=>a.pw?UPOW[a.pw].t:SET_STAT[a.k]?SET_STAT[a.k].replace('{v}',a.v):affText(Object.assign({},a,{k:spdKey(a.k,G.char&&G.char.cls)}),1,G.char&&G.char.cls);
 // Glow for a worn set piece: 'full' with the whole set on, 'on' while any of its set bonuses (or its own green lines)
 // are active, '' otherwise (not a set piece, or not enough pieces worn yet).
 function setGlow(it,c){const v=setView(it,c);if(!v||!v.pieces.find(p=>p.name===SET_ITEMS[it.si].name).worn)return '';

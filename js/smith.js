@@ -107,7 +107,7 @@ function applyUpgradedBase(it){const o=upgradedBase(it);Object.assign(it,o);if(i
 function upbasePreview(it){const o=upgradedBase(it),rows=[['Base',`${esc(it.base)} (Tier ${TIER_NAME[it.tier-1]})`,`${esc(o.base)} (Tier ${TIER_NAME[o.tier-1]})`]];
   if(it.slot==='weapon')rows.push(['Damage',`${Math.round(it.dmin)}–${Math.round(it.dmax)}`,`${Math.round(o.dmin)}–${Math.round(o.dmax)}`]);
   if(it.arm)rows.push(['Armor',Math.round(it.arm),Math.round(o.arm)]);
-  (it.imp||[]).forEach((a,i)=>{if(a.k!=='skill'&&o.imp[i].v!==a.v)rows.push(['',esc(affText(a,1,it.cls)),esc(affText(o.imp[i],1,it.cls))]);});
+  (it.imp||[]).forEach((a,i)=>{if(a.k!=='skill'&&o.imp[i].v!==a.v)rows.push(['',esc(affText(spdA(a,G.char.cls),1,it.cls)),esc(affText(spdA(o.imp[i],G.char.cls),1,it.cls))]);});
   return rows;}
 // Why an operation can't be done on this item (or null if it can), ignoring cost.
 function smithBlock(op,it,affIdx){if(it.corrupt)return 'Corrupted: it can\'t be changed';

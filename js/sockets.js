@@ -36,7 +36,7 @@ const RUNE_KEYS=Object.keys(RUNES);
 // A socketed or pouched stone: {g, q} for a gem, {r} for a rune.
 const stoneName=s=>s.g?(GQ[s.q-1]?GQ[s.q-1]+' ':'')+GEMS[s.g].name:RUNES[s.r].name+' Rune';
 const stoneCol=s=>s.g?GEMS[s.g].col:'#ffd36b';
-function stoneStat(s,host){if(s.r)return {k:RUNES[s.r].k,v:RUNES[s.r].v};const [k,vs]=GEMS[s.g][host];return {k,v:vs[s.q-1]};}
+function stoneStat(s,host,cls=G.char&&G.char.cls){if(s.r)return {k:spdKey(RUNES[s.r].k,cls),v:RUNES[s.r].v};const [k,vs]=GEMS[s.g][host];return {k:spdKey(k,cls),v:vs[s.q-1]};} // Emerald, Rhu: Cast Speed for the Arcanist
 const statText=a=>AFF[a.k].t.replace('{v}',AFF[a.k].dec?(+a.v).toFixed(1):a.v);
 function stoneSvg(s){
   if(s.r)return `<svg class="icn" viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="5" fill="#5d6168" stroke="#2f3236" stroke-width="1.5"/><text x="16" y="21.5" font-size="13" text-anchor="middle" fill="#ffd36b" font-family="Georgia,serif">${RUNES[s.r].name[0]}</text></svg>`;
@@ -168,7 +168,7 @@ function socketPreview(c,T,s){const it=T.it,h=hostOf(it),st=stoneStat(s,h),n=pou
   const clone=Object.assign({},it,{socketed:(it.socketed||[]).concat([s])});let ch='';
   if(T.eq&&c.equip[T.eq]===it){const s0=calcStats(c),s1=calcStats(c,clone,T.eq),v0=st.k in s0?s0[st.k]:0,v1=st.k in s1?s1[st.k]:0;
     ch=`<div>${esc(nm)}: ${fmtNum(st.k,v0)} → <b class="up">${fmtNum(st.k,v1)}</b> <span class="fdim">(your total)</span></div>`;
-    if(st.k==='dmg'||st.k==='spell'||st.k==='crit'||st.k==='critd'||st.k==='aspd'){const d=(dpsOf(s1)/dpsOf(s0)-1)*100;ch+=`<div class="fdim">DPS ${d>=0?'+':''}${d.toFixed(1)}%</div>`;}}
+    if(st.k==='dmg'||st.k==='spell'||st.k==='crit'||st.k==='critd'||st.k==='aspd'||st.k==='cspd'){const d=(dpsOf(s1)/dpsOf(s0)-1)*100;ch+=`<div class="fdim">DPS ${d>=0?'+':''}${d.toFixed(1)}%</div>`;}}
   else{const R0=itemRows(it,it.cls||c.cls),r=R0[st.k],v0=r?r.v:0;ch=`<div>${esc(nm)} on this item: ${fmtNum(st.k,v0)} → <b class="up">${fmtNum(st.k,v0+st.v)}</b></div><div class="fdim">Counts once the item is worn.</div>`;}
   return `<b style="color:${stoneCol(s)}">${esc(stoneName(s))}</b> <span class="fdim">× ${n}</span>
     <div>In this ${HOST_NAME[h].toLowerCase()}: <b>${esc(statText(st))}</b></div>${ch}
