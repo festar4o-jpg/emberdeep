@@ -105,7 +105,7 @@ const MAT_OF={archer:'bone',scarab:'chitin',vinelasher:'sap',sporetoad:'sap',ice
 const matOf=e=>e.type==='boss'?['armor','armor','sap','ice','magma'][e.kind||0]:MAT_OF[e.type]||'flesh';
 const MAT={flesh:{blood:'#5e0a06',spray:'#8a1410'},bone:{spray:'#b8ae90',sparks:0.3,sparkCol:'#fff0d0',dust:1},chitin:{blood:'#2a4224',spray:'#4a6a3a'},sap:{blood:'#34501a',spray:'#6a8a2a'},
   ice:{spray:'#dff4ff',sparks:0.7,sparkCol:'#bfe8ff'},magma:{blood:'#140604',spray:'#ff7a2a',sparks:1,sparkCol:'#ffb040'},armor:{blood:'#4e0a06',spray:'#7a1410',sparks:1}};
-function part(x,y,vx,vy,life,col,s,extra){if(G.parts.length>(PERF.saver?180:420)||PERF.saver&&fr(0,1)<0.4)return; /* fx rng: never shifts gameplay rolls */const q={x,y,vx,vy,life,max:life,col,s};if(extra)Object.assign(q,extra);G.parts.push(q);}
+function part(x,y,vx,vy,life,col,s,extra){if(G.parts.length>420*PERF.partMul||PERF.partMul<1&&fr(0,1)>PERF.partMul)return; /* fx rng: never shifts gameplay rolls */const q={x,y,vx,vy,life,max:life,col,s};if(extra)Object.assign(q,extra);G.parts.push(q);}
 // Struck: a spray along the blow, sparks off armour, bone and ice, a splat that lingers on the floor; heavy blows
 // (crits, two-handers, big chunks of life) also freeze the action for a few frames (hit-stop) and shake the screen.
 function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const mat=matOf(e),M=MAT[mat],p=G.p,a=Math.atan2(e.y-p.y,e.x-p.x),heavy=!!(crit||(opts&&opts.kb>=95)||d>=e.maxHp*0.25);
