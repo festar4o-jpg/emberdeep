@@ -35,7 +35,8 @@ function gatherLights(Lt){
   for(const s of G.lights||[]){const f=s.fl?flick(t,s.x*0.37+s.y):1;add(s.x,s.y,s.r*(0.94+0.06*f),s.i*f,s.rgb,s.g*f);}
   if(G.inTown&&G.town){const T=G.town.T;for(const l of G.town.lights){const f=l.win?0.9+0.1*Math.sin(t*1.3+l.x):flick(t,l.x);
       add(l.x,l.y,l.r*(l.win?3:2.8),(l.win?0.72:0.9)*f,l.shroom?'120,255,190':l.way?'90,220,255':l.win?'255,190,110':T.flame,(l.win?0.32:0.4)*f);} // towns: warm, generous light
-    if(G.smith)add(G.smith.x+34,G.smith.y-6,130,0.9*flick(t,3),'255,140,50',0.35);}
+    if(G.smith)add(G.smith.x+34,G.smith.y-6,130,0.9*flick(t,3),'255,140,50',0.35);
+    if(G.bench)add(G.bench.x,G.bench.y-14,110,0.8*(0.85+0.15*Math.sin(t*2.3)),'200,150,255',0.3);}
   if(G.sidePortal)add(G.sidePortal.x,G.sidePortal.y,150,0.75,'230,180,90',0.22); /* zones.js */
   const P=G.portal;if(P)add(P.x,P.y,170,P.active?0.85:0.4,P.active?'170,110,255':'150,150,150',P.active?0.28:0.08);
   if(!G.inTown)for(const f of G.feats){if(f.kind==='shrine'){if(!f.used)add(f.x,f.y-18,120,0.7,rgbOf(SHRINES[f.type].col),0.3);}else if(f.state!=='open')add(f.x,f.y,110,0.6,f.state==='waves'?'255,64,160':'144,64,255',0.25);}

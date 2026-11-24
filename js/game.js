@@ -68,15 +68,15 @@ function killEnemy(e){
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);dropUCharm(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.05:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
+  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.03:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
   else if(Math.random()<normalDrop(T)*lootHere().drop)dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
 }
-// Item drop chances (v1.0.74): normal monsters 3.75-5.75% (tougher kinds more), champion/magic pack members 20%
-// (25% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
+// Item drop chances (v1.0.77): normal monsters about 1.9-2.9% (tougher kinds more), champion/magic pack members 10%
+// (13% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
 // BOSSES[].loot). Gold is separate and more common; gems, runes and charms keep their own rates.
-// Nightmare and Hell: x1.25 / x1.5 item chances, more Item Rarity, gold, gems and boss items (maps.js DIFFS loot).
-const ELITE_DROP=0.2,GOLD_CH=0.5; // v1.0.74: about half the items of before (fewer, better: rarity bonuses unchanged)
-const normalDrop=T=>0.03+(T.drop||0)*0.125;
+// Nightmare and Hell: x1.1 / x1.2 item chances, more Item Rarity, gold, gems and boss items (maps.js DIFFS loot).
+const ELITE_DROP=0.1,GOLD_CH=0.5; // v1.0.77: half of v1.0.74 again (a quarter of the old rate; rarity bonuses unchanged)
+const normalDrop=T=>0.015+(T.drop||0)*0.0625;
 function dropItem(x,y,it){if(it&&(it.rarity===3||it.rarity===5)&&G.char&&!namedFound(it))G.char.namedSince=0; /* only one you haven't found resets the guarantee (sockets.js BOOK) */if(blockedAt(x,y,4)){x=G.p.x;y=G.p.y;}const l={x,y,item:it,t:0};G.loot.push(l);if(!lootHidden(it)){dropSfx(l);dropFlash(l);}} // sfx.js: a chime for rare and better
 function dropGold(x,y,v){v=Math.round(v*lootHere().gold);G.loot.push({x:x+rand(-14,14),y:y+rand(-14,14),gold:v,t:0});} // maps.js: more gold in Nightmare and Hell
 // Returns true when the hit landed (not blocked). src = the attacking enemy, for elite effects.
@@ -172,7 +172,7 @@ function startDepth(d,mode){
   if(zoneOfDepth(d))return startZone(zoneOfDepth(d),mode); /* zones.js / acts.js: acts built of zones */
   G.zone=null;G.sidePortal=null;G.zboss=null;
   const c=G.char;if(c.mapRun)endMap('abandon'); /* sigils.js */G.depth=d;c.depth=d;c.town=0;if(d>25)c.endMax=Math.max(c.endMax||0,d);else c.maxDepth=Math.max(c.maxDepth,d); // endless reach: one for all difficulties
-  resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
+  resetArea();G.inTown=false;G.merchant=null;G.stash=null;G.smith=null;G.bench=null;G.waystone=null;G.levelMode=d%5===0&&mode?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   genLevel(d,G.levelMode);G.cam.x=p.x;G.cam.y=p.y;
   $('descBtn').textContent='⬇ Descend';
@@ -184,7 +184,7 @@ function resetArea(){
   G.areaT=G.time;G.bossIntro=null;G.zoneTheme=null;G.elder=null; // a new area: no boss banner left over from the last one
   G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;G.tpField=null;G.tpBack=null;G.atTp=false;
   const p=G.p;p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
-  $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
+  $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('benchBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
 function startTown(next){
@@ -322,6 +322,8 @@ function update(dt){
   $('stashBtn').classList.toggle('hidden',!nearStash);
   const nearSmith=G.inTown&&G.smith&&!p.dead&&Math.hypot(p.x-G.smith.x,p.y-G.smith.y)<85;
   $('smithBtn').classList.toggle('hidden',!nearSmith);
+  const nearBench=G.inTown&&G.bench&&!p.dead&&Math.hypot(p.x-G.bench.x,p.y-G.bench.y)<75;
+  $('benchBtn').classList.toggle('hidden',!nearBench);
   const nearWay=G.inTown&&G.waystone&&!p.dead&&!nearPortal&&Math.hypot(p.x-G.waystone.x,p.y-G.waystone.y)<70;
   $('wayBtn').classList.toggle('hidden',!nearWay);
   // camera

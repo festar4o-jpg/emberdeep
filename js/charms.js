@@ -77,7 +77,7 @@ function openCharm(it,inPouch){
   h+=`<div class="tfoot">Works while it's in your charm pouch (${charmUsed(c)}/${CHARM_SLOTS} slots used)</div></div>`;
   const clash=!inPouch&&ucharmClash(c,it),fits=charmFits(c,it)&&!clash;
   h+=`<div class="row">${inPouch?'<div class="btn sm" id="cOut">Take out</div>':`<div class="btn sm${fits?'':' dis'}" id="cIn">Put in charm pouch</div>`}
-    ${curAny(it)?'<div class="btn sm" id="iCraft">✦ Craft</div>':''}<div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>${inPouch?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}<div class="btn sm" id="iClose">Close</div></div>`;
+    <div class="btn sm" id="iLock">${it.lock?'🔓 Unlock':'🔒 Lock'}</div>${inPouch?'':`<div class="btn sm red${it.lock?' dis':''}" id="iSalv">Salvage (+${salvageValue(it)}🪙)</div>`}<div class="btn sm" id="iClose">Close</div></div>`;
   if(clash)h+=`<div class="cmp dn">You already carry ${esc(it.name)} in your pouch.</div>`;
   else if(!inPouch&&!fits)h+=`<div class="cmp dn">Not enough room: needs ${C.slots} free slot${C.slots>1?'s':''}.</div>`;
   $('itemPanel').innerHTML=h;$('itemPanel').classList.remove('cvp');$('itemOv').classList.remove('hidden');setPause();
@@ -85,6 +85,5 @@ function openCharm(it,inPouch){
   else{$('cIn').onclick=()=>{if(!charmIn(it)){toast('Charm pouch is full',`Needs ${C.slots} free slot${C.slots>1?'s':''}`);return;}closeItem();renderInv();};
     $('iSalv').onclick=()=>{const r=salvageItem(c,it);if(!r)return;toast('Salvaged',`+${r.gold} gold ${matText(r.mats)}`);closeItem();renderInv();saveChar();};}
   $('iLock').onclick=()=>{toggleLock(it);renderInv();openCharm(it,inPouch);};
-  if($('iCraft'))$('iCraft').onclick=()=>{$('itemOv').classList.add('hidden');openCurrency(it,inPouch?'charm':false);}; // currency.js
   $('iClose').onclick=closeItem;
 }

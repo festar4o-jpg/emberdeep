@@ -164,7 +164,7 @@ const LAYOUT={
 // ---------- building a zone ----------
 function startZone(zid,mode){const Z=ZONES[zid],c=G.char;if(!Z)return;migrateZones(c);if(c.mapRun&&zid!=='map'&&typeof endMap==='function')endMap('abandon'); /* sigils.js */
   G.zone=zid;G.depth=Z.depth;c.depth=Z.depth;c.zone=zid;c.maxDepth=Math.max(c.maxDepth||1,Z.depth);
-  resetArea();G.inTown=false;c.town=0;G.merchant=null;G.stash=null;G.smith=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&(mode==='boss'||mode==='noboss')?mode:'all';
+  resetArea();G.inTown=false;c.town=0;G.merchant=null;G.stash=null;G.smith=null;G.bench=null;G.waystone=null;G.levelMode=Z.layout==='boss'&&(mode==='boss'||mode==='noboss')?mode:'all';
   const p=G.p;p.potions=Math.max(p.potions,potFloor());
   if(!restoreInstance(zid,mode)){ /* portal.js: kept instances; waypoint travel elsewhere throws them away */
     if(mode==='fresh'||mode==='all'||mode==='boss'||mode==='noboss')clearInstances();

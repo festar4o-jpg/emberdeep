@@ -36,10 +36,11 @@ canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-ac
 #potBtn{bottom:calc(80px + env(safe-area-inset-bottom));}
 #tpBtn{right:calc(var(--arc) + 18px + env(safe-area-inset-right));bottom:calc(148px + env(safe-area-inset-bottom));width:50px;height:50px;font-size:22px;} /* town portal: above the potion, far from the joystick */
 #potBtn .cnt{position:absolute;bottom:2px;right:8px;font-size:12px;font-family:sans-serif;font-weight:bold;text-shadow:0 0 3px #000;}
-#descBtn,#shopBtn,#stashBtn,#smithBtn,#wayBtn,#useBtn{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:17px;padding:12px 22px;box-shadow:0 0 18px #9b4dff;white-space:nowrap;}
+#descBtn,#shopBtn,#stashBtn,#smithBtn,#benchBtn,#wayBtn,#useBtn{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:17px;padding:12px 22px;box-shadow:0 0 18px #9b4dff;white-space:nowrap;}
 #shopBtn{box-shadow:0 0 18px #d9a441;}
 #stashBtn{box-shadow:0 0 18px #8a6a3a;}
 #smithBtn{box-shadow:0 0 18px #e8703a;}
+#benchBtn{box-shadow:0 0 18px #c890ff;}
 #wayBtn{box-shadow:0 0 18px #4ad8e8;}
 .wayrow{margin:8px 0;}.wayn{font-size:14px;margin-bottom:4px;}.wayb{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}.wayb .btn.here{border-color:var(--gold);box-shadow:0 0 8px #d9a44188;}.wayend{font-size:13px;padding:0 6px;color:var(--dim);}
 #useBtn{box-shadow:0 0 18px #c060ff;}
@@ -194,7 +195,7 @@ h2{color:var(--gold);text-align:center;font-weight:normal;letter-spacing:2px;mar
   #potBtn,#dodgeBtn{width:50px;height:50px;font-size:22px;}
   #potBtn{bottom:calc(70px + env(safe-area-inset-bottom));}
   #tpBtn{bottom:calc(128px + env(safe-area-inset-bottom));width:44px;height:44px;font-size:19px;}
-  #descBtn,#shopBtn,#stashBtn,#smithBtn,#wayBtn,#useBtn{padding:10px 20px;font-size:16px;}
+  #descBtn,#shopBtn,#stashBtn,#smithBtn,#benchBtn,#wayBtn,#useBtn{padding:10px 20px;font-size:16px;}
   #bossbar{top:calc(10px + env(safe-area-inset-top));}
   .overlay{padding:calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));}
   .panel{padding:12px;}

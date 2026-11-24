@@ -5,7 +5,8 @@
 // uniques, set items, Runebinds and unique charms can't be changed by them. Charms (v1.0.62): Shard, Cinder, Tear,
 // Void Ash and Star-Iron work on them, up to the size's most stats (charms.js CHARM max); a charm keeps at least one stat. Every new stat rolls a tier for the item's level
 // (items.js affix tiers) and must fit an open prefix or suffix slot. The Blacksmith's crafts stay as they were.
-// Use: an item card's ✦ Craft button (pick a currency), or look through the pouch from the inventory (✦ Currency).
+// Use (v1.0.77): only at the Crafting Bench in town (pick an item, then a currency); the inventory's ✦ Currency button
+// just shows the pouch.
 const CUR_KEY='emberdeep_currency';
 // w: drop weight (Star-Iron is the rare one) · use: which items it works on.
 const CURS={
@@ -126,13 +127,44 @@ let curFor=null; // {it, equipped}: crafting this item; null: just looking
 function openCurrency(it,equipped){curFor=it?{it,equipped}:null;renderCurrency();$('curOv').classList.remove('hidden');if(!it)setPause();}
 function closeCurrency(){$('curOv').classList.add('hidden');const f=curFor;curFor=null;if(f)openItem(f.it,f.equipped);else setPause();}
 function renderCurrency(){const it=curFor&&curFor.it;
-  $('curSub').innerHTML=it?`Crafting <b style="color:${RCOL[it.rarity]}">${esc(it.name)}</b>: tap a currency to use one.`:'Currency drops from monsters and is shared by all your heroes. Use it from an item card (✦ Craft).';
+  $('curSub').innerHTML=it?`Crafting <b style="color:${RCOL[it.rarity]}">${esc(it.name)}</b>: tap a currency to use one.`:'Currency drops from monsters and is shared by all your heroes. Use it at the ✦ Crafting Bench in town.';
   $('curList').innerHTML=CUR_KEYS.map(k=>{const C=CURS[k],n=curCount(k),why=it?(n<1?'None left':curBlock(k,it)):null;
     return `<div class="slot${it&&!why?' cur-ok':''}${it&&why?' unk':''}" data-cur="${k}"><div class="ic" style="color:${C.col}">${C.ic}</div><div class="info"><b style="color:${C.col}">${C.name}</b> <span class="fdim">×${n}</span><div>${esc(C.desc)}</div>${why&&n>0?`<div class="fdim">${esc(why)}</div>`:''}</div></div>`;}).join('');
   if(it)$('curList').querySelectorAll('[data-cur]').forEach(el=>el.onclick=()=>{const k=el.dataset.cur,msg=useCur(k,it);if(!msg)return;toast(CURS[k].name,msg);refreshStats();renderInv();saveChar();renderCurrency();});}
 const curAny=it=>CUR_KEYS.some(k=>curCount(k)>0&&!curBlock(k,it));
 tap('curClose',closeCurrency);
 tap('curBtn',()=>openCurrency(null));
+// ---------- the Crafting Bench (v1.0.77): the only place to use currency, in every town ----------
+// Left: every item you can craft (worn, charm pouch, bag); right: the chosen item's card and the currencies for it.
+let benchSel=null;
+function benchItems(){const c=G.char;return EQ_SLOTS.map(s=>c.equip[s]).filter(Boolean).concat(charmsOf(c),c.bag).filter(it=>!it.rb);}
+function openBench(){if(!G.char||G.paused||!G.inTown)return;benchSel=null;$('benchOv').classList.remove('hidden');renderBench();setPause();}
+function closeBench(){$('benchOv').classList.add('hidden');benchSel=null;setPause();}
+function renderBench(){const c=G.char,items=benchItems();if(benchSel&&!items.includes(benchSel))benchSel=null;
+  const have=CUR_KEYS.filter(k=>curCount(k)>0);
+  $('benchCur').innerHTML=have.length?have.map(k=>`<span title="${CURS[k].name}" style="color:${CURS[k].col}">${CURS[k].ic} ${curCount(k)}</span>`).join(' &nbsp; '):'<span class="fdim">No currency yet: it drops from monsters, more in harder places.</span>';
+  $('benchGrid').innerHTML=items.length?items.map(it=>cellHtml(it).replace('class="cell','class="cell'+(it===benchSel?' sel':''))).join(''):'<p class="fdim" style="grid-column:1/-1">Nothing to craft.</p>';
+  [...$('benchGrid').children].forEach((el,i)=>{if(items[i])el.onclick=()=>{benchSel=items[i];renderBench();};});
+  const it=benchSel;
+  if(!it){$('benchInfo').innerHTML='<p class="fdim">Pick an item on the left. Currency is shared by all your heroes.</p>';return;}
+  let h=tipCard(it,c);
+  const rows=CUR_KEYS.filter(k=>curCount(k)>0).map(k=>{const C=CURS[k],why=curBlock(k,it);
+    return `<div class="slot${why?' unk':' cur-ok'}" data-cur="${k}"><div class="ic" style="color:${C.col}">${C.ic}</div><div class="info"><b style="color:${C.col}">${C.name}</b> <span class="fdim">×${curCount(k)}</span><div>${esc(C.desc)}</div>${why?`<div class="fdim">${esc(why)}</div>`:''}</div></div>`;});
+  h+=rows.length?rows.join(''):'<p class="fdim">You have no currency.</p>';
+  $('benchInfo').innerHTML=h;
+  $('benchInfo').querySelectorAll('[data-cur]').forEach(el=>el.onclick=()=>{const k=el.dataset.cur,msg=useCur(k,it);if(!msg)return;
+    toast(CURS[k].name,msg);refreshStats();renderInv();saveChar();renderBench();});}
+tap('benchClose',closeBench);
+tap('benchBtn',openBench);
+// The bench in town: a dark table with a glowing rune cloth and a few floating orbs of currency.
+function drawBench(){const {x,y}=G.bench,t=G.time;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-34,y+10,68,7);
+  ctx.fillStyle='#3a2a20';ctx.strokeStyle='#140d08';ctx.lineWidth=2;for(const o of [-26,22])ctx.fillRect(x+o,y-2,5,14);
+  ctx.fillStyle='#5a4030';ctx.fillRect(x-32,y-10,64,10);ctx.strokeRect(x-32,y-10,64,10);
+  ctx.fillStyle='#3a1f4f';ctx.fillRect(x-20,y-11,40,6);
+  const g=0.55+0.45*Math.sin(t*2.3);ctx.strokeStyle=`rgba(210,160,255,${g})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y-8,4,0,TAU);ctx.moveTo(x-14,y-8);ctx.lineTo(x-8,y-8);ctx.moveTo(x+8,y-8);ctx.lineTo(x+14,y-8);ctx.stroke();
+  for(const [col,k] of [['#9ab0ff',0],['#ffb040',1],['#c890ff',2]]){const a=t*1.4+k/3*TAU;ctx.fillStyle=col;ctx.globalAlpha=0.85;ctx.beginPath();ctx.arc(x+Math.cos(a)*18,y-26+Math.sin(a)*5,3.5,0,TAU);ctx.fill();}ctx.globalAlpha=1;
+  ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Crafting Bench',x,y-44);ctx.fillStyle='#c890ff';ctx.fillText('Crafting Bench',x,y-44);}
 // ---------- corruption (v1.0.73): the Abyssal Ember ----------
 // One of four outcomes, a quarter each, then the item is corrupted for good (no currency, no Blacksmith crafts; upgrades
 // with gold and socketing stones still work). Magic, rare and white items: a corrupted implicit; one stat a tier up (past

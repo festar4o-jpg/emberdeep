@@ -35,6 +35,7 @@ function render(){
   if(G.inTown&&G.merchant&&onScreen(G.merchant.x,G.merchant.y,120))drawMerchant();
   if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
   if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
+  if(G.inTown&&G.bench&&onScreen(G.bench.x,G.bench.y,90))drawBench(); // currency.js
   // hazards & telegraphs
   for(const h of G.hazards){const g=ctx.createRadialGradient(h.x,h.y,5,h.x,h.y,h.r);g.addColorStop(0,h.rot?'#8fd04066':'#ff6a1a66');g.addColorStop(1,h.rot?'#6ab02000':'#ff3a0a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,TAU);ctx.fill();}
   for(const f of G.fx)if((f.type==='tele'||f.type==='tline')&&!f.own)drawWarning(f,f.t/f.max); // fx.js: enemy attacks, red/orange
@@ -384,6 +385,7 @@ function drawMinimap(){
   for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i;if(G.explored[k]&&G.grid[k]===0){mctx.fillStyle=TC[G.terrain[k]]||base;mctx.fillRect(i*s,j*s,s+0.5,s+0.5);}}
   const P=G.portal;const pti=Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE);if(G.explored[pti]){mctx.fillStyle=P.active?'#b27bff':'#777';mctx.beginPath();mctx.arc(P.x/TILE*s,P.y/TILE*s,6,0,TAU);mctx.fill();}
   if(G.inTown&&G.smith){mctx.fillStyle='#e8703a';mctx.beginPath();mctx.arc(G.smith.x/TILE*s,G.smith.y/TILE*s,4.5,0,TAU);mctx.fill();}
+  if(G.inTown&&G.bench){mctx.fillStyle='#c890ff';mctx.beginPath();mctx.arc(G.bench.x/TILE*s,G.bench.y/TILE*s,4,0,TAU);mctx.fill();}
   if(G.inTown&&G.stash){mctx.fillStyle='#b07a3a';mctx.fillRect(G.stash.x/TILE*s-4,G.stash.y/TILE*s-4,8,8);}
   if(G.inTown&&G.waystone){mctx.fillStyle='#4ad8e8';mctx.beginPath();mctx.arc(G.waystone.x/TILE*s,G.waystone.y/TILE*s,4.5,0,TAU);mctx.fill();}
   if(G.inTown&&G.merchant){mctx.fillStyle='#f2d04a';mctx.beginPath();mctx.arc(G.merchant.x/TILE*s,G.merchant.y/TILE*s,5,0,TAU);mctx.fill();}
