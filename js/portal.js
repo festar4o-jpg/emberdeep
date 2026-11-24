@@ -100,7 +100,7 @@ $('tpBtn').addEventListener('touchstart',ev=>{ev.preventDefault();castPortal();}
 // Rising again in a zone: same instance, at its waypoint (once unlocked) or its entrance. The survivors calm down, heal
 // and go back to where they first stood (a zone boss doesn't wait at the entrance); the dead stay dead, the loot stays.
 function zoneRespawn(){const p=G.p,c=G.char,Z=ZONES[G.zone];
-  p.dead=false;p.hp=G.stats.life;p.res=CLASSES[c.cls].res==='Fury'?20:G.stats.res;p.leap=null;p.dodge=null;p.spin=0;p.tpCast=null;p.cd=[0,0,0,0,0];p.slowT=0;p.burnT=0;p.dotAcc=0;
+  clearPlayerAils(p);p.dead=false;p.hp=G.stats.life;p.res=CLASSES[c.cls].res==='Fury'?20:G.stats.res;p.leap=null;p.dodge=null;p.spin=0;p.tpCast=null;p.cd=[0,0,0,0,0];p.slowT=0;p.burnT=0;p.dotAcc=0;
   p.potions=Math.max(p.potions,potFloor());
   G.proj=[];G.ehaz=[];G.hazards=[];G.delayed=[];G.fx=[];G.texts=[];G.bossIntro=null;
   for(const e of G.enemies)if(!e.dead){e.aggro=false;e.wind=0;e.busy=0;e.act=null;e.tele=null;e.dash=0;e.hp=e.maxHp;e.bleedT=0;e.burnT=0;e.stun=0;e.frozen=0;if(e.hx!=null&&!e.summoned){e.x=e.hx;e.y=e.hy;}}

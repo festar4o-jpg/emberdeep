@@ -10,7 +10,9 @@ const AFFIXES={
   molten:{name:'Molten',col:'#ff9a2a',act:2},
   teleporter:{name:'Teleporter',col:'#c080ff',act:2},
   waller:{name:'Waller',col:'#c8a878',act:2},
+  storm:{name:'Storm-Charged',col:'#ffe24a',act:2},
   frozen:{name:'Frozen Pulse',col:'#bfe8ff',act:3},
+  venom:{name:'Venomous',col:'#8ae05a',act:3},
   summoner:{name:'Summoner',col:'#b070ff',act:3},
   reflect:{name:'Reflects Damage',col:'#ff5ad0',act:4}
 };
@@ -38,6 +40,12 @@ function affixTick(e,d,dt){const L=affLv(),T=e.affT||(e.affT={});
     else if(k==='summoner'){if(ready(k,9-L*0.6)){const t=minionType(),n=(t==='scarab'?3:2)+(L>=3?1:0);bossSummon(e,t,n,n+2);}}
     else if(k==='molten'){T.molten=(T.molten||0)-dt;if(T.molten<=0){T.molten=0.4;addEHaz(e.x,e.y,26,2.5+L*0.2,e.dmg*0.35,'fire');}}
     else if(k==='waller'){if(d<260&&ready(k,8-L*0.5))raiseWall(e,L);}
+    // v1.0.85 (ailments.js does the rest): Storm-Charged calls three lightning strikes around you, one after another (they
+    // can Shock you); Venomous hits are 60% poison (they can Poison you) and it spits a poison cloud where you stand.
+    else if(k==='storm'){if(d<420&&ready(k,6-L*0.4)){const p=G.p,a0=rand(0,TAU);for(let j=0;j<3;j++){const a=a0+j*TAU/3,x=p.x+Math.cos(a)*(j?45:0),y=p.y+Math.sin(a)*(j?45:0);
+      later(j*0.3,()=>affStrike(x,y,48+L*3,0.8,e.dmg*0.45,'#ffe24a',null,'lres'));}}}
+    else if(k==='venom'){if(!e.elem){e.elem='pres';e.elemS=0.6;}if(d<380&&ready(k,6.5-L*0.4)){const p=G.p,x=p.x,y=p.y,r=55+L*3;
+      G.fx.push({type:'tele',x,y,r,t:0,max:0.9,col:'#8ae05a'});later(0.9,()=>{addEHaz(x,y,r,3+L*0.3,e.dmg*0.3,'poison');burst(x,y,16,'#8ae05a',160);});}}
   }
 }
 // Reflects Damage: part of each hit comes back (capped per hit, sent at most 4 times a second).

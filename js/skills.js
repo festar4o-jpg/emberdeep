@@ -58,8 +58,8 @@ const SKILLS={
       desc:r=>`Lightning jumps between ${Math.min(8,3+Math.floor((r-1)/2))} enemies for ${pct(1.25+0.15*(r-1))} damage each. Costs 18 Mana.`,
       cast(r){const p=G.p;let cur=nearest(p.x,p.y,340);if(!cur){G.p.res+=18;G.p.cd[3]=0.2;return;}
         const hit=new Set(),pts=[{x:p.x,y:p.y}];const endless=hasPw('endless')&&p.res>G.stats.res*0.5,n=endless?30:Math.min(8,3+Math.floor((r-1)/2))+(hasPw('stormweave')?4:0);
-        const fork=hasMod('fork'),over=hasMod('overload'),stat=hasMod('static'),m0=(1.25+0.15*(r-1))*(fork?0.75:1); // skillmods.js: Fork, Overload, Static
-        const chainFrom=(cur,pts)=>{for(let k=0;k<n&&cur;k++){hit.add(cur);pts.push({x:cur.x,y:cur.y});hitEnemy(cur,m0*(over?Math.pow(1.15,k):1),{});if(stat)staticMark(cur);cur=nearest(cur.x,cur.y,210,endless?new Set([cur]):hit);}}; // endless: may bounce back, just not onto the same enemy twice in a row
+        const fork=hasMod('fork'),over=hasMod('overload'),m0=(1.25+0.15*(r-1))*(fork?0.75:1); // skillmods.js: Fork, Overload (Static: ailments.js)
+        const chainFrom=(cur,pts)=>{for(let k=0;k<n&&cur;k++){hit.add(cur);pts.push({x:cur.x,y:cur.y});hitEnemy(cur,m0*(over?Math.pow(1.15,k):1),{});cur=nearest(cur.x,cur.y,210,endless?new Set([cur]):hit);}}; // endless: may bounce back, just not onto the same enemy twice in a row
         const second=fork?nearest(p.x,p.y,340,new Set([cur])):null;chainFrom(cur,pts);
         if(second&&!second.dead){const pts2=[{x:p.x,y:p.y}];if(!hit.has(second))chainFrom(second,pts2);if(pts2.length>1)G.fx.push({type:'bolt',pts:pts2,t:0,max:0.22});}
         if(hasPw('chainBlast')&&pts.length>1){const L=pts[pts.length-1];aoe(L.x,L.y,90,(1.25+0.15*(r-1))*1.5,{});fxExplosion(L.x,L.y,90,'#9fd8ff');}
@@ -86,7 +86,7 @@ function startAtk(style,hand,i){const p=G.p,s=G.stats;if(!style){const w=wOf(G.c
   const dur=Math.min(ATK_DUR[style]||0.24,i===0?skillCd(0)*0.95:0.5);p.atk={style,hand:hand||'mh',t:0,dur};
   if(i===0&&G.char.cls==='warden')skillSfx('warden',0,style);} // sfx.js: the weapon's whoosh
 function tryCast(i){
-  const p=G.p;if(G.paused||!p||p.dead)return;
+  const p=G.p;if(G.paused||!p||p.dead||playerFrozen())return; // ailments.js: no casting while frozen
   const r=rk(i);if(r<=0||p.cd[i]>0||p.leap)return;
   if(p.spin>0&&i!==2)return;
   const sk=SKILLS[G.char.cls][i];

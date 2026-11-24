@@ -230,6 +230,11 @@ body.lefty #potBtn,body.lefty #dodgeBtn,body.lefty #tpBtn{right:auto;left:calc(v
 :root{--iron:#5c5042;--iron2:#8a7a62;--stone:#17120e;--blood:#7a1612;}
 /* life and mana orbs: liquid that fills from the bottom, a lit surface line, a glass highlight, an iron rim */
 .orbs{display:flex;gap:10px;margin:2px 0 6px;}
+#ailHud{display:flex;gap:4px;min-height:0;margin:-2px 0 4px;pointer-events:none;}
+#ailHud .ail{display:flex;align-items:center;gap:2px;font-size:13px;line-height:18px;padding:0 5px 0 3px;border-radius:9px;background:#000a;border:1px solid #fff3;}
+#ailHud .ail b{font:bold 11px sans-serif;color:#fff;}
+#ailHud .ail i{font:normal 10px sans-serif;color:#cfc;}
+#ailHud .ail-burn{border-color:#ff8a2a;}#ailHud .ail-chill,#ailHud .ail-frozen{border-color:#bfe8ff;}#ailHud .ail-shock{border-color:#ffe24a;}#ailHud .ail-poison{border-color:#8ae05a;}
 .orb,#hpb.orb,#mpb.orb{position:relative;width:58px;height:58px;margin:0;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1c1410,#050302 75%);
   border:3px solid #2e261e;box-shadow:0 0 0 1px #000,0 0 0 3px var(--iron),0 0 0 4px #1a140f,0 4px 10px #000,inset 0 0 12px #000;}
 .orb>i,#hpb.orb>i,#mpb.orb>i{position:absolute;left:0;right:0;bottom:0;top:auto;width:auto;height:100%;transition:height .15s linear;}

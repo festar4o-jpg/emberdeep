@@ -7,16 +7,16 @@ const EQ_SLOTS=['mainhand','ring1','helm','amulet','offhand','gloves','ring2','b
 const SLOT_NAME={mainhand:'Main Hand',offhand:'Off Hand',helm:'Helm',body:'Body',gloves:'Gloves',belt:'Belt',boots:'Boots',amulet:'Amulet',ring1:'Ring 1',ring2:'Ring 2'};
 // Item types: which slots they fit, drop weight (w = % of drops; shield and focus share the off-hand 10%, one per class), and affix pool.
 const TYPES={
-  weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','loh','life','res','spell','skdmg','bossdmg']},
+  weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','loh','life','res','spell','skdmg','bossdmg','igniteCh','shockCh','poisonCh']},
   shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh','resist','ares','thorns','dr']},
-  focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','res','cdr','crit','regen','life','skdmg','bossdmg']},
+  focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','res','cdr','crit','regen','life','skdmg','bossdmg','igniteCh','shockCh','poisonCh']},
   helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen','resist','lifepct','evade']},
   body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr','resist','lifepct','thorns','dr']},
-  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor','resist','skdmg','evade']},
+  gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','crit','critd','dmg','loh','armor','resist','skdmg','evade','igniteCh','shockCh','poisonCh']},
   belt:{name:'Belt',slots:['belt'],w:10,pool:['life','pot','armor','regen','res','resist','lifepct','dr']},
   boots:{name:'Boots',slots:['boots'],w:10,pool:['move','life','armor','regen','cdr','resist','evade']},
   amulet:{name:'Amulet',slots:['amulet'],w:6,pool:null}, // null = any affix
-  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell','resist','ares','bossdmg','skdmg']}
+  ring:{name:'Ring',slots:['ring1','ring2'],w:10,pool:['life','res','dmg','crit','critd','aspd','cdr','loh','regen','armor','spell','resist','ares','bossdmg','skdmg','igniteCh','shockCh','poisonCh']}
 };
 // ---------- base tiers: each act adds a tier (Tier I in act 1 … Tier V in act 5) ----------
 // A base's tier sets its base level, which drives base damage, armor and implicit values; item level only nudges it
@@ -57,7 +57,7 @@ const WEAPONS={
   scepter:{name:'Scepter',cls:'arcanist',act:1,hands:1,dmg:1,spd:1,spell:10,anim:'flick',bases:['Iron Scepter','Sun Scepter','Bog Scepter','Crystal Scepter','Ember Scepter']},
   staff:{name:'Staff',cls:'arcanist',act:1,hands:2,dmg:1.4,spd:0.85,spell:20,anim:'thrust',bases:['Oak Staff','Runed Staff','Elder Staff','Frost Staff','Cinder Staff']},
   rod:{name:'Rod',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,pierce:1,anim:'flick',bases:['Sand Rod','Bog Rod','Ice Rod','Magma Rod']},
-  thornstaff:{name:'Thornstaff',cls:'arcanist',act:3,hands:2,dmg:1.35,spd:0.85,spell:10,splash:35,anim:'thrust',bases:['Thornstaff','Frostthorn Staff','Emberthorn Staff']},
+  thornstaff:{name:'Thornstaff',cls:'arcanist',act:3,hands:2,dmg:1.35,spd:0.85,spell:10,splash:35,poison:25,anim:'thrust',bases:['Thornstaff','Frostthorn Staff','Emberthorn Staff']},
   runewand:{name:'Runewand',cls:'arcanist',act:4,hands:1,dmg:0.9,spd:1.25,skill:1,anim:'flick',bases:['Runewand','Ember Runewand']},
   spellblade:{name:'Spellblade',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,spell:8,crit:2,anim:'flick',bases:['Spellblade','Bog Spellblade','Frost Spellblade','Sunfire Spellblade']}, // v1.0.71
   demonstaff:{name:'Demon Staff',cls:'arcanist',act:5,hands:2,dmg:1.45,spd:0.85,spell:15,explode:40,anim:'thrust',bases:['Demon Staff']}
@@ -91,7 +91,7 @@ const ARM={helm:[3,1.5],shield:[4,2],gloves:[1.5,0.8],boots:[1.5,0.8]};
 function weaponProps(w){const out=[];
   if(w.crit)out.push(`+${w.crit}% Crit Chance`);if(w.critd)out.push(`+${w.critd}% Crit Damage`);if(w.spell)out.push(`+${w.spell}% Spell Damage`);
   if(w.block)out.push(`+${w.block}% Block Chance`);
-  if(w.bleed)out.push(`${w.bleed}% chance to Bleed (80% of hit over 3s)`);if(w.stun)out.push(`${w.stun}% chance to Stun for ${w.stunDur}s`);
+  if(w.bleed)out.push(`${w.bleed}% chance to Bleed (80% of hit over 3s)`);if(w.poison)out.push(`${w.poison}% chance to Poison (60% of hit over 3s, stacks)`);if(w.stun)out.push(`${w.stun}% chance to Stun for ${w.stunDur}s`);
   if(w.splash)out.push(`Hits splash ${w.splash}% damage onto nearby enemies`);if(w.pierce)out.push(`Bolts pierce ${w.pierce} enemy`);
   if(w.explode)out.push(`Slain enemies explode for ${w.explode}% damage`);if(w.reach>=110)out.push('Long reach');
   if(w.skill)out.push(`+${w.skill} to a random skill`);
@@ -200,6 +200,10 @@ const AFF={
   lifepct:{ps:'p',t:'+{v}% maximum Life',pre:'Vigorous',suf:'of Vigour',roll:l=>rand(3,5)+l*0.06,flat:1},
   thorns:{ps:'p',t:'{v} damage to attackers when hit',pre:'Barbed',suf:'of Thorns',roll:l=>rand(6,12)+l*1.8,flat:1},
   evade:{ps:'s',t:'+{v}% chance to evade hits',pre:'Elusive',suf:'of Evasion',roll:l=>rand(2,4)+l*0.04,dec:1,flat:1},
+  // v1.0.83: ailment chances on any direct hit (ailments.js): Ignite, Shock, Poison. Cap AIL_CH_CAP each.
+  igniteCh:{ps:'s',t:'+{v}% chance to Ignite',pre:'Smouldering',suf:'of Embers',roll:l=>rand(4,7)+l*0.14,flat:1},
+  shockCh:{ps:'s',t:'+{v}% chance to Shock',pre:'Crackling',suf:'of Sparks',roll:l=>rand(4,7)+l*0.14,flat:1},
+  poisonCh:{ps:'s',t:'+{v}% chance to Poison',pre:'Venomous',suf:'of the Asp',roll:l=>rand(4,7)+l*0.14,flat:1},
   dr:{ps:'s',t:'{v}% less damage taken',pre:'Unyielding',suf:'of Endurance',roll:l=>rand(1.5,3)+l*0.035,dec:1,flat:1,myth:1},
   // charm-only stats (v1.0.62, charms.js): never on gear. nom: not scaled by the charm's size; lg: large and grand only.
   rarity:{ps:'s',t:'+{v}% Item Rarity',pre:'Lucky',suf:'of Fortune',roll:l=>rand(8,13)+l*0.3,flat:1,charm:1},
@@ -555,14 +559,14 @@ function bestSlot(c,it){const fits=fitsFor(c,it).filter(s=>(is2h(it)||slotOpen(c
   let best=fits[0],bp=-1;for(const s of fits){const p=power(calcStats(c,it,s));if(p>bp){bp=p;best=s;}}return best;}
 function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
-  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,skd0:0,skd1:0,skd2:0,skd3:0,skd4:0,bossdmg:0,lifepct:0,thorns:0,evade:0,dr:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
+  const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,poisonCh:0,shockCh:0,igniteCh:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,skd0:0,skd1:0,skd2:0,skd3:0,skd4:0,bossdmg:0,lifepct:0,thorns:0,evade:0,dr:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){
     const it=eq[sl];if(!it)continue;
     const m=upgMul(it),qm=1+(it.q||0)/100; // quality (currency.js Whetstone): base damage and armor
     if(it.slot==='weapon'){const w=wOf(it);const hand={wt:it.wt,dmin:it.dmin*m*qm,dmax:it.dmax*m*qm,spd:w.spd};if(sl==='mainhand')s.mh=hand;else s.oh=hand;
-      s.crit+=w.crit||0;s.critd+=w.critd||0;s.block+=w.block||0;s.bleed+=w.bleed||0;s.spell+=w.spell||0;if(w.stun){s.stunCh+=w.stun;s.stunDur=Math.max(s.stunDur,w.stunDur);}
+      s.crit+=w.crit||0;s.critd+=w.critd||0;s.block+=w.block||0;s.bleed+=w.bleed||0;s.poisonCh+=w.poison||0;s.spell+=w.spell||0;if(w.stun){s.stunCh+=w.stun;s.stunDur=Math.max(s.stunDur,w.stunDur);}
       s.splash+=w.splash||0;s.pierce=Math.max(s.pierce,w.pierce||0);s.explode=Math.max(s.explode,w.explode||0);}
     for(const k of itemPowers(it))s.pw[k]=true;
     if(it.arm)s.armor+=it.arm*m*qm;
@@ -578,14 +582,15 @@ function calcStats(c,swap,at){
   else if(s.mh){s.dmin=s.mh.dmin;s.dmax=s.mh.dmax;s.wspd=s.mh.spd;}
   const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
-  s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)
+  s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);for(const k of ['igniteCh','shockCh','poisonCh'])s[k]=Math.min(s[k],AIL_CH_CAP);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)
   shrineStats(s);
   if(typeof mapStats==='function')mapStats(s); // sigils.js: a map's modifiers on you
   return s;
 }
 // Resistance to one element after the difficulty's penalty (maps.js resPenalty), at most 75%; can go below 0.
 function resOf(s,k){return Math.min(resCap(s),(s[k]||0)+(s.ares||0)-resPenalty());}
-function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15)*(1+(s.skd0+s.skd1+s.skd2+s.skd3+s.skd4)/500)*(1+s.bossdmg/400);
+const AIL_CH_CAP=75; // chance to Ignite / Shock / Poison, each
+function power(s){const avg=(s.dmin+s.dmax)/2*s.levelMul;const off=avg*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08)*(1+s.cdr/200)*s.wspd*(1+s.spell/100)*(1+s.bleed/100*0.8)*(1+s.stunCh/200)*(1+s.splash/200)*(1+s.pierce*0.1)*(1+s.explode/400)*(1+Object.keys(s.pw).length*0.15)*(1+(s.skd0+s.skd1+s.skd2+s.skd3+s.skd4)/500)*(1+s.bossdmg/400)*(1+(s.igniteCh*0.6+s.shockCh*0.5+s.poisonCh*0.5)/100); /* ailment chances: about what they add on average */
   const def=(s.life*(1+s.armor/150)/(1-s.block/100)*(1+s.pot*0.04)+s.loh*20+s.regen*10)*(1+RES_KEYS.reduce((a,k)=>a+Math.max(0,Math.min(RES_CAP,(s[k]||0)+(s.ares||0))),0)/600);return off*Math.sqrt(def/(1-s.evade/100)/(1-s.dr/100))*(1+s.move/400);}
 // ---------- loot filter (per character, set in the menu) ----------
 // c.filter = {min, rares, autoSalv}: autoSalv salvages plain white items on pickup (see smith.js).

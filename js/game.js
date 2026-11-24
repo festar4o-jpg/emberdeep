@@ -6,7 +6,7 @@ function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */if(e.staticUntil>G.time)r.d*=1.15; /* skillmods.js: Static */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e); /* ailments.js: Shock */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -24,8 +24,7 @@ function hitEnemy(e,mult,opts={}){
   if(opts.stun&&e.type!=='boss')e.stun=Math.max(e.stun,opts.stun);
   if(opts.stun&&e.type==='boss')e.stun=Math.max(e.stun,opts.stun*0.3);
   if(opts.freeze)e.frozen=Math.max(e.frozen,e.type==='boss'?opts.freeze*0.35:opts.freeze);
-  if(opts.chill)e.chillT=Math.max(e.chillT||0,opts.chill); // skillmods.js: Cold Snap (half speed)
-  if(G.sk===1&&!opts.dot&&!opts.splashed&&hasMod('ignite'))fireballBurn(e,r.d); // skillmods.js: Ignite
+  applyAilments(e,r.d,opts); // ailments.js: Ignite, Shock, Chill, Poison
   if(opts.kb&&!ETYPES[e.type].heavy){const a=Math.atan2(e.y-G.p.y,e.x-G.p.x);moveEnt(e,Math.cos(a)*opts.kb*0.3,Math.sin(a)*opts.kb*0.3);}
   if(!opts.quiet)for(let k=0;k<3;k++)G.parts.push({x:e.x,y:e.y,vx:rand(-90,90),vy:rand(-90,90),life:0.3,max:0.3,col:'#8a1a1a',s:3});
   // flail / thornstaff: weapon hits splash onto enemies around the target
@@ -88,7 +87,7 @@ function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}return [mx,my];}
 // Dodge: a quick dash (about 140px) in the move direction (or facing), untouchable while it lasts.
 const DODGE_CD=1.4,DODGE_DUR=0.26,DODGE_SPD=540;
-function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
+function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||playerFrozen()||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
   const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;playSfx(G.char&&G.char.cls==='arcanist'?'blink':'dodge');
   if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
     const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
@@ -100,7 +99,7 @@ function dmgPlayer(raw,src,el){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul();
   if(G.stats.evade>0&&Math.random()*100<G.stats.evade){floatText(p.x,p.y-p.r-8,'Evade','#a8e0c0',false);return false;} // v1.0.70: evasion
   raw*=1-(G.stats.dr||0)/100; // less damage taken /* bossfight.js: underleveled for the area, boss matchup */
-  raw*=modTakenMul(); // skillmods.js: Iron Landing, Ice Armour
+  raw*=modTakenMul()*playerShockMul(); // skillmods.js: Iron Landing, Ice Armour; ailments.js: Shocked
   const blk=G.stats.block+(p.spin>0&&hasMod('bladeward')?25:0);
   if(blk>0&&Math.random()*100<blk){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
@@ -109,7 +108,7 @@ function dmgPlayer(raw,src,el){
   if(p.barrier>0){const a=Math.min(p.barrier,d);p.barrier-=a;d-=a;if(!d){floatText(p.x,p.y-p.r-8,'Absorbed','#ffd27a',false);return true;}} // Warlord's Visage
   if(hasPw('manaShield')&&p.res>0){const m=Math.min(p.res,Math.floor(d*0.25));p.res-=m;d-=m;} // Mantle of Sorrows
   if(hasPw('thornBurst')&&G.time-(p.tbT||-9)>=1){p.tbT=G.time;aoe(p.x,p.y,110,0.6,{});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:115,t:0,max:0.3,col:'#8ac060'});}
-  p.hp-=d;p.hurt=0.15;playSfx('hurt');if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
+  p.hp-=d;p.hurt=0.15;playSfx('hurt');if(E)playerAilHit(E,sh,d); /* ailments.js: burning, chill/freeze, shock, poison on you */if(p.tpCast)portalInterrupt(); /* portal.js: a hit breaks the cast */
   floatText(p.x,p.y-p.r-8,d,E&&sh>=0.5?RES_COL[E]:'#ff5a5a',false);
   {const L=G.stats.life,big=src&&(src.type==='boss'||src.zb);if(d>=L*0.2||(big&&d>=L*0.08))buzz('heavy');else if(d>=L*0.08)buzz('hurt');} // vibration (sfx.js)
   if(src&&!src.dead&&hasAff(src,'vampiric')){src.hp=Math.min(src.maxHp,src.hp+d*2);floatText(src.x,src.y-src.r-8,'+'+Math.round(d*2),'#e04060',false);}
@@ -187,7 +186,7 @@ function startDepth(d,mode){
 function resetArea(){
   G.areaT=G.time;G.bossIntro=null;G.zoneTheme=null;G.elder=null; // a new area: no boss banner left over from the last one
   G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;G.tpField=null;G.tpBack=null;G.atTp=false;
-  const p=G.p;p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
+  const p=G.p;clearPlayerAils(p);p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('benchBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
@@ -207,7 +206,7 @@ function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
-  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt); /* skillmods.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
+  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt); /* skillmods.js, ailments.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
   if(p.atk){p.atk.t+=dt;if(p.atk.t>=p.atk.dur)p.atk=null;}
   if(p.slowT>0){p.slowT-=dt;if(p.slowT<=0)p.slowAmt=0;}
   if(!p.dead){p.hp=Math.min(s.life,p.hp+s.regen*dt);p.res=Math.min(s.res,p.res+C.regen*dt);}
@@ -215,6 +214,7 @@ function update(dt){
   // movement
   const [mx,my]=moveInput(),ml=Math.hypot(mx,my);if(p.dodgeCd>0)p.dodgeCd-=dt;
   if(p.dead){}
+  else if(playerFrozen()){} // ailments.js: frozen in place
   else if(p.dodge){const D=p.dodge;D.t+=dt;if(!D.blink)moveEnt(p,Math.cos(D.a)*DODGE_SPD*dt,Math.sin(D.a)*DODGE_SPD*dt);p.face=D.a;
     if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
@@ -244,6 +244,7 @@ function update(dt){
       if(Math.random()<dt*6)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y,vx:rand(-15,15),vy:rand(20,60),life:0.5,max:0.5,col:'#b01818',s:3});
       if(e.bleedTick<=0&&e.bleedAcc>=1){e.bleedTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.bleedAcc),'#e04040',false);e.bleedAcc=0;}
       if(e.hp<=0){killEnemy(e);continue;}}
+    if(ailTick(e,dt)){killEnemy(e);continue;} // ailments.js: poison, shock, chill timers
     if(e.burnT>0){e.burnT-=dt;const b=e.burnDps*dt;e.hp-=b;bossGate(e);e.burnAcc=(e.burnAcc||0)+b;e.burnTick=(e.burnTick||0)-dt;
       if(Math.random()<dt*8)G.parts.push({x:e.x+rand(-e.r,e.r)*0.6,y:e.y-rand(0,e.r),vx:rand(-10,10),vy:rand(-70,-30),life:0.45,max:0.45,col:'#ff8a2a',s:3});
       if(e.burnTick<=0&&e.burnAcc>=1){e.burnTick=0.6;floatText(e.x+rand(-6,6),e.y-e.r-6,Math.round(e.burnAcc),'#ff9a4a',false);e.burnAcc=0;}
@@ -257,7 +258,6 @@ function update(dt){
       e.hp=Math.min(e.maxHp,e.hp+e.maxHp*T.regen*dt);if(Math.random()<dt*5)G.parts.push({x:e.x+rand(-e.r,e.r)*0.7,y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-35,life:0.6,max:0.6,col:'#7fe060',s:3});}
     if(e.stun>0){e.stun-=dt;continue;}if(e.frozen>0){e.frozen-=dt;continue;}
     if(e.fearT>0){fleeStep(e,dt);continue;} // skillmods.js: Terrify
-    if(e.chillT>0){e.chillT-=dt;if(Math.random()<dt*6)G.parts.push({x:e.x+rand(-e.r,e.r),y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-20,life:0.5,max:0.5,col:'#bfe8ff',s:3});} // chilled: icy motes
     const d=dist(e,p);
     if(!e.aggro&&d<(T.ai==='turret'?400:360))aggroPack(e);
     if(!e.aggro||p.dead)continue;
@@ -270,7 +270,7 @@ function update(dt){
       else if(act==='charge'){e.dash=0.5;e.dashHit=false;e.dvx=Math.cos(e.chargeA)*560;e.dvy=Math.sin(e.chargeA)*560;}
       else if(act==='slam'){if(d<120+p.r)dmgPlayer(e.dmg*1.3,e);G.shake=10;G.fx.push({type:'ring',x:e.x,y:e.y,r0:10,r1:125,t:0,max:0.3,col:'#ff4a3a'});}
       else if(d<e.r+p.r+T.range+14)dmgPlayer(e.dmg,e);}continue;}
-    const slow=(G.terrain[tileIdx(e.x,e.y)]===T_POISON?0.6:1)*(e.chillT>0?0.5:1);
+    const slow=(G.terrain[tileIdx(e.x,e.y)]===T_POISON?0.6:1)*chillMul(e); // ailments.js
     const step=(ang,mul)=>moveEnt(e,Math.cos(ang)*e.spd*mul*slow*dt,Math.sin(ang)*e.spd*mul*slow*dt);
     const chase=()=>{const a=d<TILE*1.6?toP:(flowDir(e)??toP);step(a,1);};
     AI[T.ai](e,T,d,toP,step,chase,e.cdMul||1,dt);
@@ -299,7 +299,7 @@ function update(dt){
   if(dot>0)p.dotAcc=(p.dotAcc||0)+dot*bossTakenMul()*(1-Math.min(0.75,s.armor/(s.armor+30+10*PD()))*0.5);
   p.dotT=(p.dotT||0)-dt;if(p.dotT<=0){p.dotT=0.4;if(p.dotAcc>=1){burnPlayer(p.dotAcc,p.dotCol);p.dotAcc=0;}}
   // hazards
-  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;G.sk=h.sk??null;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true}:{});G.sk=null;}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}
+  for(const h of G.hazards){h.t-=dt;h.tick-=dt;if(h.tick<=0){h.tick=0.5;G.sk=h.sk??null;aoe(h.x,h.y,h.r,h.mult,h.quiet?{quiet:true,splashed:true,dot:true,haz:true}:{haz:true});G.sk=null;}if(Math.random()<0.5)G.parts.push({x:h.x+rand(-h.r,h.r)*0.8,y:h.y+rand(-h.r,h.r)*0.8,vx:0,vy:-40,life:0.5,max:0.5,col:h.rot?'#9fe04a':'#ff7a2a',s:3});}
   G.hazards=G.hazards.filter(h=>h.t>0);
   for(const dl of G.delayed){dl.t-=dt;if(dl.t<=0&&!dl.done){dl.done=true;const was=G.sk;G.sk=dl.sk??null;dl.fn();G.sk=was;}} // a delayed hit keeps its skill
   G.delayed=G.delayed.filter(dl=>!dl.done);

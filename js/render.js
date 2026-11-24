@@ -232,6 +232,7 @@ function drawPlayer(){
   const heroF=p.spin>0?0:animFrame(p,11);
   ctx.save();ctx.translate(p.x,p.y-z);
   if(p.slowT>0){ctx.strokeStyle='#9fdcff';ctx.globalAlpha=0.6;ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,p.r+4,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}
+  if(playerFrozen()){ctx.fillStyle='rgba(150,210,255,.35)';ctx.strokeStyle='rgba(225,245,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,p.r+5,0,TAU);ctx.fill();ctx.stroke();} // ailments.js
   if(p.buffT>0){ctx.strokeStyle='#ffcc55';ctx.globalAlpha=0.5+Math.sin(G.time*8)*0.2;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,p.r+6,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
   const C2=G.char,eq=C2.equip,mw=eq.mainhand&&eq.mainhand.slot==='weapon'?eq.mainhand:null,off=eq.offhand,W=mw?WEAPONS[mw.wt]||FIST:null;
   const A=p.atk,u=A?Math.min(1,A.t/A.dur):0,S=Math.sin(u*Math.PI),spin=p.spin>0;
@@ -368,6 +369,7 @@ function drawEnemy(e){
     ctx.save();ctx.translate(e.x,e.y);(SHAPES[T.shape]||SHAPES.blob)(e,col,T);ctx.restore();}
   if(e.stun>0){ctx.fillStyle='#ffd54a';ctx.font='12px sans-serif';ctx.fillText('✦',e.x+Math.cos(G.time*8)*8,e.y-e.r-6);}
   if(e.hp<e.maxHp&&e.type!=='boss'){const w=e.r*2;ctx.fillStyle='#000a';ctx.fillRect(e.x-w/2,e.y-e.r-10,w,4);ctx.fillStyle=e.elite?'#6f8fff':'#c22';ctx.fillRect(e.x-w/2,e.y-e.r-10,w*Math.max(0,e.hp/e.maxHp),4);}
+  drawAilPips(e); // ailments.js
   if(e.shieldT>0){ctx.strokeStyle='#bcd0ff';ctx.fillStyle='rgba(150,180,255,.18)';ctx.lineWidth=2;ctx.globalAlpha=0.7+Math.sin(G.time*10)*0.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,TAU);ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
   if(e.type==='boss')drawBossState(e); /* bossfight.js */
   if(e.elite||e.type==='thief'||e.zb||e.type==='nest')drawEliteLabel(e);

@@ -26,7 +26,7 @@ const SKILL_MODS={
     [{k:'pierce',name:'Pierce',t:'Arcane Bolt passes through 2 enemies'},
      {k:'overcharge',name:'Overcharge',t:'Every 4th Arcane Bolt deals triple damage'},
      {k:'siphon',name:'Siphon',t:'Each Arcane Bolt hit heals you for 1% of your Life'}],
-    [{k:'ignite',name:'Ignite',t:'Fireball sets enemies burning for 30% of its damage per second for 3s'},
+    [{k:'ignite',name:'Ignite',t:'Fireball always sets enemies burning (normally a 20% chance): 25% of its damage per second for 3s'},
      {k:'bigbang',name:'Big Bang',t:'Fireball is bigger and slower, with a 60% wider blast and 25% more damage'},
      {k:'rapid',name:'Rapid Fire',t:'Fireball flies 40% faster and costs half as much Mana, but deals 20% less damage'}],
     [{k:'deepfreeze',name:'Deep Freeze',t:'Frost Nova freezes for twice as long'},
@@ -34,7 +34,7 @@ const SKILL_MODS={
      {k:'icearmour',name:'Ice Armour',t:'After casting Frost Nova, take 30% less damage for 4s'}],
     [{k:'fork',name:'Fork',t:'Chain Lightning starts as two bolts aimed at different enemies (75% damage each, never the same enemy twice)'},
      {k:'overload',name:'Overload',t:'Each bounce deals 15% more damage than the last'},
-     {k:'static',name:'Static',t:'Enemies Chain Lightning hits take 15% more damage from everything for 3s'}],
+     {k:'static',name:'Static',t:'Chain Lightning always Shocks, 2 stacks a hit (normally a 35% chance of 1): each stack is +10% damage taken, up to 3'}],
     [{k:'comet',name:'Comet',t:'Meteor turns to ice: it freezes enemies for 1.5s, but leaves no burning ground'},
      {k:'moltencore',name:'Molten Core',t:'Meteor\'s burning ground lasts twice as long (6s) and covers 50% more'},
      {k:'swiftfall',name:'Swift Fall',t:'Meteor lands almost instantly, but deals 20% less damage'}]
@@ -107,7 +107,3 @@ function boltCharge(){if(!hasMod('overcharge'))return false;const p=G.p;p.ocN=((
 function fireballMod(){return hasMod('bigbang')?{spd:0.7,size:1.4,blast:1.6,mult:1.25}:hasMod('rapid')?{spd:1.4,size:0.85,blast:1,mult:0.8}:{spd:1,size:1,blast:1,mult:1};}
 // a skill's Mana/Fury cost after modifiers (Rapid Fire halves Fireball's)
 function modCost(i,cost){return G.char&&G.char.cls==='arcanist'&&i===1&&hasMod('rapid')?cost/2:cost;}
-// Fireball: Ignite. 30% of the hit per second for 3s (the stronger fire wins, like the Ignite power)
-function fireballBurn(e,d){if(e.dead)return;const dps=d*0.3*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,3);}
-// Chain Lightning: Static. +15% damage taken from everything for 3s
-function staticMark(e){if(!(e.staticUntil>G.time))floatText(e.x,e.y-e.r-14,'Static','#9fd8ff',false);e.staticUntil=G.time+3;}
