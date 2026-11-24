@@ -3,6 +3,7 @@
 // ---------- main loop ----------
 let last=performance.now();
 function frame(now){
+  if(capSkip(now-last)){requestAnimationFrame(frame);return;} // perf.js: frame rate cap
   const gap=now-last,dt=Math.min(0.05,gap/1000);last=now;const t0=performance.now();
   const idle=G.paused||portraitBlocked(); // a menu is open, the game is paused or the phone is upright
   if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
