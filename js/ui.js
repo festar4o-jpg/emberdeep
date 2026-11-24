@@ -264,12 +264,13 @@ tap('shopClose',closeShop);
 // ---------- skills UI ----------
 function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden'))renderSkills();setPause();}
 function renderSkills(){
-  const c=G.char,sk=SKILLS[c.cls];$('skPts').textContent=`Skill points: ${c.skillPts}`;
+  const c=G.char,sk=SKILLS[c.cls];fixMods(c);$('skPts').textContent=`Skill points: ${c.skillPts}`;
   $('skList').innerHTML=sk.map((s,i)=>{const base=c.skills[i],bonus=G.stats.skill[i],r=rk(i),req=SKILL_REQ[i];const locked=c.lvl<req;
     const can=!locked&&c.skillPts>0&&base<15;
     return `<div class="skrow${locked?' locked':''}"><div class="ic">${s.icon}</div><div class="info"><b>${s.name}</b> ${base?`Rank ${base}${bonus?` <span style="color:#f2d04a">(+${bonus})</span>`:''}`:locked?`· Requires level ${req}`:'· Not learned'}
-      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}</div>
+      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${modRowHtml(c,i)}</div>
       <div class="btn sm${can?'':' dis'}" data-i="${i}">${base?'+':'Learn'}</div></div>`;}).join('');
+  $('skList').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.m.split(':').map(Number);if(pickMod(i,j))renderSkills();}); // skillmods.js
   $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15)return;c.skills[i]++;c.skillPts--;renderSkills();buildSkillBar();saveChar();});
 }
 tap('skClose',toggleSkills);

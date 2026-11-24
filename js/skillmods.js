@@ -1,0 +1,113 @@
+'use strict';
+// Skill modifiers: each skill has 3, unlocked by the skill's own rank (MOD_UNLOCK, points spent, not +skill from items).
+// One can be active per skill, swapped any time for free on the skill screen. Saved per character as c.mods
+// (one key or null per skill). They stack with legendary powers (uniques.js UPOW) and never copy one.
+// A modifier with live:false is listed but does nothing yet (shown as "coming soon").
+const MOD_UNLOCK=[3,6,10];
+const SKILL_MODS={
+  warden:[
+    [{k:'execute',name:'Executioner',t:'+50% damage to enemies below 30% Life'},
+     {k:'momentum',name:'Momentum',t:'Each Cleave that hits gives +6% attack speed for 3s, stacking up to 5 times'},
+     {k:'widearc',name:'Wide Arc',t:'Cleave swings 50% wider and reaches 20% further, but deals 15% less damage'}],
+    [{k:'aftershock',name:'Aftershock',t:'A second, weaker slam (60% damage) hits where you landed 1s later'},
+     {k:'ironland',name:'Iron Landing',t:'Take 40% less damage for 2s after landing'},
+     {k:'longleap',name:'Long Leap',t:'Leap 50% further, and the cooldown is 1.5s shorter'}],
+    [{k:'bloodspin',name:'Bloodspin',t:'Each enemy Whirlwind hits heals you for 0.5% of your Life'},
+     {k:'bladeward',name:'Blade Ward',t:'+25% block chance while spinning'},
+     {k:'dustdevil',name:'Dust Devils',t:'While spinning, throw a small whirlwind at a nearby enemy every 0.5s'}],
+    [{k:'rally',name:'Rally',t:'War Cry heals 40% of your Life instead of 20%, then 2% per second while its boost lasts'},
+     {k:'terrify',name:'Terrify',t:'Enemies near you flee for 2s (bosses only stagger)'},
+     {k:'battlefury',name:'Battle Fury',t:'While War Cry\'s boost lasts, Cleave is 25% faster and builds double Fury'}],
+    [{k:'fissure',name:'Fissure',t:'Earthshatter tears a long line forward instead of a circle, 25% more damage'},
+     {k:'tremors',name:'Tremors',t:'Three smaller quakes follow around you (40% damage each)'},
+     {k:'magma',name:'Magma',t:'Earthshatter leaves burning ground for 4s'}]
+  ],
+  arcanist:[
+    [{k:'pierce',name:'Pierce',t:'Arcane Bolt passes through 2 enemies'},
+     {k:'overcharge',name:'Overcharge',t:'Every 4th Arcane Bolt deals triple damage'},
+     {k:'siphon',name:'Siphon',t:'Each Arcane Bolt hit heals you for 1% of your Life'}],
+    [{k:'ignite',name:'Ignite',t:'Fireball sets enemies burning for 30% of its damage per second for 3s'},
+     {k:'bigbang',name:'Big Bang',t:'Fireball is bigger and slower, with a 60% wider blast and 25% more damage'},
+     {k:'rapid',name:'Rapid Fire',t:'Fireball flies 40% faster and costs half as much Mana, but deals 20% less damage'}],
+    [{k:'deepfreeze',name:'Deep Freeze',t:'Frost Nova freezes for twice as long'},
+     {k:'coldsnap',name:'Cold Snap',t:'Frost Nova\'s cooldown is halved, but instead of freezing it slows enemies to half speed for 3s'},
+     {k:'icearmour',name:'Ice Armour',t:'After casting Frost Nova, take 30% less damage for 4s'}],
+    [{k:'fork',name:'Fork',t:'Chain Lightning starts as two bolts aimed at different enemies (75% damage each, never the same enemy twice)'},
+     {k:'overload',name:'Overload',t:'Each bounce deals 15% more damage than the last'},
+     {k:'static',name:'Static',t:'Enemies Chain Lightning hits take 15% more damage from everything for 3s'}],
+    [{k:'comet',name:'Comet',t:'Meteor turns to ice: it freezes enemies for 1.5s, but leaves no burning ground'},
+     {k:'moltencore',name:'Molten Core',t:'Meteor\'s burning ground lasts twice as long (6s) and covers 50% more'},
+     {k:'swiftfall',name:'Swift Fall',t:'Meteor lands almost instantly, but deals 20% less damage'}]
+  ]
+};
+// mod keys this class has, for save cleanup
+function modKeys(cls,i){return (SKILL_MODS[cls]&&SKILL_MODS[cls][i]||[]).map(m=>m.k);}
+function modUnlocked(c,i,j){return (c.skills[i]||0)>=MOD_UNLOCK[j];}
+// keeps c.mods valid: 5 entries, each a key of that skill's own modifiers (still unlocked) or null
+function fixMods(c){const m=Array.isArray(c.mods)?c.mods:[];
+  c.mods=[0,1,2,3,4].map(i=>{const ks=modKeys(c.cls,i),j=ks.indexOf(m[i]);return j>=0&&modUnlocked(c,i,j)?m[i]:null;});return c.mods;}
+// the active modifier of skill i (key or null)
+function skMod(i){const c=G.char;return c&&c.mods?c.mods[i]||null:null;}
+// is modifier k active on any skill of the current hero
+function hasMod(k){const c=G.char;return !!(c&&c.mods&&c.mods.includes(k));}
+// pick (or, if it is already active, clear) modifier j of skill i
+function pickMod(i,j){const c=G.char;fixMods(c);const M=SKILL_MODS[c.cls][i][j];
+  if(!modUnlocked(c,i,j)){toast(M.name,`${M.t}. Unlocks at ${SKILLS[c.cls][i].name} rank ${MOD_UNLOCK[j]}`);return false;}
+  c.mods[i]=c.mods[i]===M.k?null:M.k;playSfx('click');saveChar();return true;}
+// the modifier row for the skill screen
+function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=SKILL_MODS[c.cls][i],act=c.mods&&c.mods[i];
+  const chips=ms.map((m,j)=>{const open=modUnlocked(c,i,j);
+    return `<span class="mod${m.k===act?' on':''}${open?'':' lk'}" data-m="${i}:${j}">${open?'':'🔒 '}${m.name}${open?'':` <small>R${MOD_UNLOCK[j]}</small>`}</span>`;}).join('');
+  const A=ms.find(m=>m.k===act);
+  return `<div class="mods">${chips}</div><div class="modt">${A?`<b>${A.name}:</b> ${A.t}${A.live===false?' <i>(coming soon)</i>':''}`:ms.some((m,j)=>modUnlocked(c,i,j))?'Tap a modifier to use it':`First modifier at rank ${MOD_UNLOCK[0]}`}</div>`;}
+
+// ---------- effects ----------
+// Hooks: skills.js (Cleave, Leap range, War Cry, Earthshatter, skillCd), game.js (Executioner in hitEnemy,
+// modTakenMul/Blade Ward in dmgPlayer, modTick, leapMods on landing, Bloodspin + spinMods while spinning, fleeStep).
+function modTakenMul(){const p=G.p;return (p.ironT>0?0.6:1)*(p.iceArmT>0?0.7:1);} // Iron Landing, Ice Armour
+function modTick(p,dt){
+  if(p.momT>0){p.momT-=dt;if(p.momT<=0)p.momN=0;}  // Momentum stacks run out
+  if(p.ironT>0)p.ironT-=dt;if(p.iceArmT>0)p.iceArmT-=dt;
+  if(p.rallyT>0){p.rallyT-=dt;if(!p.dead)healPlayer(G.stats.life*0.02*dt,true);} // Rally
+}
+// Leap Slam just landed
+function leapMods(p,L){const x=p.x,y=p.y;
+  if(hasMod('aftershock')){G.fx.push({type:'tele',x,y,r:95,t:0,max:1,col:'#ffcc88',own:1});
+    G.delayed.push({sk:1,t:1,fn:()=>{aoe(x,y,95,L.mult*0.6,{stun:0.5});G.shake=Math.max(G.shake,7);fxCracks(x,y,90);burst(x,y,18,'#c8a070',200);
+      G.fx.push({type:'ring',x,y,r0:10,r1:100,t:0,max:0.3,col:'#ffcc88'});playSfx('slam');}});}
+  if(hasMod('ironland')){p.ironT=2;floatText(p.x,p.y-p.r-24,'Iron Skin','#cfd6dc',false);G.fx.push({type:'ring',x,y,r0:p.r,r1:p.r+16,t:0,max:0.4,col:'#cfd6dc'});}
+}
+// Whirlwind, every frame while spinning: Dust Devils
+function spinMods(p,dt){if(!hasMod('dustdevil'))return;p.ddT=(p.ddT||0)-dt;if(p.ddT>0)return;p.ddT=0.5;
+  const t=nearest(p.x,p.y,320);if(!t)return;const a=Math.atan2(t.y-p.y,t.x-p.x);
+  G.proj.push({sk:2,x:p.x+Math.cos(a)*20,y:p.y+Math.sin(a)*20,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:11,col:'#d8c8a0',life:0.8,from:'p',mult:p.spinMult*0.8,pierce:99,wave:true});}
+// War Cry: Terrify. Ordinary monsters run from you (after War Cry's own short stun); bosses only get that stun.
+function terrify(p){for(const e of G.enemies){if(e.dead||e.hidden||e.type==='boss'||e.zb||dist(e,p)>260)continue;e.fearT=2.6;floatText(e.x,e.y-e.r-14,'Fear','#c080ff',false);}}
+function fleeStep(e,dt){const p=G.p;e.fearT-=dt;e.wind=0;e.tele=null;e.act=null;e.lockA=null;e.dash=0;
+  const a=Math.atan2(e.y-p.y,e.x-p.x);e.face=a;moveEnt(e,Math.cos(a)*e.spd*0.9*dt,Math.sin(a)*e.spd*0.9*dt);}
+// Earthshatter: Fissure. A line 340 long, 90 wide, aimed at the nearest enemy, 25% more damage.
+const FISSURE_L=340,FISSURE_W=45;
+function fissure(m){const p=G.p,t=aimPoint(FISSURE_L),a=p.face,x0=p.x,y0=p.y,ca=Math.cos(a),sa=Math.sin(a);
+  for(let d=40;d<=FISSURE_L;d+=60)G.fx.push({type:'tele',x:x0+ca*d,y:y0+sa*d,r:FISSURE_W,t:0,max:0.35,col:'#ff7a2a',own:1});
+  G.delayed.push({sk:4,t:0.35,fn:()=>{for(const e of G.enemies){if(e.dead||e.hidden)continue;const dx=e.x-x0,dy=e.y-y0,al=dx*ca+dy*sa,pp=Math.abs(-dx*sa+dy*ca);
+      if(al>=-e.r&&al<=FISSURE_L+e.r&&pp<FISSURE_W+e.r)hitEnemy(e,m*1.25,{stun:1.5});}
+    G.shake=14;G.hitStop=0.07;for(let d=50;d<=FISSURE_L;d+=70){fxCracks(x0+ca*d,y0+sa*d,60);burst(x0+ca*d,y0+sa*d,8,'#c8763a',200);}}});}
+// Earthshatter landed (the circle): Tremors and Magma
+function shatterMods(x,y,R,m,r){const p=G.p;
+  if(hasMod('magma'))G.hazards.push({sk:4,x,y,r:R*0.9,t:4,tick:0,mult:0.3+0.03*(r-1)});
+  if(hasMod('tremors'))for(let k=1;k<=3;k++)G.delayed.push({sk:4,t:0.4*k,fn:()=>{const a=rand(0,TAU),d=rand(50,120),qx=p.x+Math.cos(a)*d,qy=p.y+Math.sin(a)*d;
+    G.fx.push({type:'tele',x:qx,y:qy,r:90,t:0,max:0.25,col:'#ff9a4a',own:1});
+    G.delayed.push({sk:4,t:0.25,fn:()=>{aoe(qx,qy,90,m*0.4,{stun:0.5});G.shake=Math.max(G.shake,6);fxCracks(qx,qy,95);burst(qx,qy,14,'#c8763a',200);}});}});
+}
+
+// ---------- Arcanist ----------
+// Arcane Bolt: Overcharge counts bolts; true on every 4th
+function boltCharge(){if(!hasMod('overcharge'))return false;const p=G.p;p.ocN=((p.ocN||0)+1)%4;return p.ocN===0;}
+// Fireball: Big Bang / Rapid Fire scale speed, size, blast and damage
+function fireballMod(){return hasMod('bigbang')?{spd:0.7,size:1.4,blast:1.6,mult:1.25}:hasMod('rapid')?{spd:1.4,size:0.85,blast:1,mult:0.8}:{spd:1,size:1,blast:1,mult:1};}
+// a skill's Mana/Fury cost after modifiers (Rapid Fire halves Fireball's)
+function modCost(i,cost){return G.char&&G.char.cls==='arcanist'&&i===1&&hasMod('rapid')?cost/2:cost;}
+// Fireball: Ignite. 30% of the hit per second for 3s (the stronger fire wins, like the Ignite power)
+function fireballBurn(e,d){if(e.dead)return;const dps=d*0.3*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,3);}
+// Chain Lightning: Static. +15% damage taken from everything for 3s
+function staticMark(e){if(!(e.staticUntil>G.time))floatText(e.x,e.y-e.r-14,'Static','#9fd8ff',false);e.staticUntil=G.time+3;}

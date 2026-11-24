@@ -6,7 +6,7 @@ function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */if(e.staticUntil>G.time)r.d*=1.15; /* skillmods.js: Static */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -24,6 +24,8 @@ function hitEnemy(e,mult,opts={}){
   if(opts.stun&&e.type!=='boss')e.stun=Math.max(e.stun,opts.stun);
   if(opts.stun&&e.type==='boss')e.stun=Math.max(e.stun,opts.stun*0.3);
   if(opts.freeze)e.frozen=Math.max(e.frozen,e.type==='boss'?opts.freeze*0.35:opts.freeze);
+  if(opts.chill)e.chillT=Math.max(e.chillT||0,opts.chill); // skillmods.js: Cold Snap (half speed)
+  if(G.sk===1&&!opts.dot&&!opts.splashed&&hasMod('ignite'))fireballBurn(e,r.d); // skillmods.js: Ignite
   if(opts.kb&&!ETYPES[e.type].heavy){const a=Math.atan2(e.y-G.p.y,e.x-G.p.x);moveEnt(e,Math.cos(a)*opts.kb*0.3,Math.sin(a)*opts.kb*0.3);}
   if(!opts.quiet)for(let k=0;k<3;k++)G.parts.push({x:e.x,y:e.y,vx:rand(-90,90),vy:rand(-90,90),life:0.3,max:0.3,col:'#8a1a1a',s:3});
   // flail / thornstaff: weapon hits splash onto enemies around the target
@@ -98,7 +100,9 @@ function dmgPlayer(raw,src,el){
   const p=G.p;if(p.dead||p.leap||p.dodge)return false;raw*=underMul()*bossTakenMul();
   if(G.stats.evade>0&&Math.random()*100<G.stats.evade){floatText(p.x,p.y-p.r-8,'Evade','#a8e0c0',false);return false;} // v1.0.70: evasion
   raw*=1-(G.stats.dr||0)/100; // less damage taken /* bossfight.js: underleveled for the area, boss matchup */
-  if(G.stats.block>0&&Math.random()*100<G.stats.block){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
+  raw*=modTakenMul(); // skillmods.js: Iron Landing, Ice Armour
+  const blk=G.stats.block+(p.spin>0&&hasMod('bladeward')?25:0);
+  if(blk>0&&Math.random()*100<blk){floatText(p.x,p.y-p.r-8,'Block','#cfd6dc',false);playSfx('block');if(hasPw('kingsWrath'))p.wrathT=3;if(hasPw('counter'))counterBlast();return false;}
   const red=Math.min(0.75,G.stats.armor/(G.stats.armor+30+10*PD()));
   const E=el||src&&src.elem,sh=el?1:src&&src.elemS||1,rm=E?1-sh*resOf(G.stats,E)/100:1; // items.js: resistances (penalty included)
   let d=Math.max(1,Math.round(raw*(1-red)*rm*rand(0.9,1.1)));
@@ -150,7 +154,7 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 
 // ---------- start / depth ----------
 function newChar(name,cls){
-  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
+  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
   const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
@@ -203,7 +207,7 @@ function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
-  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
+  p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt); /* skillmods.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
   if(p.atk){p.atk.t+=dt;if(p.atk.t>=p.atk.dur)p.atk=null;}
   if(p.slowT>0){p.slowT-=dt;if(p.slowT<=0)p.slowAmt=0;}
   if(!p.dead){p.hp=Math.min(s.life,p.hp+s.regen*dt);p.res=Math.min(s.res,p.res+C.regen*dt);}
@@ -215,7 +219,7 @@ function update(dt){
     if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);}}
+    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);leapMods(p,L);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
     if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04*resMul('fres'));burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;
@@ -223,7 +227,7 @@ function update(dt){
   if(!G.inTown&&Math.random()<0.5){const i=Math.floor(p.x/TILE)+randi(-9,9),j=Math.floor(p.y/TILE)+randi(-7,7);
     if(i>=0&&j>=0&&i<MW&&j<MH){const k=j*MW+i,t=G.terrain[k],lava=t===T_LAVA||G.grid[k]===2&&ACTS[actIdx(G.depth)].gen==='ember';
       if(lava||t===T_POISON)G.parts.push({x:(i+Math.random())*TILE,y:(j+Math.random())*TILE,vx:rand(-8,8),vy:lava?-rand(30,70):-12,life:lava?0.9:0.7,max:0.9,col:lava?'#ffb040':'#b8ff5a',s:lava?2.5:3});}}
-  if(p.spin>0){p.spin-=dt;p.spinTick-=dt;if(p.spinTick<=0){p.spinTick=0.25;if(hasPw('pull'))pullIn(240,45);G.sk=p.spinSk??null;aoe(p.x,p.y,88,p.spinMult,{});G.sk=null;}}
+  if(p.spin>0){p.spin-=dt;p.spinTick-=dt;if(p.spinTick<=0){p.spinTick=0.25;if(hasPw('pull'))pullIn(240,45);G.sk=p.spinSk??null;const n=aoe(p.x,p.y,88,p.spinMult,{});if(n&&hasMod('bloodspin'))healPlayer(G.stats.life*0.005*Math.min(n,4),true);G.sk=null;}spinMods(p,dt);}
   if(G.stats.pw&&Object.keys(G.stats.pw).length)powerTick(dt);
   encounterTick(dt);portalTick(dt); /* portal.js */
   for(let i=0;i<5;i++)if(held[i])tryCast(i);
@@ -252,6 +256,8 @@ function update(dt){
     if(T.regen&&e.hp<e.maxHp&&G.time-(e.lastHit||-9)>2&&!(e.bleedT>0)){ // troll regen; bleeding stops it
       e.hp=Math.min(e.maxHp,e.hp+e.maxHp*T.regen*dt);if(Math.random()<dt*5)G.parts.push({x:e.x+rand(-e.r,e.r)*0.7,y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-35,life:0.6,max:0.6,col:'#7fe060',s:3});}
     if(e.stun>0){e.stun-=dt;continue;}if(e.frozen>0){e.frozen-=dt;continue;}
+    if(e.fearT>0){fleeStep(e,dt);continue;} // skillmods.js: Terrify
+    if(e.chillT>0){e.chillT-=dt;if(Math.random()<dt*6)G.parts.push({x:e.x+rand(-e.r,e.r),y:e.y+rand(-e.r,e.r)*0.5,vx:0,vy:-20,life:0.5,max:0.5,col:'#bfe8ff',s:3});} // chilled: icy motes
     const d=dist(e,p);
     if(!e.aggro&&d<(T.ai==='turret'?400:360))aggroPack(e);
     if(!e.aggro||p.dead)continue;
@@ -264,7 +270,7 @@ function update(dt){
       else if(act==='charge'){e.dash=0.5;e.dashHit=false;e.dvx=Math.cos(e.chargeA)*560;e.dvy=Math.sin(e.chargeA)*560;}
       else if(act==='slam'){if(d<120+p.r)dmgPlayer(e.dmg*1.3,e);G.shake=10;G.fx.push({type:'ring',x:e.x,y:e.y,r0:10,r1:125,t:0,max:0.3,col:'#ff4a3a'});}
       else if(d<e.r+p.r+T.range+14)dmgPlayer(e.dmg,e);}continue;}
-    const slow=G.terrain[tileIdx(e.x,e.y)]===T_POISON?0.6:1;
+    const slow=(G.terrain[tileIdx(e.x,e.y)]===T_POISON?0.6:1)*(e.chillT>0?0.5:1);
     const step=(ang,mul)=>moveEnt(e,Math.cos(ang)*e.spd*mul*slow*dt,Math.sin(ang)*e.spd*mul*slow*dt);
     const chase=()=>{const a=d<TILE*1.6?toP:(flowDir(e)??toP);step(a,1);};
     AI[T.ai](e,T,d,toP,step,chase,e.cdMul||1,dt);

@@ -479,7 +479,7 @@ const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64'
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=10; // 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
+const SAVE_VER=11; // 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -530,6 +530,7 @@ function migrateChar(c){
   if(c.diff==null){c.diff=0;c.diffDone=c.won?1:0;c.dsave={};if((c.maxDepth||1)>25){c.endMax=c.maxDepth;c.maxDepth=25;}}
   if(c.actSeen==null){const d=c.depth||1;c.actSeen=stageOf(d)===1?d-1:d-stageOf(d)+1;} // depth N is already Act ceil(N/5); only show titles for acts not yet entered
   migrateCharms(c);matsOf(c); // crafting materials
+  fixMods(c); // v11: skill modifiers (skillmods.js)
   c.equip=eq;c.ver=SAVE_VER;return c;
 }
 function migrateSaves(){
