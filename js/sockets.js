@@ -88,7 +88,7 @@ function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(is
 const namedFound=it=>!!(it&&(it.uq?BOOK.uqs[it.uq]:it.si?BOOK.sets[it.si]:false));
 function noteSetPieces(items){let n=0,u=0;for(const it of items){if(!it)continue;if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(it.uq&&!BOOK.uqs[it.uq]){BOOK.uqs[it.uq]=1;u++;}}if(n||u)storeBook();return n;}
 function noteSetPiece(it){if(noteSetPieces([it]))toast('New set piece!',`${it.name} · ${SETS[setOf(it)].name}`);}
-function storeBook(){try{localStorage.setItem(BOOK_KEY,JSON.stringify(BOOK));}catch(e){}backupSoon();}
+function storeBook(){storeSafe(BOOK_KEY,JSON.stringify(BOOK));backupSoon();} // core.js
 const recipeKnown=k=>!!BOOK.made[k]||RUNEBINDS[k].runes.every(r=>BOOK.runes[r]);
 
 // ---------- drops ----------

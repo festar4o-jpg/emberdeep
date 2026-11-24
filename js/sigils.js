@@ -38,7 +38,7 @@ const SIG_RNAME=['Plain','Magic','Rare'],SIG_COL=['#e8dcc4','#8888ff','#ffff77']
 let SIGILS=[];
 const SIGILS_NOW=()=>SIGILS; // (tests: a let)
 function loadSigils(){SIGILS=[];try{const a=JSON.parse(localStorage.getItem(SIG_KEY));if(Array.isArray(a))SIGILS=a.filter(validSig).slice(0,SIG_CAP);}catch(e){}}
-function storeSigils(){try{localStorage.setItem(SIG_KEY,JSON.stringify(SIGILS));}catch(e){}backupSoon();}
+function storeSigils(){storeSafe(SIG_KEY,JSON.stringify(SIGILS));backupSoon();} // core.js
 function validSig(s){if(!s||typeof s!=='object'||!(s.tier>=1&&s.tier<=SIG_MAX_TIER))return false;s.tier=Math.floor(s.tier);s.rarity=clamp(s.rarity|0,0,2);
   s.mods=(Array.isArray(s.mods)?s.mods:[]).filter(m=>m&&MAP_MODS[m.k]&&m.t>=1&&m.t<=3);if(!s.id)s.id=++ITEM_ID;return true;}
 // ---------- Sigils and their modifiers ----------
@@ -296,7 +296,7 @@ const ENG_KEYS=Object.keys(ENG);
 let ENGS=[];
 const ENGS_NOW=()=>ENGS;
 function loadEngs(){ENGS=[];try{const a=JSON.parse(localStorage.getItem(ENG_KEY));if(Array.isArray(a))ENGS=a.filter(validEng).slice(0,ENG_CAP);}catch(e){}}
-function storeEngs(){try{localStorage.setItem(ENG_KEY,JSON.stringify(ENGS));}catch(e){}backupSoon();}
+function storeEngs(){storeSafe(ENG_KEY,JSON.stringify(ENGS));backupSoon();} // core.js
 function validEng(e){return !!e&&typeof e==='object'&&!!ENG[e.k]&&e.uses>0&&(!e.b||!!ENG_BONUS[e.b]);}
 function genEng(){const k=pick(ENG_KEYS),b=pick(Object.keys(ENG_BONUS));return {id:++ITEM_ID,k,v:randi(...ENG[k].v),b,bv:randi(...ENG_BONUS[b].v),uses:randi(6,10)};}
 const engText=e=>ENG[e.k].t.replace('{v}',e.v)+(e.b?' · '+ENG_BONUS[e.b].t.replace('{v}',e.bv):'');

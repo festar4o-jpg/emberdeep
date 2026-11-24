@@ -39,7 +39,7 @@ const CUR_KEYS=Object.keys(CURS);
 let CUR={};
 const CUR_NOW=()=>CUR; // (tests: CUR is a let)
 function loadCur(){CUR={};try{const o=JSON.parse(localStorage.getItem(CUR_KEY));if(o&&typeof o==='object')for(const k of CUR_KEYS)if(o[k]>0)CUR[k]=Math.floor(o[k]);}catch(e){}}
-function storeCur(){try{localStorage.setItem(CUR_KEY,JSON.stringify(CUR));}catch(e){}backupSoon();}
+function storeCur(){storeSafe(CUR_KEY,JSON.stringify(CUR));backupSoon();} // core.js: frees old backups when full
 const curCount=k=>CUR[k]||0;
 function curAdd(k,n=1){if(!CURS[k])return;CUR[k]=curCount(k)+n;storeCur();}
 // ---------- what each one does ----------

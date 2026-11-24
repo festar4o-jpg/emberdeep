@@ -14,13 +14,21 @@ const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;r
 
 // ---------- saves ----------
 // Game version: shown in the pause menu; bump it (and VERSION in sw.js) after every change.
-const GAME_VERSION='1.0.95';
+const GAME_VERSION='1.0.96';
 const SAVE_KEY='emberdeep_v1';
 let SAVES=[];
 try{SAVES=JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){SAVES=[];}
 // backupSoon(): every store*() calls it; js/backup.js sets the hook (the Android app copies saves outside the app)
 let backupHook=null;const backupSoon=()=>{if(backupHook)backupHook();};
-function storeSaves(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVES));}catch(e){}backupSoon();}
+// Writes to the phone's storage. When it is full, the oldest backup copy (kept from save format changes, '_backup')
+// is deleted and the write tried again, until it fits or no backups are left; then a warning (at most once a minute).
+// Backups are only ever deleted when the space is needed.
+let saveWarnT=-1e9;
+function storeSafe(k,v){for(let n=0;n<20;n++){try{localStorage.setItem(k,v);return true;}catch(e){if(!dropOldestBackup())break;}}
+  const now=Date.now();if(now-saveWarnT>60000){saveWarnT=now;if(typeof toast==='function')toast("Couldn't save","Your phone's storage is full: free some space");}return false;}
+function dropOldestBackup(){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.includes('_backup'))ks.push(k);}
+  if(!ks.length)return false;const ver=k=>{if(k.includes('prerestore'))return 1e9; /* the copy kept before a restore: last to go */const m=/_backup_v(\d+)/.exec(k);return m?+m[1]:0;};ks.sort((a,b)=>ver(a)-ver(b));localStorage.removeItem(ks[0]);return true;}catch(e){return false;}}
+function storeSaves(){storeSafe(SAVE_KEY,JSON.stringify(SAVES));backupSoon();}
 function saveChar(){if(!G.char)return;if(G.p)G.char.potions=G.p.potions;const i=SAVES.findIndex(c=>c.id===G.char.id);if(i>=0)SAVES[i]=G.char;else SAVES.push(G.char);storeSaves();}
 
 // ---------- game state ----------

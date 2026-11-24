@@ -17,7 +17,7 @@ function loadStash(){
   STASH=st;
   if(s&&s.ver!==SAVE_VER){try{if(!localStorage.getItem(STASH_KEY+'_backup_v'+s.ver))localStorage.setItem(STASH_KEY+'_backup_v'+s.ver,raw);}catch(e){}storeStash();}
 }
-function storeStash(){try{localStorage.setItem(STASH_KEY,JSON.stringify(STASH));}catch(e){}backupSoon();}
+function storeStash(){storeSafe(STASH_KEY,JSON.stringify(STASH));backupSoon();} // core.js: frees old backups when full
 
 function openStash(){if(!G.char||G.paused||!G.inTown)return;$('stashOv').classList.remove('hidden');renderStash();setPause();stashHint();}
 function closeStash(){$('stashOv').classList.add('hidden');setPause();}

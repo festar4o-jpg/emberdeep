@@ -12,6 +12,12 @@ const AIL_BASE={fire:20,light:35}; // a skill's own chance to Ignite / Shock (Me
 const AIL_METEOR=50,IGNITE_DPS=0.25,IGNITE_DUR=3,SHOCK_PER=0.1,SHOCK_MAX=3,SHOCK_DUR=4,CHILL_DUR=2,CHILL_SLOW=0.3,CHILL_FREEZE=4,
   POISON_DPS=0.2,POISON_DUR=3,AIL_POISON_MAX=30;
 const AIL_COL={bleed:'#e04040',burn:'#ff8a2a',poison:'#8ae05a',chill:'#bfe8ff',shock:'#ffe24a'};
+// The element line on the skill screen (renderSkills): what a skill's hits can leave, from the same numbers as above.
+function skillElemText(cls,i){const el=SKILL_ELEM[cls][i];if(cls==='arcanist'&&i===4&&hasMod('comet'))return `Cold: chills, ${freezeAt()} cold hits freeze`;
+  if(el==='fire')return `Fire: ${cls==='arcanist'&&i===4?AIL_METEOR:i===1&&hasMod('ignite')?100:AIL_BASE.fire}% chance to Ignite`;
+  if(el==='light')return `Lightning: ${i===3&&hasMod('static')?'always Shocks (2 stacks)':AIL_BASE.light+'% chance to Shock'}`;
+  if(el==='cold')return i===2&&hasMod('coldsnap')?'Cold: chills (Cold Snap never freezes)':`Cold: chills, ${freezeAt()} cold hits freeze`;
+  return '';}
 // the element of the hit being dealt now (G.sk: the skill it comes from)
 function hitElem(){const c=G.char;if(!c||G.sk==null)return null;if(c.cls==='arcanist'&&G.sk===4&&hasMod('comet'))return 'cold';return SKILL_ELEM[c.cls][G.sk]||null;}
 // damage taken multiplier from Shock
@@ -23,11 +29,11 @@ function applyAilments(e,d,opts){if(e.dead||opts.dot||opts.haz||opts.splashed)re
   if(ig>0&&Math.random()*100<ig)igniteHit(e,d);
   const stat=c&&c.cls==='arcanist'&&G.sk===3&&hasMod('static'),sh=(el==='light'?AIL_BASE.light:0)+(s.shockCh||0);
   if(stat)shockHit(e,2);else if(sh>0&&Math.random()*100<sh)shockHit(e,1);
-  if(el==='cold')chillHit(e,opts.chill?0.5:CHILL_SLOW,Math.max(CHILL_DUR,opts.chill||0));
+  if(el==='cold')chillHit(e,opts.chill?0.5:CHILL_SLOW,Math.max(CHILL_DUR,opts.chill||0),!!opts.chill); // Cold Snap (opts.chill): slows only, never builds a freeze
   if((s.poisonCh||0)>0&&Math.random()*100<s.poisonCh)poisonHit(e,d);}
 function igniteHit(e,d){const dps=d*IGNITE_DPS*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,IGNITE_DUR);}
 function shockHit(e,n){const was=e.shockT>0;e.shockN=Math.min(shockMax(),(was?e.shockN||0:0)+n); /* subclasses.js: High Voltage */e.shockT=SHOCK_DUR;if(!was)floatText(e.x,e.y-e.r-16,'Shocked',AIL_COL.shock,false);}
-function chillHit(e,amt,t){e.chillAmt=Math.max(e.chillT>0?e.chillAmt||0:0,amt);e.chillT=Math.max(e.chillT||0,t);e.chillN=(e.chillN||0)+1;
+function chillHit(e,amt,t,noFreeze){e.chillAmt=Math.max(e.chillT>0?e.chillAmt||0:0,amt);e.chillT=Math.max(e.chillT||0,t);if(noFreeze)return;e.chillN=(e.chillN||0)+1;
   if(e.chillN>=freezeAt()){ /* subclasses.js: Quick Freeze */e.chillN=0;e.frozen=Math.max(e.frozen,e.type==='boss'?0.35:1);floatText(e.x,e.y-e.r-16,'Frozen',AIL_COL.chill,false);}}
 function poisonHit(e,d){if(!e.pois)e.pois=[];if(!e.pois.length)floatText(e.x,e.y-e.r-16,'Poisoned',AIL_COL.poison,false);
   e.pois.push({dps:d*POISON_DPS*poisonMul()*(1-(e.dr||0)),t:POISON_DUR}); /* subclasses.js: Venom Blood */if(e.pois.length>AIL_POISON_MAX)e.pois.shift();}
