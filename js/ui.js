@@ -17,7 +17,7 @@ function buildSkillBar(){
     box.appendChild(d);skillEls.push(d);}
   $('skDot').classList.toggle('hidden',!canLearnAny());
 }
-function canLearnAny(){const c=G.char;if(c.lvl>=SUB_LVL&&!c.sub)return true; /* subclasses.js: a path to choose */if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
+function canLearnAny(){const c=G.char;if(G.modDot)return true; /* hints.js: a modifier just unlocked */if(c.lvl>=SUB_LVL&&!c.sub)return true; /* subclasses.js: a path to choose */if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
 // HUD writes go through hud(): a page write only when the value changed (each write can make the page redo its layout).
 // k: 'text' / 'html' / 'title', '-name' a CSS variable, '.name' a class on/off, anything else a style property.
 const HUDC=new WeakMap(),r2=v=>Math.round(v*100)/100,pc=v=>Math.round(v*1000)/10+'%';
@@ -271,7 +271,7 @@ tap('shopClose',closeShop);
 function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden'))renderSkills();setPause();}
 let skTab='skills';
 function renderSkills(){
-  const c=G.char,sk=SKILLS[c.cls];fixMods(c);
+  const c=G.char,sk=SKILLS[c.cls];fixMods(c);G.modDot=false; // hints.js: seen
   { const pathDot=c.lvl>=SUB_LVL&&!c.sub?' <span style="color:#f55">●</span>':''; // subclasses.js: the Path tab
     $('skTabs').innerHTML=[['skills','Skills'],['path','Path'+pathDot]].map(([k,n])=>`<div class="tab${skTab===k?' on':''}" data-t="${k}">${n}</div>`).join('');
     $('skTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{skTab=el.dataset.t;subAsk=null;renderSkills();});
@@ -286,7 +286,7 @@ function renderSkills(){
       <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}</div>
       <div class="btn sm${can?'':' dis'}" data-i="${i}">${base?'+':'Learn'}</div></div>`;}).join('');
   $('skList').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.m.split(':').map(Number);if(pickMod(i,j))renderSkills();}); // skillmods.js
-  $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15)return;c.skills[i]++;c.skillPts--;renderSkills();buildSkillBar();saveChar();});
+  $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15)return;c.skills[i]++;c.skillPts--;hintMod(i); /* hints.js */renderSkills();buildSkillBar();saveChar();});
 }
 tap('skClose',toggleSkills);
 
@@ -314,9 +314,9 @@ document.addEventListener('fullscreenchange',fsLabel);document.addEventListener(
 addEventListener('orientationchange',()=>{releaseInputs();setTimeout(resize,200);});
 // ---------- settings (shared by all characters) ----------
 const SETTINGS_KEY='emberdeep_settings',JOY_SIZES={s:44,m:55,l:68};
-let SETTINGS={joy:'m',lefty:false,sound:true,vib:true,sfxVol:0.8,musVol:0.5,fps:false,fpsCap:60,saver:false,sharp:'high',parts:'many',light:'full',glow:'all'};
+let SETTINGS={joy:'m',lefty:false,sound:true,vib:true,sfxVol:0.8,musVol:0.5,fps:false,fpsCap:60,saver:false,hints:true,sharp:'high',parts:'many',light:'full',glow:'all'};
 const vol01=(v,d)=>typeof v==='number'&&v>=0&&v<=1?v:d;
-function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false,vib:o.vib!==false,sfxVol:vol01(o.sfxVol,0.8),musVol:vol01(o.musVol,0.5),fps:o.fps===true,fpsCap:FPS_CAPS.includes(o.fpsCap)?o.fpsCap:60,saver:o.saver===true,...Object.fromEntries(Object.keys(GFX_DEF).map(k=>[k,GFX[k][o[k]]!=null?o[k]:GFX_DEF[k]]))};}catch(e){}applySettings();}
+function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false,vib:o.vib!==false,sfxVol:vol01(o.sfxVol,0.8),musVol:vol01(o.musVol,0.5),fps:o.fps===true,fpsCap:FPS_CAPS.includes(o.fpsCap)?o.fpsCap:60,saver:o.saver===true,hints:o.hints!==false,...Object.fromEntries(Object.keys(GFX_DEF).map(k=>[k,GFX[k][o[k]]!=null?o[k]:GFX_DEF[k]]))};}catch(e){}applySettings();}
 const SETTINGS_NOW=()=>SETTINGS; // (tests: SETTINGS is a let)
 function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}backupSoon();}
 function setSetting(k,v){SETTINGS[k]=v;storeSettings();releaseInputs();applySettings();renderSettings();}
@@ -333,6 +333,7 @@ function renderSettings(){
   for(const [k,opts] of [['sharp',[['low','Low'],['normal','Normal'],['high','High']]],['parts',[['few','Few'],['normal','Normal'],['many','Many']]],['light',[['simple','Simple'],['full','Full']]],['glow',[['off','Off'],['few','Few'],['all','All']]]]){
     const el=$('set_'+k);el.classList.toggle('dimmed',saverOn());el.innerHTML=opts.map(([v,n])=>`<div class="tab${gfx(k)===v?' on':''}" data-g="${v}">${n}</div>`).join('')+(saverOn()?'<span class="fdim"> (Battery saver)</span>':'');
     el.querySelectorAll('[data-g]').forEach(t=>t.onclick=()=>{if(saverOn()){toast('Battery saver is on','Turn it off to choose');return;}setSetting(k,t.dataset.g);});} // perf.js
+  $('setHints').classList.toggle('on',SETTINGS.hints!==false);$('setHints').onclick=()=>setSetting('hints',SETTINGS.hints===false);$('setHintsAgain').onclick=()=>{resetHints();toast('Hints reset','Each tip shows again the next time it fits');}; // hints.js
   $('setSaver').classList.toggle('on',saverOn());$('setSaverTxt').textContent=PERF.autoSaver&&!SETTINGS.saver?' (on by itself: battery low)':'';
   $('setSaver').onclick=()=>{if(saverOn()){PERF.autoSaver=false;PERF.autoDismissed=true;setSetting('saver',false);}else setSetting('saver',true);}; // perf.js
   $('setFps').classList.toggle('on',SETTINGS.fps===true);$('setFps').onclick=()=>setSetting('fps',!SETTINGS.fps); // perf.js

@@ -75,8 +75,9 @@ function playerFrozen(){const p=G.p;return !!(p&&p.ail&&p.ail.frozenT>0);}
 function playerAilHit(E,sh,d){const p=G.p;if(p.dead||!PAIL_KIND[E]||!(d>0))return;const A=pAil(p),res=clamp(resOf(G.stats,E),-60,75),kind=PAIL_KIND[E];
   const dur=1-Math.max(0,res)/150,ch=PAIL_CH[E]*Math.min(1,sh)*(1-res/100);
   if(kind==='chill'&&d>=G.stats.life*PFREEZE_HIT&&A.freezeImm<=0){A.frozenT=Math.max(0.1,PFREEZE_MAX*(1-Math.max(0,res)/100));A.freezeImm=A.frozenT+PFREEZE_IMM;
-    floatText(p.x,p.y-p.r-30,'Frozen!',AIL_COL.chill,true);buzz('heavy');}
+    floatText(p.x,p.y-p.r-30,'Frozen!',AIL_COL.chill,true);buzz('heavy');hintAil('frozen');}
   if(Math.random()*100>=ch)return;
+  hintAil(kind); // hints.js: the first time each one lands
   if(kind==='burn'){const dps=d*0.15;A.burnDps=A.burnT>0?Math.max(A.burnDps,dps):dps;A.burnT=Math.max(A.burnT,3*dur);}
   else if(kind==='chill')slowPlayer(0.3,2*dur);
   else if(kind==='shock'){if(!(A.shockT>0))floatText(p.x,p.y-p.r-30,'Shocked',AIL_COL.shock,false);A.shockT=Math.max(A.shockT,3*dur);}

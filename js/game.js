@@ -136,7 +136,7 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst
 function gainXp(v){
   const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
   while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
-    const newSk=SKILL_REQ.indexOf(c.lvl);toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point'); /* subclasses.js */
+    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point'); /* subclasses.js */
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
 // After level 50 every bit of XP fills Paragon levels instead (leftover XP at 50 carries over).
@@ -171,6 +171,7 @@ function startGame(c){
   if(mapsOpen(c)&&!c.sigGift){c.sigGift=1;for(let i=0;i<3;i++)SIGILS.length<SIG_CAP&&SIGILS.push(genSigil(1,0));storeSigils();} // first maps: three Tier 1 Sigils
   instLoad(c); /* portal.js: this hero's kept zones */
   if(c.town)startTown(c.depth);else if(c.zone==='map'&&c.mapRun)startZone('map','resume');else startDepth(c.depth); // an open map: back into it
+  hintPath(); // hints.js: a hero of level 20+ without a path
 }
 // mode (boss depths, from the Waystone): 'all' (default), 'boss' = the boss alone, 'noboss' = the packs only.
 function startDepth(d,mode){
@@ -311,7 +312,7 @@ function update(dt){
     if(l.gold&&d<60){l.x+=(p.x-l.x)*Math.min(1,dt*10);l.y+=(p.y-l.y)*Math.min(1,dt*10);}
     if(d<32){if(l.gem)pickStone(l);else if(l.cur)pickCur(l);else if(l.sig)pickSigil(l);else if(l.eng)pickEng(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
       else if(autoSalvages(G.char,l.item)){const r=autoSalvage(G.char,l.item);l.taken=true;floatText(l.x,l.y-20,`+${r.gold}🪙 ${matText(r.mats)}`,RCOL[0],false);}
-      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
+      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);hintItem(l.item); /* hints.js */floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
       else if(G.bagFullT<=0){G.bagFullT=3;toast('Bag is full','Salvage items in 🎒');}}}
   G.loot=G.loot.filter(l=>!l.taken);
   // fx

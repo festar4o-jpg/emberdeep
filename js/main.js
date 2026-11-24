@@ -11,11 +11,13 @@ function frame(now){
   // perf.js: while idle nothing moves, so the scene behind the menu is only redrawn IDLE_DRAW_MS apart (battery)
   if(!idle||now-PERF.idleAt>=IDLE_DRAW_MS){PERF.idleAt=now;PERF.draws++;render();
     if(G.char&&G.p){updateHud();G.mmT-=idle?IDLE_DRAW_MS/1000:dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}}
+  hintTick(Math.min(1,gap/1000),idle); // hints.js
   musicTick(dt); // music.js
   perfFrame(gap,performance.now()-t0); // perf.js: FPS counter
   requestAnimationFrame(frame);
 }
-watchBattery(); // perf.js: Battery saver turns on by itself on low battery
+watchBattery();loadHints();$('hintBox').onclick=()=>nextHint(); // hints.js
+ // perf.js: Battery saver turns on by itself on low battery
 migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();
 resize();showTitle();requestAnimationFrame(frame);
 $('verTxt').textContent='Emberdeep v'+GAME_VERSION;

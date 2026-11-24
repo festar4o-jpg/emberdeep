@@ -31,7 +31,7 @@ function minionType(){return ACTS[actIdx(G.depth)].roster.map(r=>r[0]).filter(t=
 function affStrike(x,y,r,delay,dmg,col,onHit,el){G.fx.push({type:'tele',x,y,r,t:0,max:delay,col});
   later(delay,()=>{const p=G.p;if(Math.hypot(p.x-x,p.y-y)<r+p.r*0.5&&dmgPlayer(dmg,null,el)&&onHit)onHit();G.fx.push({type:'ring',x,y,r0:r*0.3,r1:r,t:0,max:0.25,col});burst(x,y,14,col,180);});}
 // Runs every frame for an aggroed, active elite with affixes (d = distance to the player).
-function affixTick(e,d,dt){const L=affLv(),T=e.affT||(e.affT={});
+function affixTick(e,d,dt){const L=affLv(),T=e.affT||(e.affT={});if(!HINT.seen.elite)hintElite(); // hints.js
   const ready=(k,cd)=>{T[k]=(T[k]??rand(1,cd))-dt;if(T[k]>0)return false;T[k]=cd*rand(0.85,1.15);return true;};
   for(const k of e.affs){
     if(k==='shielded'){if(!(e.shieldT>0)&&ready(k,7-L*0.4)){e.shieldT=1.8+L*0.25;G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r+16,t:0,max:0.3,col:'#9ab0ff'});}}

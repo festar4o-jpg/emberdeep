@@ -10,8 +10,8 @@
 // server again and goes back online if it answers.
 // Saves live in localStorage, which a service worker never reads, writes or clears.
 // FILES must list every file the page loads; VERSION must equal GAME_VERSION in js/core.js (tests/game-check.js checks both).
-const VERSION='1.0.96',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
-const FILES=[ "./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "js/core.js", "js/items.js", "js/uniques.js", "js/maps.js", "js/towns.js", "js/skills.js", "js/skillmods.js", "js/ailments.js", "js/subclasses.js", "js/monsters.js", "js/bossfight.js", "js/game.js", "js/render.js", "js/light.js", "js/sprites.js", "js/fx.js", "js/sfx.js", "js/music.js", "js/ui.js", "js/stash.js", "js/sockets.js", "js/charms.js", "js/smith.js", "js/currency.js", "js/encounters.js", "js/waystone.js", "js/zones.js", "js/acts.js", "js/portal.js", "js/sigils.js", "js/pinnacle.js", "js/backup.js", "js/perf.js", "js/main.js"];
+const VERSION='1.0.97',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
+const FILES=[ "./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "js/core.js", "js/items.js", "js/uniques.js", "js/maps.js", "js/towns.js", "js/skills.js", "js/skillmods.js", "js/ailments.js", "js/subclasses.js", "js/monsters.js", "js/bossfight.js", "js/game.js", "js/render.js", "js/light.js", "js/sprites.js", "js/fx.js", "js/sfx.js", "js/music.js", "js/ui.js", "js/stash.js", "js/sockets.js", "js/charms.js", "js/smith.js", "js/currency.js", "js/encounters.js", "js/waystone.js", "js/zones.js", "js/acts.js", "js/portal.js", "js/sigils.js", "js/pinnacle.js", "js/backup.js", "js/perf.js", "js/hints.js", "js/main.js"];
 // One cache entry per file, whatever ?query it was opened with (play.sh opens ./?v=<time>).
 const key=u=>{const x=new URL(u,self.location.href);x.search='';x.hash='';return x.href;};
 let offline=false;const waiting=new Set();

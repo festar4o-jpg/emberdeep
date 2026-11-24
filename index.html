@@ -220,6 +220,8 @@
     <div class="vol">🔊 Effects <input type="range" id="setSfxVol" min="0" max="100" step="5"></div>
     <div class="vol">🎵 Music <input type="range" id="setMusVol" min="0" max="100" step="5"></div>
     <div class="chk" id="setVib"><span class="box"></span> Vibration: crits, heavy hits, level-ups, boss kills and good drops</div>
+    <div class="chk" id="setHints"><span class="box"></span> Hints: short tips the first time something new happens</div>
+    <div class="btn sm" id="setHintsAgain">Show hints again</div>
   </div>
   <div class="filt">
     <b style="color:var(--gold)">Performance</b> <span class="fdim">frame rate (lower saves battery; Max follows the screen)</span>
@@ -292,6 +294,7 @@
 
 <!-- FPS counter (perf.js): outside the HUD and above every menu, so it can be read with a menu open -->
 <div id="fpsTxt" class="hidden"></div>
+<div id="hintBox" class="hidden"></div>
 <script src="js/core.js"></script>
 <script src="js/items.js"></script>
 <script src="js/uniques.js"></script>
@@ -325,6 +328,7 @@
 <script src="js/pinnacle.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/perf.js"></script>
+<script src="js/hints.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
