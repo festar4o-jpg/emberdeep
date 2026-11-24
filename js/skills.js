@@ -87,8 +87,8 @@ function startAtk(style,hand,i){const p=G.p,s=G.stats;if(!style){const w=wOf(G.c
   if(i===0&&G.char.cls==='warden')skillSfx('warden',0,style);} // sfx.js: the weapon's whoosh
 function tryCast(i){
   const p=G.p;if(G.paused||!p||p.dead||playerFrozen())return; // ailments.js: no casting while frozen
-  const r=rk(i);if(r<=0||p.cd[i]>0||p.leap)return;
-  if(p.spin>0&&i!==2)return;
+  // v1.0.98: other skills can be used during Leap Slam (in the air) and Whirlwind; only Leap Slam waits for its own landing
+  const r=rk(i);if(r<=0||p.cd[i]>0||p.leap&&i===1)return;
   const sk=SKILLS[G.char.cls][i];
   const lc=lifeCost(i); // Bloodleap Greaves: pay Life instead of Fury
   const cost=modCost(i,sk.cost); // skillmods.js: Rapid Fire

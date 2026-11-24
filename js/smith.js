@@ -1,14 +1,15 @@
 'use strict';
 // Blacksmith (town): crafting with gold plus materials that salvaging now yields.
-//   Reforge      a rare: reroll all of its stats
+//   Reforge      a rare: reroll all of its stats; with a stat chosen, that one is kept (costs 50% more)
 //   Enchant      a magic, rare or unique item: reroll one chosen stat into a different one
+//   Hone         a magic, rare or unique item: the chosen stat keeps its kind and gets a new number (can be worse)
 //   Quality      a white or blue item with base damage or armor: make it Superior (+15% base stats, once)
 //   Add Socket   an item with no sockets (that can hold them): give it one. Expensive.
 //   Upgrade Base a white item (sockets and Superior kept): same archetype, one tier higher, up to Tier V.
 //                A unique can do this once, at a much higher price.
 //   Add Stat     a white, magic or rare item with under 4 stats: roll 3 new stats and pick one to add
 //   Remove Stat  a white, magic or rare item: take off the chosen stat
-// Stat crafts (Add, Remove, Enchant, Reforge) on white, magic and rare items are limited: twice the item's
+// Stat crafts (Add, Remove, Enchant, Hone, Reforge) on white, magic and rare items are limited: twice the item's
 // base tier (Tier III = 6 crafts), rings and amulets by their act. Upgrade a white base first for more crafts.
 // The stat count sets the rarity: 0 white, 1-2 magic, 3-4 rare.
 // Charms and Runebinds can't be smithed.
@@ -45,8 +46,10 @@ function addMats(a,b){for(const k in b)a[k]=(a[k]||0)+b[k];return a;}
 const matCost=(it,m)=>{const mul=salvageMul(it),o={};for(const k in m)o[k]=Math.round(m[k]*mul);return o;};
 // v1.0.51: gold prices lowered about 25-30% (materials unchanged: salvage yields were raised with the drop change).
 const SMITH_OPS={
-  reforge:{name:'Reforge',desc:'Reroll every stat of a rare',cost:it=>({gold:30+it.ilvl*9,...matCost(it,{essence:4,dust:4})})},
+  reforge:{name:'Reforge',desc:(it,keep)=>keep!=null&&it.affs[keep]?'Reroll every stat except the chosen one (+50% cost)':'Reroll every stat of a rare (tap a stat first to keep it)',
+    cost:(it,keep)=>{const k=keep!=null&&it.affs&&it.affs[keep]?REFORGE_KEEP:1,o={gold:Math.round((30+it.ilvl*9)*k)},m=matCost(it,{essence:4,dust:4});for(const x in m)o[x]=Math.round(m[x]*k);return o;}},
   enchant:{name:'Enchant',desc:'Reroll the chosen stat into a different one',cost:it=>({gold:20+it.ilvl*6,...matCost(it,{dust:5,...(it.rarity===3||it.rarity===5?{primal:1}:it.rarity===2?{essence:2}:{})})})},
+  hone:{name:'Hone',desc:'Same stat, new number (it can come out lower)',cost:it=>({gold:15+it.ilvl*4,...matCost(it,{dust:3,...(it.rarity===3||it.rarity===5?{primal:1}:it.rarity===2?{essence:1}:{})})})},
   quality:{name:'Quality',desc:'Superior: +15% base damage or armor',cost:it=>({gold:15+it.ilvl*4,...matCost(it,{scrap:8})})},
   socket:{name:'Add Socket',desc:'Give an item without sockets one socket',cost:it=>({gold:100+it.ilvl*20,...matCost(it,{scrap:10,dust:10,essence:5})})},
   add:{name:'Add Stat',desc:it=>it.addOpts&&it.addOpts.length?'Pick the stat you rolled (already paid)':'Roll 3 new stats, pick one to add',cost:it=>it.addOpts&&it.addOpts.length?{gold:0}:({gold:20+it.ilvl*7,...matCost(it,{dust:4,...(statCount(it)>=2?{essence:3}:{})})})},
@@ -54,7 +57,7 @@ const SMITH_OPS={
   upbase:{name:'Upgrade Base',desc:it=>it.tier>=1&&it.tier<5?`Same ${baseKindName(it)}, Tier ${TIER_NAME[it.tier-1]} → ${TIER_NAME[it.tier]}: stronger base stats`:'Raise the base one tier',cost:it=>upbaseCost(it)}
 };
 // ---------- stat crafts ----------
-const MAX_STATS=MAX_PRE+MAX_SUF,ADD_OPTS=3,CRAFT_OPS=new Set(['add','remove','enchant','reforge']);
+const MAX_STATS=MAX_PRE+MAX_SUF,ADD_OPTS=3,CRAFT_OPS=new Set(['add','remove','enchant','hone','reforge']),REFORGE_KEEP=1.5;
 const craftLimited=it=>it.rarity>=0&&it.rarity<=2&&it.slot!=='charm';
 const craftMax=it=>2*(it.tier||itemAct(it));
 const craftsLeft=it=>Math.max(0,craftMax(it)-(it.crafts||0));
@@ -114,6 +117,7 @@ function smithBlock(op,it,affIdx){if(it.corrupt)return 'Corrupted: it can\'t be 
   if(op==='remove'){if(!craftLimited(it))return 'Only white, magic and rare items';if(!it.affs.length)return 'No stats to remove';return affIdx==null||!it.affs[affIdx]?'Tap a stat above to choose it':null;}
   if(op==='reforge')return it.rarity===2?null:'Only rares can be reforged';
   if(op==='enchant'){if(!it.affs.length)return 'Only magic, rare and unique items have stats to enchant';return affIdx==null||!it.affs[affIdx]?'Tap a stat above to choose it':null;}
+  if(op==='hone'){if(!it.affs.length)return 'Only magic, rare and unique items have stats to hone';if(affIdx==null||!it.affs[affIdx])return 'Tap a stat above to choose it';return it.affs[affIdx].k==='skill'?'A +1 skill stat has no number to change':null;}
   if(op==='quality'){if(it.rarity>1)return 'Only white and blue items';if(it.sup)return 'Already Superior';return it.slot==='weapon'||it.arm?null:'Has no base damage or armor';}
   if(op==='socket'){if(it.sockets)return 'Only items without sockets';return maxSockets(it)?null:'This item type cannot hold sockets';}
   if(op==='upbase'){if(![0,3,5].includes(it.rarity))return 'Only white items (socketed too), uniques and set items';if(!TIERED.has(it.slot)||!it.tier)return 'Rings and amulets have no base tier';
@@ -125,12 +129,12 @@ function pay(c,cost){const m=matsOf(c);c.gold-=cost.gold;for(const k of MAT_KEYS
 const affPool=it=>(TYPES[it.slot].pool||AFF_KEYS).filter(k=>(!AFF[k].cls||AFF[k].cls===it.cls)&&(!AFF[k].myth||it.myth));
 // Runs an operation if allowed and affordable. Returns true on success.
 function smith(op,it,affIdx){const c=G.char;if(smithBlock(op,it,affIdx))return false;if(op==='add'&&it.addOpts&&it.addOpts.length)return false;
-  const cost=SMITH_OPS[op].cost(it);if(!canPay(c,cost))return false;pay(c,cost);
+  const cost=SMITH_OPS[op].cost(it,affIdx);if(!canPay(c,cost))return false;pay(c,cost);
   const rm=it.rarity===3?1.3:1;if(CRAFT_OPS.has(op)&&craftLimited(it))it.crafts=(it.crafts||0)+1;
   if(op==='add')it.addOpts=addPool(it).sort(()=>Math.random()-0.5).slice(0,ADD_OPTS).map(k=>rollAff(k,affLvl(it.ilvl,it.tier),1,{il:it.ilvl}));
   else if(op==='remove'){it.affs.splice(affIdx,1);restat(it);}
-  else   if(op==='reforge'){const keys=pickAffKeys(affPool(it),randi(3,4),MAX_PRE,MAX_SUF);it.affs=keys.map(k=>rollAff(k,affLvl(it.ilvl,it.tier),rm,smithT(it)));
-    if(Math.random()<0.3)it.affs.push({k:'skill',s:randi(0,4),v:1});}
+  else   if(op==='reforge')reforgeAffs(it,affIdx,rm);
+  else if(op==='hone'){const a=it.affs[affIdx];it.affs[affIdx]=rollAff(a.k,affLvl(it.ilvl,it.tier),rm,smithT(it));}
   else if(op==='enchant'){const have=new Set(it.affs.map(a=>a.k)),old=it.affs[affIdx].k,same=k=>old==='skill'||isPre(k)===isPre(old),opts=affPool(it).filter(k=>!have.has(k)&&same(k)); // a prefix stays a prefix
     it.affs[affIdx]=opts.length?rollAff(pick(opts),affLvl(it.ilvl,it.tier),rm,smithT(it)):rollAff(old==='skill'?pick(affPool(it)):old,affLvl(it.ilvl,it.tier),rm,smithT(it));
     if(it.rarity===1)restat(it);}
@@ -138,6 +142,17 @@ function smith(op,it,affIdx){const c=G.char;if(smithBlock(op,it,affIdx))return f
   else if(op==='socket')it.sockets=1;
   else if(op==='upbase')applyUpgradedBase(it);
   refreshStats();saveChar();return true;}
+
+// Reforge: every stat rerolled; a kept stat (keep = its index) stays as it is, in its place, and the new stats
+// fill the prefix/suffix room it leaves (never the same stat twice). A kept +1 skill means no second one.
+function reforgeAffs(it,keep,rm){const K=keep!=null?it.affs[keep]:null,L=affLvl(it.ilvl,it.tier),T=smithT(it),n=randi(3,4);
+  if(!K){it.affs=pickAffKeys(affPool(it),n,MAX_PRE,MAX_SUF).map(k=>rollAff(k,L,rm,T));if(Math.random()<0.3)it.affs.push({k:'skill',s:randi(0,4),v:1});return;}
+  const sk=K.k==='skill',pre=!sk&&isPre(K.k),pool=affPool(it).filter(k=>k!==K.k);
+  const out=[];for(const k of pickAffKeys(pool,sk?n:n-1,MAX_PRE-(pre?1:0),MAX_SUF-(!sk&&!pre?1:0))){let a=rollAff(k,L,rm,T);
+    for(let t=0;t<12&&(a.k===K.k||out.some(b=>b.k===a.k));t++)a=rollAff(k,L,rm,T); // 'resist' / 'skdmg' pick a kind when rolled
+    if(a.k!==K.k&&!out.some(b=>b.k===a.k))out.push(a);}
+  if(!sk&&Math.random()<0.3)out.push({k:'skill',s:randi(0,4),v:1});
+  out.splice(Math.min(keep,out.length),0,K);it.affs=out;}
 
 // ---------- salvage ----------
 // Locked (favorite) items are never salvaged: not one by one, not in bulk.
@@ -225,16 +240,16 @@ function renderSmith(){
   if(!it){$('smithInfo').innerHTML=`<p class="fdim">Pick an item (worn or in your bag). Salvage items in the Salvage tab for ${MAT_HELP}</p>`;return;}
   // the item in the same card as everywhere else (ui.js tipCard), its stats tappable to choose one (Remove, Enchant)
   let h=tipCard(it,c,null,{pick:1,sel:smithAff});
-  if(craftLimited(it))h+=`<div class="isub" style="margin:2px 2px 6px">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}${it.affs.length?' · tap a stat to choose it':''}</div>`;
-  h+='<div class="smops">'+Object.entries(SMITH_OPS).map(([k,O])=>{const why=smithBlock(k,it,smithAff),cost=O.cost(it),ok=!why&&canPay(c,cost);
-    return `<div class="smop"><div class="btn sm${ok?'':' dis'}" data-op="${k}">${O.name}</div><div><div>${esc(typeof O.desc==='function'?O.desc(it):O.desc)}</div><div class="fdim">${why?esc(why):costHtml(cost)}</div></div></div>`;}).join('')+'</div>';
+  if(craftLimited(it))h+=`<div class="isub" style="margin:2px 2px 6px">⚒ Stat crafts left: <b style="color:${craftsLeft(it)?'var(--gold)':'#e07a5a'}">${craftsLeft(it)}/${craftMax(it)}</b>${it.rarity===0&&it.tier&&it.tier<5&&!it.crafts?' · Upgrade Base first for more':''}${it.affs.length?' · tap a stat to choose it (tap again to clear)':''}</div>`;
+  h+='<div class="smops">'+Object.entries(SMITH_OPS).map(([k,O])=>{const why=smithBlock(k,it,smithAff),cost=O.cost(it,smithAff),ok=!why&&canPay(c,cost);
+    return `<div class="smop"><div class="btn sm${ok?'':' dis'}" data-op="${k}">${O.name}</div><div><div>${esc(typeof O.desc==='function'?O.desc(it,smithAff):O.desc)}</div><div class="fdim">${why?esc(why):costHtml(cost)}</div></div></div>`;}).join('')+'</div>';
   $('smithInfo').innerHTML=h;
-  $('smithInfo').querySelectorAll('[data-a]').forEach(el=>el.onclick=()=>{smithAff=+el.dataset.a;renderSmith();});
+  $('smithInfo').querySelectorAll('[data-a]').forEach(el=>el.onclick=()=>{const a=+el.dataset.a;smithAff=smithAff===a?null:a;renderSmith();});
   $('smithInfo').querySelectorAll('[data-op]').forEach(el=>el.onclick=()=>{const op=el.dataset.op;
     if(op==='upbase')return askUpbase(it);
     if(op==='add'){if(it.addOpts&&it.addOpts.length)return askAdd(it);if(smith('add',it)){renderSmith();askAdd(it);}return;}
     if(op==='remove'){if(smith('remove',it,smithAff)){toast('Stat removed',it.name);smithAff=null;renderSmith();}return;}
-    if(smith(op,it,smithAff)){toast(SMITH_OPS[op].name,it.name);if(op!=='enchant')smithAff=null;renderSmith();}});
+    if(smith(op,it,smithAff)){toast(SMITH_OPS[op].name,it.name);if(op!=='enchant'&&op!=='hone'&&op!=='reforge')smithAff=null;renderSmith();}});
 }
 function renderSalvageInfo(){const c=G.char,it=smithSel;
   if(!it){$('smithInfo').innerHTML=`<p class="fdim">Tap a bag item to salvage it, or switch to ☑ Select to salvage several at once. Salvaging gives gold and ${MAT_HELP}</p>`;return;}
