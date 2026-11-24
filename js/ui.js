@@ -153,7 +153,8 @@ function renderInv(){
   [...$('eqgrid').children].forEach((el,i)=>el.onclick=()=>{const sl=EQ_SLOTS[i],it=c.equip[sl];if(sl==='offhand'&&twoH){toast('Off Hand blocked','Your two-handed weapon needs both hands');return;}if(it)openItem(it,sl);});
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
   const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*PD()))*100);
-  $('statsum').innerHTML=[['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
+  const weak=RES_KEYS.map(k=>[k,sheetEhp(s,k)]).sort((a,b)=>a[1]-b[1])[0];
+  $('statsum').innerHTML=[[`DPS <span class="fdim">(${SKILLS[c.cls][0].name})</span>`,kfmt(sheetDps(c,s))],['Effective Life',kfmt(sheetEhp(s))],[`<span style="color:${RES_COL[weak[0]]}">vs ${RES_NAME[weak[0]]}</span> <span class="fdim">(weakest)</span>`,kfmt(weak[1])],['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
     // resistances after the difficulty's penalty (red below 0, gold at the 75% cap)
     RES_KEYS.map(k=>{const v=resOf(s,k);return [`<span style="color:${RES_COL[k]}">${RES_NAME[k]} Res</span>`,`<span style="color:${v<0?'#ff6a5a':v>=resCap(s)?'#f2d04a':'inherit'}">${Math.round(v)}%</span>`];}),
     resPenalty()?[['Res penalty',`<span style="color:${DIFFS[curDiff()]?.col||'#ff6a5a'}">−${resPenalty()}%</span>`]]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -363,9 +364,25 @@ function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[
   for(const pw of itemPowers(it))R['pw:'+pw]={label:'★ '+(UPOW[pw]?UPOW[pw].t:pw),v:1,pw:1};
   return R;}
 // What equipping changes for the character: DPS (damage x crit x speed x spell), Life, Armor, resistances, the rest.
-const dpsOf=s=>(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.crit/100*s.critd/100)*(1+s.aspd/100)*s.wspd*(1+s.spell/100)*(1+s.skill.reduce((a,b)=>a+b,0)*0.08);
+// Character sheet numbers (v1.0.91).
+// DPS: your basic attack (skill 1) on one enemy, without temporary buffs, powers or modifiers: the average hit (weapon,
+// level, +% damage, spell damage, the skill's rank and +% damage with it) x crit x attacks per second, plus the average
+// Bleed / Ignite / Poison it adds over time (ailments.js). Shock and area hits are left out.
+// Effective Life: how much raw damage you can take before dying in this area: Life through armour (as on the sheet),
+// block, evasion and less damage taken; against an element, also through that resistance.
+const SKILL1_MULT={warden:r=>1+0.12*(r-1),arcanist:r=>0.95+0.12*(r-1)}; // = SKILLS[cls][0].desc (skills.js)
+function sheetDps(c,s){const sk=SKILLS[c.cls][0],r=Math.max(1,(c.skills[0]||1)+(s.skill[0]||0));
+  const hit=(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*SKILL1_MULT[c.cls](r)*(1+(s.skd0||0)/100);
+  const crit=1+Math.min(100,s.crit)/100*s.critd/100,aps=(s.wspd||1)*(1+s.aspd/100)/sk.cd;
+  const ail=1+Math.min(75,s.bleed||0)/100*0.8+Math.min(AIL_CH_CAP,s.igniteCh||0)/100*IGNITE_DPS*IGNITE_DUR+Math.min(AIL_CH_CAP,s.poisonCh||0)/100*POISON_DPS*POISON_DUR;
+  return hit*crit*aps*ail;}
+function sheetEhp(s,el){const red=Math.min(0.75,s.armor/(s.armor+30+10*PD())),res=el?resOf(s,el)/100:0;
+  return s.life/((1-red)*(1-Math.min(50,s.block)/100)*(1-Math.min(40,s.evade||0)/100)*(1-Math.min(30,s.dr||0)/100)*(1-res));}
+const kfmt=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e4?(v/1e3).toFixed(1)+'k':String(Math.round(v));
+const dpsOf=s=>sheetDps(G.char,s);
 function equipSummary(c,it,slot){const s0=calcStats(c),s1=calcStats(c,it,slot),out=[],d0=dpsOf(s0),d1=dpsOf(s1);
   const pct=d0>0?(d1/d0-1)*100:0;if(Math.abs(pct)>=0.5)out.push([`DPS ${pct>0?'+':''}${pct.toFixed(Math.abs(pct)<10?1:0)}%`,pct]);
+  {const e0=sheetEhp(s0),e1=sheetEhp(s1),q=e0>0?(e1/e0-1)*100:0;if(Math.abs(q)>=0.5)out.push([`Eff. Life ${q>0?'+':''}${q.toFixed(Math.abs(q)<10?1:0)}%`,q]);}
   for(const [k,n] of [['life','Life'],['armor','Armor'],['move','Move'],['block','Block']]){const d=s1[k]-s0[k];if(Math.abs(d)>=0.5)out.push([`${n} ${d>0?'+':''}${Math.round(d)}${k==='move'||k==='block'?'%':''}`,d]);}
   for(const k of RES_KEYS){const d=resOf(s1,k)-resOf(s0,k);if(Math.abs(d)>=0.5)out.push([`${RES_NAME[k]} Res ${d>0?'+':''}${Math.round(d)}%`,d]);}
   return out;}
