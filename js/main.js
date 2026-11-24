@@ -3,11 +3,12 @@
 // ---------- main loop ----------
 let last=performance.now();
 function frame(now){
-  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  const gap=now-last,dt=Math.min(0.05,gap/1000);last=now;const t0=performance.now();
   if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
   else if(G.char&&G.p&&!G.paused&&!portraitBlocked())update(dt);
   render();musicTick(dt); // music.js
   if(G.char&&G.p){updateHud();G.mmT-=dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}
+  perfFrame(gap,performance.now()-t0); // perf.js: FPS counter
   requestAnimationFrame(frame);
 }
 migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();

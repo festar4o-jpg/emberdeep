@@ -27,6 +27,7 @@
     <div id="buffTxt"></div>
   </div>
   <div id="xpb"><i></i></div>
+  <div id="fpsTxt" class="hidden"></div>
   <div id="topright">
     <div class="btnrow">
       <div class="ib pe" id="bagBtn">🎒<b class="dot hidden" id="bagDot"></b></div>
@@ -219,6 +220,10 @@
     <div class="vol">🎵 Music <input type="range" id="setMusVol" min="0" max="100" step="5"></div>
     <div class="chk" id="setVib"><span class="box"></span> Vibration: crits, heavy hits, level-ups, boss kills and good drops</div>
   </div>
+  <div class="filt">
+    <b style="color:var(--gold)">Performance</b>
+    <div class="chk" id="setFps"><span class="box"></span> Show FPS: frames per second, work per frame and the slowest frame (top of the screen)</div>
+  </div>
   <div class="help">
     <b style="color:var(--gold)">How to play</b><br>
     • Touch anywhere on the left side and drag to move (push lightly to walk). Left-handed? Swap sides under Controls.<br>
@@ -300,6 +305,7 @@
 <script src="js/sigils.js"></script>
 <script src="js/pinnacle.js"></script>
 <script src="js/backup.js"></script>
+<script src="js/perf.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
