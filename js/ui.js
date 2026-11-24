@@ -17,7 +17,7 @@ function buildSkillBar(){
     box.appendChild(d);skillEls.push(d);}
   $('skDot').classList.toggle('hidden',!canLearnAny());
 }
-function canLearnAny(){const c=G.char;if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
+function canLearnAny(){const c=G.char;if(c.lvl>=SUB_LVL&&!c.sub)return true; /* subclasses.js: a path to choose */if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
 // HUD writes go through hud(): a page write only when the value changed (each write can make the page redo its layout).
 // k: 'text' / 'html' / 'title', '-name' a CSS variable, '.name' a class on/off, anything else a style property.
 const HUDC=new WeakMap(),r2=v=>Math.round(v*100)/100,pc=v=>Math.round(v*1000)/10+'%';
@@ -25,7 +25,7 @@ function hud(el,k,v){if(!el)return;let m=HUDC.get(el);if(!m){m={};HUDC.set(el,m)
   if(k==='text')el.textContent=v;else if(k==='html')el.innerHTML=v;else if(k==='title')el.title=v;else if(k[0]==='-')el.style.setProperty(k,v);else if(k[0]==='.')el.classList.toggle(k.slice(1),!!v);else el.style[k]=v;}
 function updateHud(){
   const p=G.p,s=G.stats,c=G.char,C=CLASSES[c.cls];ailHudTick(); // ailments.js: status badges
-  hud($('nmTxt'),'text',`${c.name} · Lv ${lvlLabel(c)} ${C.name}`);
+  hud($('nmTxt'),'text',`${c.name} · Lv ${lvlLabel(c)} ${titleOf(c)}`); // subclasses.js
   // life / resource bars fill from the left; life pulses below 30%
   const hpF=clamp(p.hp/s.life,0,1),hp=$('hpb'),mp=$('mpb');
   hud(hp.firstElementChild,'height',pc(hpF));hud(hp.lastElementChild,'html',`${Math.ceil(Math.max(0,p.hp))}<small>${Math.round(s.life)}</small>`); // current over max: fits the orb
@@ -108,7 +108,7 @@ const WIN_TXT=[
   ['NIGHTMARE CONQUERED','The Cinder King falls a second time, and the world shudders.<br><b style="color:#ff4a3a">Hell</b> is open at every Waystone.<br>The Endless Depths now run as deep as Nightmare.','Descend into the Endless Depths'],
   ['HELL CONQUERED','Nothing is left to burn. You walked through Hell and out again.<br>The Endless Depths now match Hell itself.','Descend into the Endless Depths']];
 function showVictory(d=0){const c=G.char,W=WIN_TXT[Math.min(d,WIN_TXT.length-1)];$('winAct').textContent=W[0];$('winSub').innerHTML=W[1];$('winGo').textContent=W[2];
-  $('winStats').innerHTML=[['Hero',`${esc(c.name)}, Level ${lvlLabel(c)} ${CLASSES[c.cls].name}`],['Monsters slain',c.kills||0],['Deaths',c.deaths||0],['Gold',c.gold]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
+  $('winStats').innerHTML=[['Hero',`${esc(c.name)}, Level ${lvlLabel(c)} ${titleOf(c)}`],['Monsters slain',c.kills||0],['Deaths',c.deaths||0],['Gold',c.gold]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('winOv').classList.remove('hidden');releaseInputs();setPause();}
 tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal is open','Step through to enter the Endless Depths');});
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
@@ -154,7 +154,7 @@ function renderInv(){
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
   const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*PD()))*100);
   const weak=RES_KEYS.map(k=>[k,sheetEhp(s,k)]).sort((a,b)=>a[1]-b[1])[0];
-  $('statsum').innerHTML=[[`DPS <span class="fdim">(${SKILLS[c.cls][0].name})</span>`,kfmt(sheetDps(c,s))],['Effective Life',kfmt(sheetEhp(s))],[`<span style="color:${RES_COL[weak[0]]}">vs ${RES_NAME[weak[0]]}</span> <span class="fdim">(weakest)</span>`,kfmt(weak[1])],['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
+  $('statsum').innerHTML=[['Path',subOf(c)?`<span style="color:${subOf(c).col}">${subOf(c).icon} ${subOf(c).name}</span>`:`<span class="fdim">${c.lvl>=SUB_LVL?'choose one (✨ Path)':'at level '+SUB_LVL}</span>`],[`DPS <span class="fdim">(${SKILLS[c.cls][0].name})</span>`,kfmt(sheetDps(c,s))],['Effective Life',kfmt(sheetEhp(s))],[`<span style="color:${RES_COL[weak[0]]}">vs ${RES_NAME[weak[0]]}</span> <span class="fdim">(weakest)</span>`,kfmt(weak[1])],['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],['Attacks/s',(1/skillCd(0)).toFixed(2)],['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
     // resistances after the difficulty's penalty (red below 0, gold at the 75% cap)
     RES_KEYS.map(k=>{const v=resOf(s,k);return [`<span style="color:${RES_COL[k]}">${RES_NAME[k]} Res</span>`,`<span style="color:${v<0?'#ff6a5a':v>=resCap(s)?'#f2d04a':'inherit'}">${Math.round(v)}%</span>`];}),
     resPenalty()?[['Res penalty',`<span style="color:${DIFFS[curDiff()]?.col||'#ff6a5a'}">−${resPenalty()}%</span>`]]:[]).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -269,8 +269,17 @@ tap('shopClose',closeShop);
 
 // ---------- skills UI ----------
 function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden'))renderSkills();setPause();}
+let skTab='skills';
 function renderSkills(){
-  const c=G.char,sk=SKILLS[c.cls];fixMods(c);$('skPts').textContent=`Skill points: ${c.skillPts}`;
+  const c=G.char,sk=SKILLS[c.cls];fixMods(c);
+  { const pathDot=c.lvl>=SUB_LVL&&!c.sub?' <span style="color:#f55">●</span>':''; // subclasses.js: the Path tab
+    $('skTabs').innerHTML=[['skills','Skills'],['path','Path'+pathDot]].map(([k,n])=>`<div class="tab${skTab===k?' on':''}" data-t="${k}">${n}</div>`).join('');
+    $('skTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{skTab=el.dataset.t;subAsk=null;renderSkills();});
+    $('skMain').classList.toggle('hidden',skTab!=='skills');$('pathView').classList.toggle('hidden',skTab!=='path');
+    if(skTab==='path'){$('pathView').innerHTML=pathHtml(c);
+      $('pathView').querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{pickSub(b.dataset.sub);renderSkills();});
+      $('pathView').querySelectorAll('[data-sure]').forEach(b=>b.onclick=()=>{pickSub(b.dataset.sure,true);renderSkills();$('skDot').classList.toggle('hidden',!canLearnAny());});
+      $('pathView').querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>{subAsk=null;renderSkills();});return;} }$('skPts').textContent=`Skill points: ${c.skillPts}`;
   $('skList').innerHTML=sk.map((s,i)=>{const base=c.skills[i],bonus=G.stats.skill[i],r=rk(i),req=SKILL_REQ[i];const locked=c.lvl<req;
     const can=!locked&&c.skillPts>0&&base<15;
     return `<div class="skrow${locked?' locked':''}"><div class="ic">${s.icon}</div><div class="info"><b>${s.name}</b> ${base?`Rank ${base}${bonus?` <span style="color:#f2d04a">(+${bonus})</span>`:''}`:locked?`· Requires level ${req}`:'· Not learned'}
@@ -333,7 +342,7 @@ function renderSettings(){
     el.onchange=()=>{SETTINGS[k]=+el.value/100;storeSettings();};}}
 function showTitle(){
   $('titleOv').classList.remove('hidden');
-  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${CLASSES[c.cls].name} · ${c.diff&&c.depth<=25?DIFFS[c.diff].name+' ':''}${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.endMax||c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
+  $('slots').innerHTML=SAVES.length?SAVES.map((c,i)=>`<div class="slot"><div class="ic">${CLASSES[c.cls].icon}</div><div class="info"><b>${esc(c.name)}</b><div>Level ${lvlLabel(c)} ${titleOf(c)} · ${c.diff&&c.depth<=25?DIFFS[c.diff].name+' ':''}${ACTS[actIdx(c.depth)].name} ${depthLabel(c.depth)} (best ${depthLabel(c.endMax||c.maxDepth)})</div></div><div class="btn sm" data-play="${i}">Play</div><div class="btn sm red" data-del="${i}">✕</div></div>`).join(''):'<p class="sub">No heroes yet. Create your first one.</p>';
   $('slots').querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>startGame(SAVES[+b.dataset.play]));
   $('slots').querySelectorAll('[data-del]').forEach(b=>{let armed=false;b.onclick=()=>{if(!armed){armed=true;b.textContent='Delete?';setTimeout(()=>{armed=false;b.textContent='✕';},2500);return;}SAVES.splice(+b.dataset.del,1);storeSaves();showTitle();};});
   $('newBtn').classList.toggle('dis',SAVES.length>=6);

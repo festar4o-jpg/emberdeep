@@ -140,6 +140,11 @@ h2{color:var(--gold);text-align:center;font-weight:normal;letter-spacing:2px;mar
 .skrow .info b{color:var(--gold);font-weight:normal;font-size:15px;}
 .skrow .info .nx{color:#7c7;font-size:12px;}
 .skrow.locked{opacity:.5;}
+.pathcard{background:#0006;border:1px solid var(--edge);border-radius:8px;padding:8px;margin-bottom:8px;font-size:13px;color:var(--dim);}
+.pathcard.mine{box-shadow:0 0 10px #f2d04a44;}.pathcard.other{opacity:.45;}
+.pathcard .pn{font-size:17px;margin-bottom:2px;}.pathcard .pt{margin-bottom:6px;color:#cdb;}
+.pathcard .perk{padding:3px 0;border-top:1px solid #ffffff12;}.pathcard .perk b{color:var(--gold);font-weight:normal;}.pathcard .perk.on{color:#dfd;}
+.pathcard .btn{margin-top:6px;}.pathask{margin-top:6px;color:#f2d04a;}.pathask .btn{margin-right:6px;}
 .skrow .mods{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
 .skrow .mod{font-size:12px;padding:5px 8px;border:1px solid var(--edge);border-radius:12px;background:#0008;color:#cbb;cursor:pointer;}
 .skrow .mod.on{border-color:var(--gold);color:var(--gold);background:#3a2a0a;box-shadow:0 0 6px #f2d04a55;}

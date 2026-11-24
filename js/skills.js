@@ -57,7 +57,7 @@ const SKILLS={
     {name:'Chain Lightning',icon:'⚡',cd:2,cost:18,
       desc:r=>`Lightning jumps between ${Math.min(8,3+Math.floor((r-1)/2))} enemies for ${pct(1.25+0.15*(r-1))} damage each. Costs 18 Mana.`,
       cast(r){const p=G.p;let cur=nearest(p.x,p.y,340);if(!cur){G.p.res+=18;G.p.cd[3]=0.2;return;}
-        const hit=new Set(),pts=[{x:p.x,y:p.y}];const endless=hasPw('endless')&&p.res>G.stats.res*0.5,n=endless?30:Math.min(8,3+Math.floor((r-1)/2))+(hasPw('stormweave')?4:0);
+        const hit=new Set(),pts=[{x:p.x,y:p.y}];const endless=hasPw('endless')&&p.res>G.stats.res*0.5,n=endless?30:Math.min(8,3+Math.floor((r-1)/2))+(hasPw('stormweave')?4:0)+(hasPerk('stormReach')?2:0); // subclasses.js: Storm Reach
         const fork=hasMod('fork'),over=hasMod('overload'),m0=(1.25+0.15*(r-1))*(fork?0.75:1); // skillmods.js: Fork, Overload (Static: ailments.js)
         const chainFrom=(cur,pts)=>{for(let k=0;k<n&&cur;k++){hit.add(cur);pts.push({x:cur.x,y:cur.y});hitEnemy(cur,m0*(over?Math.pow(1.15,k):1),{});cur=nearest(cur.x,cur.y,210,endless?new Set([cur]):hit);}}; // endless: may bounce back, just not onto the same enemy twice in a row
         const second=fork?nearest(p.x,p.y,340,new Set([cur])):null;chainFrom(cur,pts);
@@ -76,8 +76,8 @@ const SKILLS={
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
 function skillCd(i){const sk=SKILLS[G.char.cls][i],w=G.char.cls==='warden';
   if(w&&i===1&&hasPw('bloodleap'))return 0.35;if(w&&i===4&&hasPw('faultline'))return sk.cd*0.5*(1-G.stats.cdr/100);
-  const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1):1; // skillmods.js: Momentum, Battle Fury
-  if(!w&&i===2&&hasMod('coldsnap'))return sk.cd*0.5*(1-G.stats.cdr/100);
+  const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush
+  if(!w&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
   if(w&&i===1&&hasMod('longleap'))return Math.max(0.5,(sk.cd-1.5)*(1-G.stats.cdr/100));
   return i===0?sk.cd/(G.stats.wspd*(1+G.stats.aspd/100)*mod):sk.cd*(1-G.stats.cdr/100);}
 // Attack animation: style from the weapon archetype (swing, stab, heavy, flick, thrust); duration fits inside the attack interval.

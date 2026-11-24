@@ -26,11 +26,11 @@ function applyAilments(e,d,opts){if(e.dead||opts.dot||opts.haz||opts.splashed)re
   if(el==='cold')chillHit(e,opts.chill?0.5:CHILL_SLOW,Math.max(CHILL_DUR,opts.chill||0));
   if((s.poisonCh||0)>0&&Math.random()*100<s.poisonCh)poisonHit(e,d);}
 function igniteHit(e,d){const dps=d*IGNITE_DPS*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,IGNITE_DUR);}
-function shockHit(e,n){const was=e.shockT>0;e.shockN=Math.min(SHOCK_MAX,(was?e.shockN||0:0)+n);e.shockT=SHOCK_DUR;if(!was)floatText(e.x,e.y-e.r-16,'Shocked',AIL_COL.shock,false);}
+function shockHit(e,n){const was=e.shockT>0;e.shockN=Math.min(shockMax(),(was?e.shockN||0:0)+n); /* subclasses.js: High Voltage */e.shockT=SHOCK_DUR;if(!was)floatText(e.x,e.y-e.r-16,'Shocked',AIL_COL.shock,false);}
 function chillHit(e,amt,t){e.chillAmt=Math.max(e.chillT>0?e.chillAmt||0:0,amt);e.chillT=Math.max(e.chillT||0,t);e.chillN=(e.chillN||0)+1;
-  if(e.chillN>=CHILL_FREEZE){e.chillN=0;e.frozen=Math.max(e.frozen,e.type==='boss'?0.35:1);floatText(e.x,e.y-e.r-16,'Frozen',AIL_COL.chill,false);}}
+  if(e.chillN>=freezeAt()){ /* subclasses.js: Quick Freeze */e.chillN=0;e.frozen=Math.max(e.frozen,e.type==='boss'?0.35:1);floatText(e.x,e.y-e.r-16,'Frozen',AIL_COL.chill,false);}}
 function poisonHit(e,d){if(!e.pois)e.pois=[];if(!e.pois.length)floatText(e.x,e.y-e.r-16,'Poisoned',AIL_COL.poison,false);
-  e.pois.push({dps:d*POISON_DPS*(1-(e.dr||0)),t:POISON_DUR});if(e.pois.length>AIL_POISON_MAX)e.pois.shift();}
+  e.pois.push({dps:d*POISON_DPS*poisonMul()*(1-(e.dr||0)),t:POISON_DUR}); /* subclasses.js: Venom Blood */if(e.pois.length>AIL_POISON_MAX)e.pois.shift();}
 // per frame for each living enemy; true when the poison killed it
 function ailTick(e,dt){
   if(e.shockT>0){e.shockT-=dt;if(e.shockT<=0)e.shockN=0;else if(Math.random()<dt*5)G.parts.push({x:e.x+rand(-e.r,e.r),y:e.y+rand(-e.r,e.r)*0.6,vx:rand(-40,40),vy:rand(-40,40),life:0.15,max:0.15,col:AIL_COL.shock,s:2});}

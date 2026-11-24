@@ -483,7 +483,7 @@ const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64'
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=11; // 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
+const SAVE_VER=12; // 12: subclasses (c.sub, none on old heroes) · 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -535,6 +535,7 @@ function migrateChar(c){
   if(c.actSeen==null){const d=c.depth||1;c.actSeen=stageOf(d)===1?d-1:d-stageOf(d)+1;} // depth N is already Act ceil(N/5); only show titles for acts not yet entered
   migrateCharms(c);matsOf(c); // crafting materials
   fixMods(c); // v11: skill modifiers (skillmods.js)
+  if(c.sub===undefined)c.sub=null;fixSub(c); // v12: subclasses (subclasses.js)
   c.equip=eq;c.ver=SAVE_VER;return c;
 }
 function migrateSaves(){
@@ -583,6 +584,7 @@ function calcStats(c,swap,at){
   const PL=c.para||0;s.dmg+=PL*PARA_DMG;s.life+=PL*PARA_LIFE;
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
   s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);for(const k of ['igniteCh','shockCh','poisonCh'])s[k]=Math.min(s[k],AIL_CH_CAP);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)
+  perkStats(c,s,eq); // subclasses.js: Iron Hide, Heavy Crit
   shrineStats(s);
   if(typeof mapStats==='function')mapStats(s); // sigils.js: a map's modifiers on you
   return s;
