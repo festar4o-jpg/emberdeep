@@ -382,7 +382,7 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
   const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&(!AFF[k].myth||it.myth)); // myth stats: Mythic bases only
   const keys=SI?SET_ITEMS[SI].affs.slice():U?pool.slice().sort(()=>Math.random()-0.5).slice(0,n):pickAffKeys(pool,n,rarity<=1?1:MAX_PRE,rarity<=1?1:MAX_SUF); // magic 1+1, rare 2+2
-  const TT=!U&&!SI?{il:ilvl,boost}:null; // tiers on magic and rare items only
+  const TT=!U&&!SI?{il:ilvl,boost,mt:mapTilt()}:null; // tiers on magic and rare items only
   for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm,TT));it.uv=UPG_VER;
   if((rarity===2&&Math.random()<0.3)||rarity===3)it.affs.push({k:'skill',s:randi(0,4),v:rarity===3?randi(1,2):1});
   if(U)it.name=UNIQUES[U].name;
@@ -415,8 +415,15 @@ const tierFloor=il=>il>75?3:il>50?5:il>25?6:TIER_N;
 const NO_TIER=new Set(['pot','maxres','allsk']);
 const tiered=k=>!!AFF[k]&&!AFF[k].meta&&!NO_TIER.has(k);
 // T.best / T.worst (catalysts, v1.0.62) narrow the range further.
-function tierWeights(il,boost=0,T={}){const lo=Math.min(tierFloor(il),T.worst||TIER_N),hi=T.best||1,s=clamp((il-1)/75,0,1),b=Math.max(0,boost);
-  return TIER_W.map((w,t)=>t<hi||t>lo||il<TIER_MIN_IL[t]&&t<lo?0:w*(1+(1.6*s+0.3*b)*(TIER_N-t)/(TIER_N-1)));}
+// T.mt (maps, v1.0.78): the map's Item Rarity tilts the odds toward the best tiers: each tier above T3 weighs (1+mt)x
+// more per step (mapTilt: 0 with no modifiers, up to 1.5).
+function tierWeights(il,boost=0,T={}){const lo=Math.min(tierFloor(il),T.worst||TIER_N),hi=T.best||1,s=clamp((il-1)/75,0,1),b=Math.max(0,boost),mt=Math.max(0,T.mt||0);
+  return TIER_W.map((w,t)=>t<hi||t>lo||il<TIER_MIN_IL[t]&&t<lo?0:w*(1+(1.6*s+0.3*b)*(TIER_N-t)/(TIER_N-1))*(mt&&t<3?Math.pow(1+mt,3-t):1));}
+const MAP_TILT_MAX=1.5,tiltOf=rar=>clamp((rar||0)/70,0,MAP_TILT_MAX);
+// The open map's tilt (sigils.js runQR: its modifiers, node, Atlas tree and Engraving rarity).
+function mapTilt(){const c=G.char;return c&&c.mapRun&&typeof inMap==='function'&&inMap()?tiltOf(runQR(c,c.mapRun).r):0;}
+// "T1 x% · T2 y% · T3 z%" for map drops (item level 76+) at a given Item Rarity from the map.
+function tierOddsText(rar){const w=tierWeights(80,0,{mt:tiltOf(rar)}),tot=w.reduce((a,x)=>a+x,0);return [1,2,3].map(t=>`T${t} ${Math.round(100*w[t]/tot)}%`).join(' · ');}
 {const w=tierWeights(15),tot=w.reduce((a,b)=>a+b,0);let m=0;for(let t=1;t<=TIER_N;t++)m+=w[t]/tot*(TIER_BAND0[t][0]+TIER_BAND0[t][1])/2;TIER_BAND=TIER_BAND0.map(B=>B&&B.map(x=>x/m));}
 function rollAffTier(il,boost,T){const w=tierWeights(il,boost,T);let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let t=1;t<=TIER_N;t++){r-=w[t];if(r<0)return t;}return tierFloor(il);}
 const affMid=(k,l)=>{const [a,b]=rollRange(k,l);return (a+b)/2;};

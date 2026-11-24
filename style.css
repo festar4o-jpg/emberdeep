@@ -330,3 +330,5 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 @media (max-width:620px){.tipcmp{flex-direction:column;}.tipcol{max-height:none;}}
 .tl.sm-aff{cursor:pointer;margin:1px 4px;border-radius:4px;}.tl.sm-aff.sel{background:#3a2a1488;outline:1px solid var(--gold);}
 #smithInfo .tip{margin-bottom:6px;}
+
+.maphelp p{margin:6px 0;line-height:1.45;font-size:15px}

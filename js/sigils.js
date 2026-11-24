@@ -144,10 +144,11 @@ let mapSel=null;
 function openMapDevice(){const c=G.char;if(!mapsOpen(c))return;mapSel=null;$('mapOv').classList.remove('hidden');renderMapDevice();setPause();}
 function closeMapDevice(){$('mapOv').classList.add('hidden');setPause();}
 function renderMapDevice(){const c=G.char,r=c.mapRun,M=c.maps||{done:0,best:0};
-  $('mapTabs').innerHTML=[['atlas','Atlas'],['sigils','Sigils'],['eng',`Engravings (${ENGS.length})`],['tree',`Atlas tree${treeFree(c)>0?' ('+treeFree(c)+')':''}`]].map(([k,n])=>`<div class="tab${mapTab===k?' on':''}" data-mt="${k}">${n}</div>`).join('');
+  $('mapTabs').innerHTML=[['atlas','Atlas'],['sigils','Sigils'],['eng',`Engravings (${ENGS.length})`],['tree',`Atlas tree${treeFree(c)>0?' ('+treeFree(c)+')':''}`],['help','? Help']].map(([k,n])=>`<div class="tab${mapTab===k?' on':''}" data-mt="${k}">${n}</div>`).join('');
   $('mapTabs').querySelectorAll('[data-mt]').forEach(el=>el.onclick=()=>setMapTab(el.dataset.mt));
-  const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)} ${r.done?'(complete)':''}<div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
+  const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)} ${r.done?'(complete)':''}<div class="fdim">Stat tiers on drops: ${tierOddsText(runQR(c,r).r)}</div><div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
   $('mapSub').innerHTML=`${M.done} maps done · best Tier ${M.best||'–'} · ${SIGILS.length}/${SIG_CAP} Sigils (shared by your heroes). Each map: ${mapLives(c)} lives.`;
+  if(mapTab==='help'){$('mapList').innerHTML=MAP_HELP;$('mapInfo').innerHTML='';$('mapInfo').style.display='none';return;}
   if(mapTab==='atlas'||mapTab==='tree'||mapTab==='eng'){$('mapList').innerHTML=open+(mapTab==='atlas'?sunRow(c)+renderAtlas():mapTab==='eng'?renderEngs():renderTree());$('mapInfo').innerHTML='';$('mapInfo').style.display='none';
     $('mapList').querySelectorAll('[data-n]').forEach(el=>el.onclick=()=>{atlasSel=+el.dataset.n;const sc=$('mapList').querySelector('.atlasview'),st=sc?sc.scrollLeft:0,tp=sc?sc.scrollTop:0;renderMapDevice();const s2=$('mapList').querySelector('.atlasview');if(s2){s2.scrollLeft=st;s2.scrollTop=tp;}});
     $('mapList').querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{mapSel=SIGILS[+el.dataset.pick];renderMapDevice();});
@@ -165,6 +166,7 @@ function renderMapDevice(){const c=G.char,r=c.mapRun,M=c.maps||{done:0,best:0};
   $('mapList').innerHTML=open+(list.length?list.map(s=>`<div class="slot${mapSel===s?' cur-ok':''}" data-sig="${SIGILS.indexOf(s)}"><div class="ic" style="color:${SIG_COL[s.rarity]}">◆<small>${s.tier}</small></div><div class="info"><b style="color:${SIG_COL[s.rarity]}">${sigName(s)}</b> <span class="fdim">+${sigQuant(s)}% quantity · +${sigRar(s)}% rarity</span>${s.mods.map(m=>`<div class="smod ${MAP_MODS[m.k].p?'mp':'ms'}">${esc(modText(m))} <span class="fdim">(T${m.t})</span></div>`).join('')}</div></div>`).join(''):'<p class="fdim">No Sigils yet. Hell act bosses and zone bosses, the Endless Depths and maps drop them.</p>');
   const s=mapSel;let h='';
   if(s){h=`<b style="color:${SIG_COL[s.rarity]}">${sigName(s)}</b> <span class="fdim">power like depth ${75+2*s.tier} · area level ${areaLvl(75+2*s.tier)}</span>
+    <div class="fdim">Stat tiers on drops (before the node's bonus): ${tierOddsText(sigRar(s))}</div>
     <div class="row" style="margin-top:4px">${CUR_KEYS.filter(k=>!CURS[k].cat&&!['awl','spindle','whet'].includes(k)).map(k=>{const why=curCount(k)<1?'none':sigCurBlock(k,s);return `<div class="btn sm${why?' dis':''}" data-sc="${k}" title="${esc(why||CURS[k].name)}"><span style="color:${CURS[k].col}">${CURS[k].ic}</span> ×${curCount(k)}</div>`;}).join('')}</div>
     <div class="row"><div class="btn sm" id="mapGo">🗺 Pick a node on the Atlas</div><div class="btn sm red" id="mapSalv">Discard</div></div>`;}
   $('mapInfo').innerHTML=h||'<span class="fdim">Tap a Sigil to craft it or open its map. Modifiers make a map harder and add Item Quantity and Rarity.</span>';
@@ -239,6 +241,18 @@ function runQR(c,r){const s=r.sig,mods=s.mods.concat(r.extra||[]),mq=mods.reduce
 function mapTick(){const c=G.char,r=c.mapRun;if(!r||!r.shrine||!G.p)return;const b=G.p.shr||(G.p.shr={});if(!(b[r.shrine]>9000)){b[r.shrine]=99999;refreshStats();}}
 // The Atlas window: the map of nodes, the selected node, and the Sigil to run there.
 let atlasSel=null,mapTab='atlas';
+// The Map Device's Help tab (v1.0.78): how maps work, in short lines for a phone screen.
+const MAP_HELP=`<div class="pinfo maphelp">
+<b style="color:var(--gold)">How maps work</b>
+<p>• <b>Sigils</b> are maps. Hell bosses, the Endless Depths and maps drop them (map bosses often drop one a tier higher). Higher tiers: stronger monsters, better loot.</p>
+<p>• <b>Open a map:</b> pick a Sigil, then a revealed node on the <b>Atlas</b>. You get 3 lives (more from the Atlas tree). Kill the map boss to complete it. The town portal keeps the map open; other travel closes it.</p>
+<p>• <b>Modifiers</b> make a map harder and add Item Quantity and Rarity. Map drops always roll stats at <b>T1–T3</b>; more Rarity from modifiers moves the odds toward <b>T1</b> (no modifiers: T1 11%; heavy modifiers: about T1 30%).</p>
+<p>• <b>Craft Sigils</b> here with your currency: add, reroll, strengthen or remove modifiers, for more risk and more reward.</p>
+<p>• <b>Atlas nodes:</b> completing one reveals its neighbours. Shrine (a blessing), Vault (a hoard chest), Boss (a tougher boss, more loot), Corrupted (two extra modifiers, double rewards).</p>
+<p>• <b>Atlas points</b> (special nodes, and every 4 new plain nodes) buy passives in the Atlas tree.</p>
+<p>• <b>Beacons ▲:</b> clear one, then put in an Engraving (map bosses drop them) to boost every map within 2 steps for a while.</p>
+<p>• <b>Citadels ♜</b> hold three guardians. Each drops a Fragment; with all three, open the crater of <b>The Hollow Sun</b>. They drop chase uniques found nowhere else.</p>
+<p>• The Endless Depths stay open as always.</p></div>`;
 function setMapTab(t){mapTab=t;renderMapDevice();}
 function renderAtlas(){const c=G.char,A=atlasOf(c),g=atlasGraph(A.seed),N=g.nodes,vis=N.filter(n=>nodeOpen(c,n.id));
   const vset=new Set(vis.map(n=>n.id));let lines='';for(const a of vis)for(const b of a.nb)if(b>a.id&&vset.has(b)){const o=N[b];lines+=`<line x1="${a.x|0}" y1="${a.y|0}" x2="${o.x|0}" y2="${o.y|0}" class="aedge${A.done[a.id]&&A.done[b]?' done':''}"/>`;}
