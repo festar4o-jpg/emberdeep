@@ -146,7 +146,7 @@ const lvlLabel=c=>c.para?`${c.lvl} ✦${c.para}`:String(c.lvl);
 function refreshStats(){G.stats=calcStats(G.char);if(G.p){G.p.hp=Math.min(G.p.hp,G.stats.life);G.p.res=Math.min(G.p.res,G.stats.res);}}
 
 // ---------- fx helpers ----------
-function burst(x,y,n,col,sp){for(let k=0;k<n;k++){if(G.parts.length>350)break;const a=rand(0,TAU),v=rand(sp*0.3,sp);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(0.3,0.7),max:0.7,col,s:rand(2,4)});}}
+function burst(x,y,n,col,sp){if(PERF.saver)n=Math.ceil(n/2);for(let k=0;k<n;k++){if(G.parts.length>(PERF.saver?150:350))break; /* perf.js: Battery saver: half the sparks */const a=rand(0,TAU),v=rand(sp*0.3,sp);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(0.3,0.7),max:0.7,col,s:rand(2,4)});}}
 function floatText(x,y,txt,col,big){if(G.texts.length>60)G.texts.shift();G.texts.push({x,y,txt:String(txt),col,big,t:0});}
 let toastTimer=0;
 function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'</small>':'');t.style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity=0,2200);}
@@ -313,7 +313,7 @@ function update(dt){
   G.loot=G.loot.filter(l=>!l.taken);
   // fx
   for(const f of G.fx)f.t+=dt;G.fx=G.fx.filter(f=>f.t<f.max);
-  for(const q of G.parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=0.92;q.vy*=0.92;q.life-=dt;}G.parts=G.parts.filter(q=>q.life>0);
+  for(const q of G.parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=0.92;q.vy*=0.92;q.life-=dt;}G.parts=G.parts.filter(q=>q.life>0);if(PERF.saver&&G.parts.length>200)G.parts.splice(0,G.parts.length-200); // perf.js: Battery saver keeps fewer particles
   for(const t of G.texts){t.t+=dt;t.y-=40*dt;}G.texts=G.texts.filter(t=>t.t<0.9);
   if(G.inTown)townTick(dt);
   // explore

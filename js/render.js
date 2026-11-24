@@ -3,7 +3,7 @@
 // ---------- render ----------
 const cv=$('game');let ctx=cv.getContext('2d'); // let: sprites.js paints weapons into sprites through it
 let DPR=1,CW=0,CH=0,Z=1;
-function resize(){DPR=Math.min(2,window.devicePixelRatio||1);CW=innerWidth;CH=innerHeight;cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);Z=clamp(Math.min(CW,CH)/430,0.75,1.5);if(!joy.active)placeJoy(null);}
+function resize(){DPR=Math.min(saverOn()?1:2,window.devicePixelRatio||1); /* perf.js: Battery saver draws at 1x */CW=innerWidth;CH=innerHeight;cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);Z=clamp(Math.min(CW,CH)/430,0.75,1.5);if(!joy.active)placeJoy(null);}
 addEventListener('resize',resize);
 function resizeTo(w,h){CW=w;CH=h;} // tests: pretend a screen size
 // Joystick base: at the thumb while active; otherwise a faint hint where it usually sits (mirrored in left-handed mode).

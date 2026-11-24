@@ -15,6 +15,7 @@ function frame(now){
   perfFrame(gap,performance.now()-t0); // perf.js: FPS counter
   requestAnimationFrame(frame);
 }
+watchBattery(); // perf.js: Battery saver turns on by itself on low battery
 migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();
 resize();showTitle();requestAnimationFrame(frame);
 $('verTxt').textContent='Emberdeep v'+GAME_VERSION;

@@ -6,7 +6,7 @@
 // read warm against cold shadows. Static lights (wall torches, candles, lava, glowing mushrooms) are collected once
 // while the map is painted (G.lights, see addLight in maps.js); moving ones (you, projectiles, spells, loot, fiery
 // monsters, hazards) are gathered per frame. All sprites are built once and reused: a frame is only drawImage calls.
-const LIGHT_RES=0.33,LIGHT_MAX=96,GLOW_MAX=24;
+let LIGHT_RES=0.33,GLOW_MAX=24;const LIGHT_MAX=96; // perf.js: Battery saver lowers LIGHT_RES and GLOW_MAX
 let LCV=null,LX=null,VIG=null,VIG_K='';
 const LSPR={},RGB_OF={};
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
