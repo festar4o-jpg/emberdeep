@@ -151,6 +151,7 @@ function skzTick(p,dt){if(!G.skz||!G.skz.length)return;
     else if(z.k==='hole'){const R=z.R||HOLE_R;pullTo(z.x,z.y,R,140*dt);z.tick-=dt;if(fr(0,1)<0.8)part(z.x+fr(-90,90),z.y+fr(-90,90),0,0,0.3,'#a06aff',3);
       if(z.tick<=0&&z.t>0){z.tick=0.5;aoe(z.x,z.y,110,z.m,{quiet:true});}
       if(z.t<=0){aoe(z.x,z.y,150,z.end,{});fxExplosion(z.x,z.y,150,'#a06aff');G.shake=Math.max(G.shake,10);if(z.fire)G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:120,t:3,tick:0,mult:z.fm});}}
+    else if(typeof RZ!=='undefined'&&RZ[z.k])RZ[z.k](z,p,dt); // ranger.js: Spike Trap, Rain of Arrows
     G.sk=null;}
   G.skz=G.skz.filter(z=>z.t>0);}
 // Pull enemies toward a point (heavy ones and bosses less), like uniques.js pullIn.

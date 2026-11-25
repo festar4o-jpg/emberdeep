@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.124",
+  "latest": "1.0.125",
   "notes": [
+    {
+      "v": "1.0.125",
+      "t": [
+        "Ranger: Multishot (a fan of 5 arrows), Spike Trap (springs and Stuns when an enemy steps close, up to 3 at once) and Rain of Arrows (volleys over an area)",
+        "His wolf (Call of the Wild) comes next"
+      ]
+    },
     {
       "v": "1.0.124",
       "t": [

@@ -77,10 +77,18 @@ const SKILLS={
     {name:'Arrow Shot',icon:'🏹',cd:0.5,cost:0,
       desc:r=>`Loose an arrow for ${pct(1+0.12*(r-1))} weapon damage. Each hit restores 3 Focus.`,
       cast(r){const a=aimPoint(600);shoot(a,760,4,'#e8dcc4',{mult:1+0.12*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(3),arrow:true});startAtk('bow','mh',0);}},
-    {name:'Multishot',icon:'🎯',cd:3,cost:20,soon:true,desc:r=>'A fan of 5 arrows.',cast(){}},
-    {name:'Spike Trap',icon:'🪤',cd:6,cost:25,soon:true,desc:r=>'A trap that explodes and Stuns when an enemy steps on it.',cast(){}},
+    // v1.0.125
+    {name:'Multishot',icon:'🎯',cd:1.2,cost:15,
+      desc:r=>`Loose a fan of 5 arrows, each for ${pct(0.65+0.08*(r-1))} weapon damage. Each hit restores 1 Focus. Costs 15 Focus.`,
+      cast(r){const p=G.p,a=aimPoint(560),a0=p.face;for(let k=-2;k<=2;k++){const b=a0+k*0.13;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:0.65+0.08*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(1)});}p.face=a0;}},
+    {name:'Spike Trap',icon:'🪤',cd:4,cost:25,
+      desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${TRAP_MAX} at once. Costs 25 Focus.`,
+      cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
+        placeTrap(x,y,2.2+0.25*(r-1),1.2+0.04*(r-1),G.sk);}},
     {name:'Call of the Wild',icon:'🐺',cd:12,cost:30,soon:true,desc:r=>'A wolf that fights beside you.',cast(){}},
-    {name:'Rain of Arrows',icon:'🌧️',cd:10,cost:45,soon:true,desc:r=>'A barrage of arrows over an area.',cast(){}}
+    {name:'Rain of Arrows',icon:'🌧️',cd:8,cost:40,
+      desc:r=>`Arrows rain on an area for ${RAIN_T}s: ${RAIN_HITS} volleys, each hitting everything in it for ${pct(0.6+0.07*(r-1))} weapon damage. Costs 40 Focus.`,
+      cast(r){const a=aimPoint(440);rainAt(a.x,a.y,0.6+0.07*(r-1),G.sk);}}
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
