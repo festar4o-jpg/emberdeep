@@ -171,7 +171,7 @@ function drawBench(){const {x,y}=G.bench,t=G.time;
 // with gold and socketing stones still work). Magic, rare and white items: a corrupted implicit; one stat a tier up (past
 // what its item level allows); every stat rerolled at T1-T3; or nothing. Uniques and set items: an extra power (uniques);
 // a corrupted implicit; their stats 15-25% stronger; or nothing.
-const CORRUPT_IMP={weapon:[['skd'+0,30],['bossdmg',18],['critd',25],['aspd',10]],focus:[['spell',18],['cdr',8],['bossdmg',15]],shield:[['block',6],['dr',5],['ares',12]],
+const CORRUPT_IMP={quiver:[['aspd',10],['critd',20],['evade',5]],weapon:[['skd'+0,30],['bossdmg',18],['critd',25],['aspd',10]],focus:[['spell',18],['cdr',8],['bossdmg',15]],shield:[['block',6],['dr',5],['ares',12]],
   helm:[['maxres',1],['lifepct',8],['evade',6]],body:[['maxres',2],['lifepct',10],['dr',6]],gloves:[['aspd',9],['critd',20],['bossdmg',12]],boots:[['move',8],['evade',6],['ares',12]],
   belt:[['lifepct',8],['potheal',30],['pot',1]],ring:[['ares',10],['bossdmg',12],['crit',2.5]],amulet:[['allsk',1],['lifepct',8],['ares',12]]};
 function corruptItem(it){it.corrupt=true;const r=Math.random(),uq=it.rarity===3||it.rarity===5;delete it.addOpts;

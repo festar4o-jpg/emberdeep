@@ -18,7 +18,7 @@ function buildSkillBar(){
     box.appendChild(d);skillEls.push(d);}
   $('skDot').classList.toggle('hidden',!canLearnAny());
 }
-function canLearnAny(){const c=G.char;if(G.modDot)return true; /* hints.js: a modifier just unlocked */if(c.lvl>=SUB_LVL&&!c.sub)return true; /* subclasses.js: a path to choose */if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15);}
+function canLearnAny(){const c=G.char;if(G.modDot)return true; /* hints.js: a modifier just unlocked */if(c.lvl>=SUB_LVL&&!c.sub&&hasPaths(c))return true; /* subclasses.js: a path to choose */if(c.skillPts<=0)return false;return SKILL_REQ.some((r,i)=>c.lvl>=r&&c.skills[i]<15&&!skillAt(c,i).soon);}
 // HUD writes go through hud(): a page write only when the value changed (each write can make the page redo its layout).
 // k: 'text' / 'html' / 'title', '-name' a CSS variable, '.name' a class on/off, anything else a style property.
 const HUDC=new WeakMap(),r2=v=>Math.round(v*100)/100,pc=v=>Math.round(v*1000)/10+'%';
@@ -276,7 +276,7 @@ function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('
 let skTab='skills';
 function renderSkills(){
   const c=G.char,sk=[0,1,2,3,4].map(i=>skillAt(c,i));fixMods(c);fixAlts(c);G.modDot=false; // hints.js: seen; skillalts.js: the chosen skills
-  { const pathDot=c.lvl>=SUB_LVL&&!c.sub?' <span style="color:#f55">●</span>':''; // subclasses.js: the Path tab
+  { const pathDot=c.lvl>=SUB_LVL&&!c.sub&&hasPaths(c)?' <span style="color:#f55">●</span>':''; // subclasses.js: the Path tab
     $('skTabs').innerHTML=[['skills','Skills'],['path','Path'+pathDot]].map(([k,n])=>`<div class="tab${skTab===k?' on':''}" data-t="${k}">${n}</div>`).join('');
     $('skTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{skTab=el.dataset.t;subAsk=null;renderSkills();});
     $('skMain').classList.toggle('hidden',skTab!=='skills');$('pathView').classList.toggle('hidden',skTab!=='path');
@@ -285,13 +285,13 @@ function renderSkills(){
       $('pathView').querySelectorAll('[data-sure]').forEach(b=>b.onclick=()=>{pickSub(b.dataset.sure,true);renderSkills();$('skDot').classList.toggle('hidden',!canLearnAny());});
       $('pathView').querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>{subAsk=null;renderSkills();});return;} }$('skPts').textContent=`Skill points: ${c.skillPts}`;
   $('skList').innerHTML=sk.map((s,i)=>{const base=c.skills[i],bonus=G.stats.skill[i],r=rk(i),req=SKILL_REQ[i];const locked=c.lvl<req;
-    const can=!locked&&c.skillPts>0&&base<15;
+    const can=!locked&&c.skillPts>0&&base<15&&!s.soon; // v1.0.124: not a skill that isn't ready yet
     return `<div class="skrow${locked?' locked':''}"><div class="ic">${s.icon}</div><div class="info"><b>${s.name}</b> ${base?`Rank ${base}${bonus?` <span style="color:#f2d04a">(+${bonus})</span>`:''}`:locked?`· Requires level ${req}`:'· Not learned'}
       <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${base&&hasKs('bloodmagic')&&s.cost>0?`<div style="color:#e04060">Blood Magic: costs ${lifeCost(i)} Life instead</div>`:''}${!altOn(c,i)&&skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}${altRowHtml(c,i)}</div>
       <div class="btn sm${can?'':' dis'}" data-i="${i}">${base?'+':'Learn'}</div></div>`;}).join('');
   $('skList').querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>{if(pickAlt(c,+b.dataset.alt))renderSkills();}); // skillalts.js
   $('skList').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.m.split(':').map(Number);if(pickMod(i,j))renderSkills();}); // skillmods.js
-  $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15)return;c.skills[i]++;c.skillPts--;hintMod(i); /* hints.js */renderSkills();buildSkillBar();saveChar();});
+  $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15||skillAt(c,i).soon)return;c.skills[i]++;c.skillPts--;hintMod(i); /* hints.js */renderSkills();buildSkillBar();saveChar();});
 }
 tap('skClose',toggleSkills);
 
@@ -385,7 +385,7 @@ function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[
 // Bleed / Ignite / Poison it adds over time (ailments.js). Shock and area hits are left out.
 // Effective Life: how much raw damage you can take before dying in this area: Life through armour (as on the sheet),
 // block, evasion and less damage taken; against an element, also through that resistance.
-const SKILL1_MULT={warden:r=>1+0.12*(r-1),arcanist:r=>0.95+0.12*(r-1)}; // = SKILLS[cls][0].desc (skills.js)
+const SKILL1_MULT={warden:r=>1+0.12*(r-1),arcanist:r=>0.95+0.12*(r-1),ranger:r=>1+0.12*(r-1)}; // = SKILLS[cls][0].desc (skills.js)
 function sheetDps(c,s){const sk=skillAt(c,0),r=Math.max(1,(c.skills[0]||1)+(s.skill[0]||0));
   const hit=(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*(sk.mult?sk.mult(r):SKILL1_MULT[c.cls](r))*(1+(s.skd0||0)/100)*(s.more||1); // passives.js: Glass Cannon
   const crit=1+Math.min(100,s.crit)/100*s.critd/100,aps=(s.wspd||1)*(1+(c.cls==='arcanist'?(s.cspd||0):s.aspd)/100)/sk.cd;

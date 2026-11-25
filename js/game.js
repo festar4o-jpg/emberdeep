@@ -141,7 +141,7 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst
 function gainXp(v){
   const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
   while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
-    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point, +1 passive point'); /* subclasses.js */
+    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub&&hasPaths(c)?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point, +1 passive point'); /* subclasses.js */
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
 // After level 50 every bit of XP fills Paragon levels instead (leftover XP at 50 carries over).
@@ -161,7 +161,8 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 // ---------- start / depth ----------
 function newChar(name,cls){
   const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],amods:[null,null,null,null,null],alt:[0,0,0,0,0],emb:{own:{},slots:[null,null]},sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
-  const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
+  const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':cls==='ranger'?'shortbow':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
+  if(cls==='ranger'){const q=genItem(1,cls,0,'quiver');q.rarity=0;q.affs=[];delete q.uq;q.name=q.base;c.equip.offhand=q;} // v1.0.124: a plain quiver
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
 }

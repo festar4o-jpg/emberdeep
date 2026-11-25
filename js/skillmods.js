@@ -38,7 +38,8 @@ const SKILL_MODS={
     [{k:'comet',name:'Comet',t:'Meteor turns to ice: it freezes enemies for 1.5s, but leaves no burning ground'},
      {k:'moltencore',name:'Molten Core',t:'Meteor\'s burning ground lasts twice as long (6s) and covers 50% more'},
      {k:'swiftfall',name:'Swift Fall',t:'Meteor lands almost instantly, but deals 20% less damage'}]
-  ]
+  ],
+  ranger:[[],[],[],[],[]] // v1.0.124: the Ranger's modifiers come in a later step
 };
 // mod keys this class has, for save cleanup
 function modKeys(cls,i){return (SKILL_MODS[cls]&&SKILL_MODS[cls][i]||[]).map(m=>m.k);}
@@ -60,7 +61,7 @@ function pickMod(i,j){const c=G.char;fixMods(c);const M=modsAt(c,i)[j],P=altOn(c
   if(!modUnlocked(c,i,j)){toast(M.name,`${M.t}. Unlocks at ${skillAt(c,i).name} rank ${MOD_UNLOCK[j]}`);return false;}
   P[i]=P[i]===M.k?null:M.k;playSfx('click');saveChar();return true;}
 // the modifier row for the skill screen
-function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=modsAt(c,i),act=pickOf(c,i)[i];
+function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=modsAt(c,i),act=pickOf(c,i)[i];if(!ms||!ms.length)return '';
   const chips=ms.map((m,j)=>{const open=modUnlocked(c,i,j);
     return `<span class="mod${m.k===act?' on':''}${open?'':' lk'}" data-m="${i}:${j}">${open?'':'🔒 '}${m.name}${open?'':` <small>R${MOD_UNLOCK[j]}</small>`}</span>`;}).join('');
   const A=ms.find(m=>m.k===act);

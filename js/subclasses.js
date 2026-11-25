@@ -5,6 +5,7 @@
 // system they change does (marked "subclasses.js" there). live:false = listed but not working yet ("coming soon").
 // Classes differ in power on purpose, and so do paths: they are not tuned to be equal.
 const SUB_LVL=20,SUB_PERK_LVLS=[20,28,36,44];
+const hasPaths=c=>!!(c&&(SUBCLASSES[c.cls]||[]).length); // v1.0.124: a class without paths yet is never asked to choose
 const SUBCLASSES={
   warden:[
     {k:'bulwark',name:'Bulwark',icon:'🛡️',col:'#9ab0ff',t:'Shield and stone: blocks that heal and stun, more armour, hard to kill.',
@@ -21,7 +22,8 @@ const SUBCLASSES={
     {k:'pyreborn',name:'Pyreborn',icon:'🔥',col:'#ff8a2a',t:'Fire and poison: everything burns, burns longer and bursts.',
      perks:[{k:'kindling',t:'+15% chance to Ignite on every hit'},{k:'longBurn',t:'Your burning ground lasts 50% longer'},
        {k:'venomBlood',t:'Your poison deals 30% more damage'},{k:'pyreBurst',t:'Enemies that die while burning explode for 30% of their Life to enemies nearby'}]}
-  ]
+  ],
+  ranger:[] // v1.0.124: the Ranger's paths (Beastmaster, Sharpshooter) come in a later step
 };
 for(const cls in SUBCLASSES)for(const S of SUBCLASSES[cls])S.perks.forEach((P,i)=>{P.lvl=SUB_PERK_LVLS[i];if(P.live==null)P.live=true;});
 function subOf(c){c=c||G.char;return c&&c.sub?(SUBCLASSES[c.cls]||[]).find(S=>S.k===c.sub)||null:null;}

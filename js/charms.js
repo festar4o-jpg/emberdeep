@@ -15,7 +15,7 @@ const CHARM={
 };
 const CHARM_POOL=['life','res','dmg','armor','crit','critd','aspd','cspd','cdr','move','loh','regen','spell','resist','rarity','gold','xp','lpk','potheal','maxres'];
 // What a charm of this size can roll, and a stat's value multiplier on it (nom: the same on every size).
-const charmPool=(it,cls)=>CHARM_POOL.filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&(!AFF[k].lg||it.size==='large'||it.size==='grand'));
+const charmPool=(it,cls)=>CHARM_POOL.filter(k=>affCls(k,cls)&&(!AFF[k].lg||it.size==='large'||it.size==='grand'));
 const charmRm=(it,k)=>AFF[k].nom?1:CHARM[it.size].m;
 const charmAff=(it,k)=>rollAff(k,it.ilvl,charmRm(it,k),{il:it.ilvl});
 function charmName(it){if(it.uc)return UCHARMS[it.uc].name;const C=CHARM[it.size],st=it.affs.filter(x=>x.k!=='skill'),a=st[0],b=st[1],sk=it.affs.find(x=>x.k==='skill');

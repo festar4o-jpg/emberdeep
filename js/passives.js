@@ -76,7 +76,7 @@ function pasBuild(){
     const [x,y]=at(140,a+0.5);add(B.id,x,y,'notable',{name:B.name,st:B.st});link(prev,B.id);});
   PAS_EDGES=E;}
 pasBuild();
-const pasStart=c=>c.cls==='arcanist'?'o0':'o'+14;
+const pasStart=c=>c.cls==='arcanist'?'o0':c.cls==='ranger'?'o21':'o'+14; // v1.0.124: the Ranger starts at the bottom for now (his own start comes with the tree step)
 // ---------- points ----------
 const bossBits=c=>{let n=0;for(let k=0;k<PAS_ACTS;k++)if((c.pasBoss||0)&1<<k)n++;return n;};
 const pasEarned=c=>Math.max(0,(c.lvl||1)-1)+PAS_BOSS_PTS*bossBits(c)+(c.para||0);
@@ -115,7 +115,7 @@ function pasRefundWhyNot(c,id){if(id===pasStart(c))return 'Your starting point';
 function pasRefund(c,id){if(pasRefundWhyNot(c,id))return false;c.gold-=pasRefundCost(c);c.pas.n=c.pas.n.filter(x=>x!==id);delete c.pas.ch[id];
   if(G.char===c){refreshStats();saveChar();}return true;}
 // ---------- stats ----------
-const pasKey=(k,cls)=>k==='aspd'||k==='cspd'?(cls==='arcanist'?'cspd':'aspd'):k; // speed: the hero's own speed stat
+const pasKey=(k,cls)=>k==='aspd'||k==='cspd'?(cls==='arcanist'?'cspd':'aspd'):k; // the Warden and the Ranger: Attack Speed // speed: the hero's own speed stat
 const pasNodeStats=(c,id)=>{const N=PAS_NODES[id];if(!N)return [];if(N.opts)return N.opts[(c.pas&&c.pas.ch[id])|0].st;return N.st||[];};
 function pasStats(c,s){s.ks={};if(!c.pas)return;let arm=0;
   for(const id of c.pas.n){const N=PAS_NODES[id];if(N&&N.ks)s.ks[N.ks]=true;

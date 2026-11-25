@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.123",
+  "latest": "1.0.124",
   "notes": [
+    {
+      "v": "1.0.124",
+      "t": [
+        "A new class is on its way: the Ranger 🏹. Create one now: bows, crossbows and quivers, built-in evasion and speed, and Arrow Shot",
+        "His other skills, his wolf, paths and own items arrive over the next updates",
+        "Fixed: in Act 5's fourth zone the waypoint was sometimes missing"
+      ]
+    },
     {
       "v": "1.0.123",
       "t": [

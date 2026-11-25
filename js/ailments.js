@@ -7,7 +7,7 @@
 //   Bleed (phys)    from weapons and Cleave powers (game.js hitEnemy), unchanged
 // A skill's element (SKILL_ELEM) gives its own chance; item stats igniteCh / shockCh / poisonCh add to any hit.
 // Ailments come from direct hits only: not from damage over time, burning ground or splash.
-const SKILL_ELEM={warden:['phys','phys','phys','phys','phys'],arcanist:['arcane','fire','cold','light','fire']};
+const SKILL_ELEM={warden:['phys','phys','phys','phys','phys'],arcanist:['arcane','fire','cold','light','fire'],ranger:['phys','phys','phys','phys','phys']};
 const AIL_BASE={fire:20,light:35}; // a skill's own chance to Ignite / Shock (Meteor: AIL_METEOR)
 const AIL_METEOR=50,IGNITE_DPS=0.25,IGNITE_DUR=3,SHOCK_PER=0.1,SHOCK_MAX=3,SHOCK_DUR=4,CHILL_DUR=2,CHILL_SLOW=0.3,CHILL_FREEZE=4,
   POISON_DPS=0.2,POISON_DUR=3,AIL_POISON_MAX=30;

@@ -10,6 +10,7 @@ const TYPES={
   weapon:{name:'Weapon',slots:['mainhand','offhand'],w:20,pool:['dmg','crit','critd','aspd','cspd','loh','life','res','spell','skdmg','bossdmg','igniteCh','shockCh','poisonCh']},
   shield:{name:'Shield',slots:['offhand'],w:10,cls:'warden',pool:['armor','life','regen','block','res','loh','resist','ares','thorns','dr']},
   focus:{name:'Focus',slots:['offhand'],w:10,cls:'arcanist',pool:['spell','cspd','res','cdr','crit','regen','life','skdmg','bossdmg','igniteCh','shockCh','poisonCh']},
+  quiver:{name:'Quiver',slots:['offhand'],w:10,cls:'ranger',pool:['aspd','crit','critd','dmg','loh','life','evade','move','skdmg','bossdmg','poisonCh','igniteCh']}, // v1.0.124: the Ranger's off hand
   helm:{name:'Helm',slots:['helm'],w:10,pool:['life','armor','crit','cdr','res','regen','resist','lifepct','evade']},
   body:{name:'Body Armor',slots:['body'],w:14,pool:['life','armor','regen','res','cdr','resist','lifepct','thorns','dr']},
   gloves:{name:'Gloves',slots:['gloves'],w:10,pool:['aspd','cspd','crit','critd','dmg','loh','armor','resist','skdmg','evade','igniteCh','shockCh','poisonCh']},
@@ -26,7 +27,7 @@ const TYPES={
 // through act 1, like all bases did before tiers; later tiers only grow slowly with item level.
 const TIER_LO=[1,6,11,16,21];            // first item level of each tier's act
 const TIER_BL=[1,7.25,11.8,17.8,25.75];  // base level at that point
-const TIERED=new Set(['weapon','shield','focus','helm','body','gloves','belt','boots']);
+const TIERED=new Set(['weapon','shield','focus','quiver','helm','body','gloves','belt','boots']);
 function baseLvl(t,ilvl){if(t===1)return Math.max(1,Math.min(ilvl,5))+Math.max(0,ilvl-5)*0.3;
   return TIER_BL[t-1]+Math.max(0,ilvl-TIER_LO[t-1])*0.3+(t===5?Math.max(0,ilvl-25)*0.7:0);} // Tier V keeps climbing in the endless depths
 const tierOfLvl=l=>Math.min(5,Math.floor((Math.max(1,l)-1)/5)+1);
@@ -59,6 +60,13 @@ const WEAPONS={
   rod:{name:'Rod',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,pierce:1,anim:'flick',bases:['Sand Rod','Bog Rod','Ice Rod','Magma Rod']},
   thornstaff:{name:'Thornstaff',cls:'arcanist',act:3,hands:2,dmg:1.35,spd:0.85,spell:10,splash:35,poison:25,anim:'thrust',bases:['Thornstaff','Frostthorn Staff','Emberthorn Staff']},
   runewand:{name:'Runewand',cls:'arcanist',act:4,hands:1,dmg:0.9,spd:1.25,skill:1,anim:'flick',bases:['Runewand','Ember Runewand']},
+  // v1.0.124: the Ranger's bows and crossbows (anim 'bow': held in the main hand, the off hand takes a quiver)
+  shortbow:{name:'Shortbow',cls:'ranger',act:1,hands:1,bow:1,dmg:0.9,spd:1.2,crit:3,anim:'bow',bases:['Hunting Bow','Ash Bow','Bone Bow','Frost Bow','Ember Bow']},
+  longbow:{name:'Longbow',cls:'ranger',act:1,hands:1,bow:1,dmg:1.25,spd:0.88,critd:15,anim:'bow',bases:['Longbow','Yew Longbow','Warden Bow','Glacier Longbow','Ashen Longbow']},
+  crossbow:{name:'Crossbow',cls:'ranger',act:2,hands:1,bow:1,dmg:1.4,spd:0.75,pierce:1,anim:'bow',bases:['Crossbow','Bog Crossbow','Frost Arbalest','Hellfire Arbalest']},
+  recurve:{name:'Recurve Bow',cls:'ranger',act:3,hands:1,bow:1,dmg:1.05,spd:1.08,crit:5,anim:'bow',bases:['Recurve Bow','Frost Recurve','Ember Recurve']},
+  repeater:{name:'Repeater',cls:'ranger',act:4,hands:1,bow:1,dmg:0.82,spd:1.4,pierce:1,anim:'bow',bases:['Repeater','Ember Repeater']},
+  greatbow:{name:'Greatbow',cls:'ranger',act:5,hands:1,bow:1,dmg:1.5,spd:0.8,critd:25,anim:'bow',bases:['Demon Greatbow']},
   spellblade:{name:'Spellblade',cls:'arcanist',act:2,hands:1,dmg:0.95,spd:1.1,spell:8,crit:2,anim:'flick',bases:['Spellblade','Bog Spellblade','Frost Spellblade','Sunfire Spellblade']}, // v1.0.71
   demonstaff:{name:'Demon Staff',cls:'arcanist',act:5,hands:2,dmg:1.45,spd:0.85,spell:15,explode:40,anim:'thrust',bases:['Demon Staff']}
 };
@@ -99,6 +107,13 @@ function weaponProps(w){const out=[];
 
 // ---------- item icons (inline SVG, one per item type / weapon kind / armor kind) ----------
 const ICON={
+  shortbow:'<path d="M10 4c10 4 13 16 2 24" fill="none" stroke="#8a5f35" stroke-width="2.6" stroke-linecap="round"/><path d="M10 4L12 28" stroke="#e8dcc4" stroke-width="0.9"/><path d="M5 16h19" stroke="#c8b088" stroke-width="1.4"/><path d="M24 16l-3-2v4z" fill="#cfd6dc"/>',
+  longbow:'<path d="M9 2c13 5 15 21 2 28" fill="none" stroke="#6b4423" stroke-width="2.8" stroke-linecap="round"/><path d="M9 2L11 30" stroke="#e8dcc4" stroke-width="0.9"/><path d="M4 16h22" stroke="#c8b088" stroke-width="1.4"/><path d="M26 16l-3-2v4z" fill="#cfd6dc"/>',
+  recurve:'<path d="M10 4c-3 3 2 4 5 6 5 4 5 8 0 12-3 2-8 3-5 6" fill="none" stroke="#7a3a2a" stroke-width="2.6" stroke-linecap="round"/><path d="M10 4L10 28" stroke="#e8dcc4" stroke-width="0.9"/><path d="M5 16h19" stroke="#c8b088" stroke-width="1.4"/>',
+  greatbow:'<path d="M8 2c15 5 17 21 2 28" fill="none" stroke="#5a1a18" stroke-width="3.2" stroke-linecap="round"/><path d="M8 2L10 30" stroke="#ff9a4a" stroke-width="1"/><path d="M4 16h22" stroke="#c8b088" stroke-width="1.5"/>',
+  crossbow:'<path d="M6 16h20" stroke="#6b4423" stroke-width="3.2" stroke-linecap="round"/><path d="M20 6c-4 4-4 16 0 20" fill="none" stroke="#9aa3aa" stroke-width="2.4"/><path d="M20 6L12 16L20 26" fill="none" stroke="#e8dcc4" stroke-width="0.9"/>',
+  repeater:'<path d="M6 16h20" stroke="#4a3a2a" stroke-width="3.2" stroke-linecap="round"/><path d="M20 6c-4 4-4 16 0 20" fill="none" stroke="#c8743a" stroke-width="2.4"/><rect x="10" y="10" width="6" height="5" fill="#7a5230"/>',
+  quiver:'<path d="M11 8l8-4 5 18-8 4z" fill="#5a3e28" stroke="#2a1c10"/><path d="M12 8l-3-5M15 6l-1-5M18 5l1-4" stroke="#c8b088" stroke-width="1.4" stroke-linecap="round"/><path d="M9 3l-1-2 2 0zM14 1l-1-1 2 0z" fill="#e8dcc4"/>',
   sword:'<path d="M9 23L25 7h1v1L10 24z" fill="#cfd6dc" stroke="#7d8790"/><path d="M6.5 19.5l6 6" stroke="#c9a24a" stroke-width="2.5" stroke-linecap="round"/><path d="M9 23l-4 4" stroke="#6b4423" stroke-width="3" stroke-linecap="round"/><circle cx="4.5" cy="27.5" r="1.8" fill="#c9a24a"/>',
   axe:'<path d="M8 27L21 7" stroke="#7a5230" stroke-width="3" stroke-linecap="round"/><path d="M17 6c4-3 10-1 11 4-3 0-6 2-7 5l-5-3c1-2 1-4 1-6z" fill="#bfc6cc" stroke="#6e767d"/>',
   mace:'<path d="M7 27l11-13" stroke="#7a5230" stroke-width="3" stroke-linecap="round"/><circle cx="21" cy="10" r="5.5" fill="#9aa3aa" stroke="#5c646b"/><path d="M21 2v3M21 15v3M13 10h3M26 10h3M15.5 4.5l2 2M24.5 13.5l2 2M26.5 4.5l-2 2" stroke="#5c646b" stroke-width="2" stroke-linecap="round"/>',
@@ -143,9 +158,9 @@ function itemIcon(it){return svgIcon(iconKey(it));}
 // Same icons as images for drawing loot on the canvas; each is built once and cached.
 const ICON_IMG={};
 function iconImg(k){let im=ICON_IMG[k];if(!im){im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">${ICON[k]}</svg>`);ICON_IMG[k]=im;}return im;}
-function slotIcon(sl,cls){const arc=cls==='arcanist';return svgIcon(sl==='mainhand'?(arc?'wand':'sword'):sl==='offhand'?(arc?'orb':'shield'):sl==='body'?'plate':SLOT_TYPE[sl]);}
+function slotIcon(sl,cls){const arc=cls==='arcanist',rg=cls==='ranger';return svgIcon(sl==='mainhand'?(arc?'wand':rg?'shortbow':'sword'):sl==='offhand'?(arc?'orb':rg?'quiver':'shield'):sl==='body'?'plate':SLOT_TYPE[sl]);}
 const tierLabel=it=>it.tier?'Tier '+TIER_NAME[it.tier-1]+(it.myth?' Mythic':''):'';
-function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return (w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;if(KINDS[it.slot]&&KINDS[it.slot][it.kind])return KINDS[it.slot][it.kind].name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
+function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return w.bow?w.name:(w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;if(KINDS[it.slot]&&KINDS[it.slot][it.kind])return KINDS[it.slot][it.kind].name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
 // PoE-style rarity colours: normal white, magic blue, rare yellow, unique orange-brown; Runebind teal, set green. Currency (gold, gems, runes) is CURRENCY_COL.
 const RCOL=['#c8c8c8','#8888ff','#ffff77','#c8743a','#5fd0c0','#3fe05a'],CURRENCY_COL='#c8b48a';
 // Ancient items (v1.0.118): a unique or set item can drop Ancient (it.anc = 1, name "Ancient …", its own colour): every
@@ -169,7 +184,10 @@ const CLASSES={
   warden:{name:'Warden',icon:'🪓',color:'#b8683a',res:'Fury',hp:130,hpL:16,mp:100,mpL:0,regen:3,
     desc:'Armored brawler. Cleaves, leaps and whirls through crowds. Builds Fury by hitting.'},
   arcanist:{name:'Arcanist',icon:'🔮',color:'#6b4aa8',res:'Mana',hp:95,hpL:11,mp:80,mpL:4,regen:6,
-    desc:'Fragile spellcaster. Hurls fire, frost and lightning from a distance. Uses Mana.'}
+    desc:'Fragile spellcaster. Hurls fire, frost and lightning from a distance. Uses Mana.'},
+  // v1.0.124: evade and move are built in (calcStats); Focus refills on its own and with every arrow that hits
+  ranger:{name:'Ranger',icon:'🏹',color:'#5a8a3a',res:'Focus',hp:110,hpL:13,mp:100,mpL:0,regen:9,evade:8,move:6,
+    desc:'Nimble archer. Fights from range with bows, traps and a wolf, and dodges blows instead of blocking them. Uses Focus.'}
 };
 
 // One resistance roll at affix level l (see the resistances in AFF).
@@ -181,7 +199,7 @@ const AFF={
   armor:{ps:'p',t:'+{v} Armor',pre:'Sturdy',suf:'of Iron',roll:l=>rand(4,8)+l*2.5},
   crit:{ps:'s',t:'+{v}% Crit Chance',pre:'Keen',suf:'of Precision',roll:l=>rand(2,4.5)*(1+0.035*(l-1)),dec:1},
   critd:{ps:'s',t:'+{v}% Crit Damage',pre:'Deadly',suf:'of Ruin',roll:l=>rand(10,20)+l*1.1},
-  aspd:{ps:'s',t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(4.5,10)*(1+0.03*(l-1)),cls:'warden'}, // v1.0.101: Warden only (Cleave)
+  aspd:{ps:'s',t:'+{v}% Attack Speed',pre:'Swift',suf:'of Haste',roll:l=>rand(4.5,10)*(1+0.03*(l-1)),cls:['warden','ranger']}, // v1.0.101: not the Arcanist (Cast Speed is his); v1.0.124: the Ranger too
   cspd:{ps:'s',t:'+{v}% Cast Speed',pre:'Quickened',suf:'of Incantation',roll:l=>rand(4.5,10)*(1+0.03*(l-1)),cls:'arcanist'}, // v1.0.101: Arcane Bolt and Fireball
   cdr:{ps:'s',t:'+{v}% Cooldown Reduction',pre:'Focused',suf:'of Ages',roll:l=>rand(3,7)*(1+0.025*(l-1))},
   move:{ps:'s',t:'+{v}% Move Speed',pre:'Fleet',suf:'of the Wind',roll:l=>rand(4,9)*(1+0.025*(l-1))},
@@ -232,7 +250,7 @@ const resCap=s=>RES_CAP+(s&&s.maxres||0); // charms can raise it
 const RES_NAME={fres:'Fire',cres:'Cold',lres:'Lightning',pres:'Poison'},RES_COL={fres:'#ff9a3a',cres:'#9fd8ff',lres:'#ffe45a',pres:'#9fe04a'};
 const AFF_KEYS=Object.keys(AFF).filter(k=>!AFF[k].meta&&!AFF[k].charm); // gear (charm stats stay on charms)
 // Per-tier base names (Tier I … V); amulets and rings are untiered.
-const BASES={shield:[['Buckler','Round Shield'],['Kite Shield','Sandstone Targe'],['Heater','Rotwood Pavise'],['Tower Shield','Frostward Shield'],['Ember Bulwark','Demon Aegis']],
+const BASES={quiver:[['Hip Quiver','Leather Quiver'],['Sandhide Quiver','Bandolier'],['Bogreed Quiver','Rotwood Quiver'],['Rime Quiver','Frostfletch Quiver'],['Cinder Quiver','Demonhide Quiver']],shield:[['Buckler','Round Shield'],['Kite Shield','Sandstone Targe'],['Heater','Rotwood Pavise'],['Tower Shield','Frostward Shield'],['Ember Bulwark','Demon Aegis']],
   helm:[['Cap','Hood'],['Helm','Desert Circlet'],['Great Helm','Bog Coif'],['Frost Helm','Winged Helm'],['Cinder Crown','Demon Horns']],
   gloves:[['Gloves','Wraps'],['Bracers','Sandsilk Wraps'],['Gauntlets','Bogleather Gloves'],['Frost Gauntlets','Rime Grips'],['Ember Gauntlets','Demon Claws']],
   belt:[['Sash','Leather Belt'],['Heavy Belt','Sand Sash'],['Girdle','Rotwood Cord'],['Frost Girdle','Plated Belt'],['Ember Girdle','Demon Chain']],
@@ -263,11 +281,11 @@ const KIND_DEFAULT={shield:'kite',helm:'greathelm',gloves:'bracers',boots:'tread
 function kindOfBase(slot,base){const b=String(base||'').replace(/^(Superior |Mythic )+/,''),K=KINDS[slot];for(const k in K)if(K[k].bases.includes(b))return k;return KIND_DEFAULT[slot];}
 // Mythic bases (v1.0.69): only from maps of Tier 5 and up (6% + 1% per tier above 5 of tiered drops). Tier V with 25%
 // stronger base damage or armor and one extra Mythic implicit for its slot. Shown as "Tier V Mythic".
-const MYTH_IMP={weapon:[['critd',15],['aspd',8],['dmg',12]],shield:[['block',5],['ares',8]],focus:[['spell',12],['cdr',5]],helm:[['maxres',1],['life',60]],
+const MYTH_IMP={quiver:[['aspd',8],['critd',12],['evade',4]],weapon:[['critd',15],['aspd',8],['dmg',12]],shield:[['block',5],['ares',8]],focus:[['spell',12],['cdr',5]],helm:[['maxres',1],['life',60]],
   body:[['maxres',1],['ares',10]],gloves:[['aspd',7],['critd',12]],boots:[['move',5],['ares',8]],belt:[['pot',1],['potheal',20]]};
 let MYTH_NEXT=false; // rollDrop decides, the next genItem makes it
 const RARE_A=['Grim','Dusk','Blood','Storm','Ash','Doom','Bone','Rune','Shadow','Gloom','Cinder','Wraith'];
-const RARE_B={weapon:['Bite','Edge','Song','Fang','Reaver'],focus:['Eye','Whisper','Lens','Psalm'],shield:['Bulwark','Aegis','Wall','Guard'],helm:['Visage','Crown','Gaze','Brow'],body:['Ward','Shell','Hide','Carapace'],
+const RARE_B={quiver:['Quill','Flight','Fletch','Barb'],weapon:['Bite','Edge','Song','Fang','Reaver'],focus:['Eye','Whisper','Lens','Psalm'],shield:['Bulwark','Aegis','Wall','Guard'],helm:['Visage','Crown','Gaze','Brow'],body:['Ward','Shell','Hide','Carapace'],
   gloves:['Grip','Grasp','Fist','Touch'],belt:['Cord','Clasp','Lash','Binding'],boots:['Stride','Path','March','Step'],amulet:['Heart','Charm','Star','Ward'],ring:['Coil','Loop','Eye','Knot']};
 
 let ITEM_ID=Date.now();
@@ -275,15 +293,19 @@ let ITEM_ID=Date.now();
 // uniques); with no unique or set piece for the slot the item becomes a rare.
 function rollRarity(boost){const r=Math.random()*100,u=1.5+boost*2,su=u*1.75,ra=9+boost*6,m=30+boost*5;if(r<u)return 3;if(r<su)return 5;if(r<su+ra)return 2;if(r<su+ra+m)return 1;return 0;}
 const typesFor=cls=>TYPE_KEYS.filter(k=>!TYPES[k].cls||TYPES[k].cls===cls);
+// A stat limited to some classes (AFF cls: one class or a list).
+const affCls=(k,cls)=>!AFF[k].cls||[].concat(AFF[k].cls).includes(cls);
+const isOff=t=>t==='shield'||t==='focus'||t==='quiver';
 function pickType(cls){const ks=typesFor(cls);let r=Math.random()*ks.reduce((a,k)=>a+TYPES[k].w,0);for(const k of ks){r-=TYPES[k].w;if(r<0)return k;}return 'weapon';}
 // ---------- drops ----------
 // Drop slots and their % weights. 'offhand' is a shield (Warden) or an orb/tome focus (Arcanist).
 const DROP_W={weapon:20,body:14,helm:10,gloves:10,boots:10,belt:10,offhand:10,ring:10,amulet:6};
 const DROP_KEYS=Object.keys(DROP_W),DROP_TOT=DROP_KEYS.reduce((a,k)=>a+DROP_W[k],0);
-const OTHER_CLS={warden:'arcanist',arcanist:'warden'},OFF_TYPE={warden:'shield',arcanist:'focus'};
+const OFF_TYPE={warden:'shield',arcanist:'focus',ranger:'quiver'};
+const otherCls=cls=>Object.keys(CLASSES).filter(k=>k!==cls); // weapons and off-hands for the other classes (stash finds)
 const OWN_CLASS_CHANCE=0.8; // weapons and off-hands: 80% for your class, 20% for the other
 const PITY=15;              // a slot missing from the last 15 drops is guaranteed next
-const dropSlotOf=it=>it.slot==='shield'||it.slot==='focus'?'offhand':it.slot;
+const dropSlotOf=it=>isOff(it.slot)?'offhand':it.slot;
 function pickDropSlot(){let r=Math.random()*DROP_TOT;for(const k of DROP_KEYS){r-=DROP_W[k];if(r<0)return k;}return 'weapon';}
 // Item rarity of a monster/boss drop (v1.0.50, Diablo 2 / PoE style; v1.0.99 made named items rarer):
 // boost (champions 1, super uniques and zone bosses 2, act bosses 3) moves odds from white to the better rarities.
@@ -305,13 +327,13 @@ const STRONG_UQ_W=0.4;
 const uqWeight=k=>UNIQUES[k]&&UNIQUES[k].strong?STRONG_UQ_W:1;
 function pickW(ks,wf){let r=Math.random()*ks.reduce((a,k)=>a+wf(k),0);for(const k of ks){r-=wf(k);if(r<0)return k;}return ks[ks.length-1];}
 // A set piece or unique made for the character's class (falling back to classless ones), weighted by slot.
-function smartNamed(c,rar,act){const slotW=t=>DROP_W[t==='shield'||t==='focus'?'offhand':t]||10;
+function smartNamed(c,rar,act){const slotW=t=>DROP_W[isOff(t)?'offhand':t]||10;
   const cand=rar===3?Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==null&&UNIQUES[k].act<=act).map(k=>({uq:k,cls:UNIQUES[k].cls,type:UNIQUES[k].type,w:slotW(UNIQUES[k].type)*uqWeight(k)}))
     :Object.keys(SET_ITEMS).filter(k=>{const S=SETS[SET_ITEMS[k].set];return S.act<=act&&inSetZone(S);}).map(k=>({si:k,cls:SETS[SET_ITEMS[k].set].cls,type:SET_ITEMS[k].type,w:slotW(SET_ITEMS[k].type)}));
   let ok=cand.filter(o=>o.cls===c.cls);if(!ok.length)ok=cand.filter(o=>!o.cls);if(!ok.length)return null;
   return pickW(ok,o=>o.w);}
 // A set piece or unique no hero has found yet that can drop here (act tiers, set zones): your class's first, then classless.
-function newNamed(c,act){const slotW=t=>DROP_W[t==='shield'||t==='focus'?'offhand':t]||10;
+function newNamed(c,act){const slotW=t=>DROP_W[isOff(t)?'offhand':t]||10;
   const cand=Object.keys(UNIQUES).filter(k=>UNIQUES[k].boss==null&&UNIQUES[k].act<=act&&!BOOK.uqs[k]).map(k=>({uq:k,cls:UNIQUES[k].cls,type:UNIQUES[k].type,w:slotW(UNIQUES[k].type)*uqWeight(k)}))
     .concat(Object.keys(SET_ITEMS).filter(k=>{const S=SETS[SET_ITEMS[k].set];return S.act<=act&&inSetZone(S)&&!BOOK.sets[k];}).map(k=>({si:k,cls:SETS[SET_ITEMS[k].set].cls,type:SET_ITEMS[k].type,w:slotW(SET_ITEMS[k].type)})));
   let ok=cand.filter(o=>o.cls===c.cls);if(!ok.length)ok=cand.filter(o=>!o.cls);return ok.length?pickW(ok,o=>o.w):null;}
@@ -344,7 +366,7 @@ function rollDrop0(c,ilvl,boost=0,minRarity=0,opt={}){
     if(o){const sl=dropSlotOf({slot:o.type});for(const k of DROP_KEYS)ds[k]=k===sl?0:ds[k]+1;
       const icls=o.cls||c.cls;return genItem(ilvl,icls,boost,o.type,0,undefined,TIERED.has(o.type)?tier0:undefined,o.si,o.uq);}}
   if(!slot)slot=pickDropSlot();
-  let icls=c.cls;if(slot==='weapon'||slot==='offhand')icls=Math.random()<OWN_CLASS_CHANCE?c.cls:OTHER_CLS[c.cls];
+  let icls=c.cls;if(slot==='weapon'||slot==='offhand')icls=Math.random()<OWN_CLASS_CHANCE?c.cls:pick(otherCls(c.cls));
   let type=slot==='offhand'?OFF_TYPE[icls]:slot;
   let tier=TIERED.has(type)?(rar>=2?tier0:rollTier(tier0,opt.top,rp)):undefined;
   // a set piece or unique needs a slot that has one: otherwise re-pick among those that do, by drop weight
@@ -352,7 +374,7 @@ function rollDrop0(c,ilvl,boost=0,minRarity=0,opt={}){
   // a forced slot (slot pity) tries the other kind first; only the set/unique guarantee may override the slot pity
   if((rar===3||rar===5)&&forced&&minRarity<3&&!has(type,icls,tier||tier0)){const alt=rar===3?5:3,r0=rar;rar=alt;if(!has(type,icls,tier||tier0))rar=r0;}
   if((rar===3||rar===5)&&!has(type,icls,tier||tier0)&&(!forced||due||minRarity>=3)){
-    const ok=[];for(const k of DROP_KEYS){const cs=k==='weapon'||k==='offhand'?[[c.cls,OWN_CLASS_CHANCE],[OTHER_CLS[c.cls],1-OWN_CLASS_CHANCE]]:[[c.cls,1]];
+    const ok=[];for(const k of DROP_KEYS){const oc=otherCls(c.cls),cs=k==='weapon'||k==='offhand'?[[c.cls,OWN_CLASS_CHANCE]].concat(oc.map(o=>[o,(1-OWN_CLASS_CHANCE)/oc.length])):[[c.cls,1]];
       for(const [ic,w] of cs){const ty=k==='offhand'?OFF_TYPE[ic]:k;if(has(ty,ic,tier0))ok.push([k,ic,ty,DROP_W[k]*w]);}}
     if(ok.length){let r=Math.random()*ok.reduce((a,o)=>a+o[3],0);let o=ok[ok.length-1];for(const x of ok){r-=x[3];if(r<0){o=x;break;}}
       [slot,icls,type]=o;tier=TIERED.has(type)?tier0:undefined;}
@@ -395,12 +417,13 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   else if(slot==='body'){it.kind=FX&&FX.kind||pick(Object.keys(BODY));const K=BODY[it.kind];it.base=pick(K.bases[it.tier-1]);it.arm=(6+bl*3)*K.arm*rand(0.9,1.1);if(K.imp)it.imp=[rollAff(K.imp,bl)];}
   else if(KINDS[slot]){it.kind=FX&&FX.kind&&KINDS[slot][FX.kind]?FX.kind:pick(Object.keys(KINDS[slot]));const K=KINDS[slot][it.kind];it.base=K.bases[it.tier-1];it.imp=K.imp(bl);} // base kinds: their own implicits
   else it.base=pick(it.tier?BASES[slot][it.tier-1]:BASES[slot]);
+  if(slot==='quiver')it.imp=[{k:'aspd',v:randi(3,6)}]; // v1.0.124: every quiver: Attack Speed
   if(ARM[slot])it.arm=(ARM[slot][0]+bl*ARM[slot][1])*rand(0.9,1.1)*(KINDS[slot]&&it.kind?KINDS[slot][it.kind].arm||1:1);
   // Mythic (maps of Tier 5+): stronger base, one more implicit
   if(MYTH_NEXT&&TIERED.has(slot)&&!U&&!SI&&it.tier===5){it.myth=true;if(it.dmin){it.dmin*=1.25;it.dmax*=1.25;}if(it.arm)it.arm*=1.25;const [k,v]=pick(MYTH_IMP[slot]);it.imp=(it.imp||[]).concat([{k,v,myth:1}]);}
   MYTH_NEXT=false;
   let n=[0,randi(1,2),randi(3,4),4][rarity];if(slot==='ring'||slot==='amulet')n=Math.max(1,n);
-  const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&(!AFF[k].myth||it.myth)); // myth stats: Mythic bases only
+  const pool=(TYPES[slot].pool||AFF_KEYS).filter(k=>affCls(k,cls)&&(!AFF[k].myth||it.myth)); // myth stats: Mythic bases only
   const keys=SI?SET_ITEMS[SI].affs.map(k=>spdKey(k,cls)):U?pool.slice().sort(()=>Math.random()-0.5).slice(0,n):pickAffKeys(pool,n,rarity<=1?1:MAX_PRE,rarity<=1?1:MAX_SUF); // magic 1+1, rare 2+2
   const TT=!U&&!SI?{il:ilvl,boost,mt:mapTilt()}:null; // tiers on magic and rare items only
   for(const k of keys)it.affs.push(rollAff(k,affLvl(ilvl,it.tier),rm,TT));it.uv=UPG_VER;
@@ -509,7 +532,7 @@ function migrateItem(it){
   if(it.slot==='body'&&!BODY[it.kind]){const b=String(it.base||'');it.kind=OLD_BODY_KIND[b]||(/robe|vestment/i.test(b)?'robe':/plate/i.test(b)?'plate':/chain|scale|mail/i.test(b)?'chain':'leather');}
   it.affs=(Array.isArray(it.affs)?it.affs:[]).filter(a=>a&&(a.k==='skill'||AFF[a.k]));
   if(it.imp&&!Array.isArray(it.imp))delete it.imp;
-  if(it.slot==='weapon'&&!WEAPONS[it.wt])it.wt=BASE_WT[it.base]||(it.cls==='arcanist'?'staff':'sword');
+  if(it.slot==='weapon'&&!WEAPONS[it.wt])it.wt=BASE_WT[it.base]||(it.cls==='arcanist'?'staff':it.cls==='ranger'?'shortbow':'sword');
   if(it.slot==='focus'&&!FOCUS[it.kind])it.kind='orb';
   if(KINDS[it.slot]&&!KINDS[it.slot][it.kind])it.kind=kindOfBase(it.slot,it.base); // v1.0.69: base kinds (implicits kept as they were)
   if(it.myth!==true)delete it.myth;if(it.corrupt!==true)delete it.corrupt;if(it.cpw&&!(typeof UPOW!=='undefined'&&UPOW[it.cpw]))delete it.cpw;
@@ -583,6 +606,7 @@ function calcStats(c,swap,at){
   const C=CLASSES[c.cls],L=c.lvl;
   const s={life:C.hp+C.hpL*(L-1),res:C.mp+C.mpL*(L-1),dmg:0,armor:0,crit:5,critd:50,aspd:0,cspd:0,cdr:0,move:0,loh:0,regen:0.5+L*0.1,block:0,pot:c.potUp||0,spell:0,bleed:0,poisonCh:0,shockCh:0,igniteCh:0,stunCh:0,stunDur:0,pw:{},gold:0,rarity:0,skd0:0,skd1:0,skd2:0,skd3:0,skd4:0,bossdmg:0,lifepct:0,thorns:0,evade:0,dr:0,xp:0,lpk:0,potheal:0,maxres:0,fres:0,cres:0,lres:0,pres:0,ares:0,splash:0,pierce:0,explode:0,dmin:3,dmax:5,wspd:1,mh:null,oh:null,skill:[0,0,0,0,0]};
   s.cls=c.cls; // power() and set bonuses: which speed stat counts
+  s.evade+=C.evade||0;s.move+=C.move||0; // v1.0.124: the Ranger's built-in evasion and speed
   if(swap&&at===undefined)at=bestSlot(c,swap);
   const eq=Object.assign({},c.equip);if(swap&&at)eq[at]=swap;if(is2h(eq.mainhand))eq.offhand=null;
   for(const sl of EQ_SLOTS){

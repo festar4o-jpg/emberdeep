@@ -158,6 +158,7 @@ function drawLootTip(){
 }
 // Hand pose during an attack: [x, y, angle] in the player's local frame. side = +1 main hand, -1 off hand.
 function handPose(style,u,side){const S=Math.sin(u*Math.PI);
+  if(style==='bow')return [8-S*2,side*(4+S*2),0];                     // v1.0.124: bow raised forward, a little kick back
   if(style==='stab')return [5+S*16,side*(12-S*5),side*0.12];         // quick straight jab
   if(style==='flick')return [5+S*6,12*side,side*(0.5-S*0.9)];         // wand flick
   if(style==='thrust')return [5+S*10,11*side,side*0.15];
@@ -174,6 +175,13 @@ function drawWeapon(wt,glow){
   const guard=(x,h,w)=>{ctx.strokeStyle='#8a7444';ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,-h);ctx.lineTo(x,h);ctx.stroke();};
   const glowAt=(x,r,col)=>{const g=ctx.createRadialGradient(x,0,1,x,0,r);g.addColorStop(0,'#fff');g.addColorStop(0.4,col);g.addColorStop(1,col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,0,r,0,TAU);ctx.fill();};
   switch(wt){
+    // v1.0.124: bows (drawn side-on: limbs bent back, the string, an arrow nocked) and crossbows
+    case 'shortbow':case 'longbow':case 'recurve':case 'greatbow':{const L=wt==='longbow'||wt==='greatbow'?16:12,col=wt==='greatbow'?'#5a1a18':wt==='recurve'?'#7a3a2a':'#8a5f35';
+      ctx.strokeStyle=col;ctx.lineWidth=wt==='greatbow'?3.4:2.8;ctx.beginPath();ctx.moveTo(-2,-L);ctx.quadraticCurveTo(8,0,-2,L);ctx.stroke();
+      ctx.strokeStyle='#e8dcc4';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(-2,-L);ctx.lineTo(glow?-7:-3,0);ctx.lineTo(-2,L);ctx.stroke();
+      ln('#c8b088',1.4,glow?-7:-3,14);poly('#cfd6dc','#6e767d',[[14,-2],[18,0],[14,2]]);break;}
+    case 'crossbow':case 'repeater':ln(wt==='repeater'?'#4a3a2a':'#6b4423',3.4,-8,14);ctx.strokeStyle=wt==='repeater'?'#c8743a':'#9aa3aa';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(8,-12);ctx.quadraticCurveTo(13,0,8,12);ctx.stroke();
+      ctx.strokeStyle='#e8dcc4';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(8,-12);ctx.lineTo(2,0);ctx.lineTo(8,12);ctx.stroke();if(wt==='repeater'){ctx.fillStyle='#7a5230';ctx.fillRect(-2,-4,6,4);}break;
     case 'dagger':ln('#4a2e17',3,-3,2);guard(2,3,2.2);poly('#b4b8b8','#5d6268',[[2,-1.8],[13,-1.2],[17,0],[13,1.2],[2,1.8]]);break;
     case 'axe':ln('#7a5230',3.2,-4,23);poly('#9a9ea0','#4c5258',[[15,-1.5],[23,-1.5],[26,-10],[13,-8.5]]);break;
     case 'mace':ln('#7a5230',3.2,-4,18);ctx.strokeStyle='#4d545a';ctx.lineWidth=2;for(let k=0;k<6;k++){const q=k/6*TAU;ctx.beginPath();ctx.moveTo(21+Math.cos(q)*4,Math.sin(q)*4);ctx.lineTo(21+Math.cos(q)*8,Math.sin(q)*8);ctx.stroke();}
@@ -248,7 +256,7 @@ function drawPlayer(){
   litBlit(HS,bx,by,ang,p.dead?0.4:p.dodge?0.55:null,hb*(p.dead?0.92:1));
   ctx.translate(bx,by);ctx.rotate(ang); // local frame: +x = facing, +y = main-hand side
   if(p.dead)ctx.globalAlpha=0.4;else if(p.dodge)ctx.globalAlpha=0.55;
-  const hand=(x,y)=>{ctx.fillStyle=C2.cls==='warden'?'#5e5a54':'#a88a70';ctx.strokeStyle='#140d08';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,3.4,0,TAU);ctx.fill();ctx.stroke();};
+  const hand=(x,y)=>{ctx.fillStyle=C2.cls==='warden'?'#5e5a54':C2.cls==='ranger'?'#6a5034':'#a88a70';ctx.strokeStyle='#140d08';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,3.4,0,TAU);ctx.fill();ctx.stroke();};
   const at=(x,y,ang,fn)=>{ctx.save();ctx.translate(x,y);ctx.rotate(ang);fn();ctx.restore();};
   if(W&&W.hands===2){ // two-hander: both hands on the grip
     const staff=W.anim==='thrust'; /* staffs and spears: held forward, low grip */let gx=staff?5:6,gy=staff?11:9,ang=staff?0.2:0.7;

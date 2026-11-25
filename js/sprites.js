@@ -197,12 +197,12 @@ function creatureSprite(e,T){const P=painterFor(e,T);if(!P)return null;const r=M
 // Boots, cape or cloak, the body armour kind (none / robe / leather / chain / plate, tinted by its tier: steel,
 // then frost-blue at Tier IV and blackened red at Tier V), pauldrons and straps, then the head: a helm if one is worn.
 const ARMOR_TINT=[null,null,null,['#7d8c9a','#a8c4dc'],['#3e2622','#c0502a']]; // [plate, trim] by tier
-function heroPaint(x,r,f,cls,body,helm,tier){const W=cls==='warden',s=swing(f),T=ARMOR_TINT[(tier||1)-1];
+function heroPaint(x,r,f,cls,body,helm,tier){const W=cls==='warden',RG=cls==='ranger',s=swing(f),T=ARMOR_TINT[(tier||1)-1]; // RG (v1.0.124): the Ranger's forest-green cloak and hood
   for(const sd of [-1,1]){oval(x,sd*s*r*0.38-r*0.05,sd*r*0.3,r*0.27,r*0.15,'#22180f',1);x.fillStyle='rgba(160,140,110,.35)';x.fillRect(sd*s*r*0.38+r*0.12,sd*r*0.3-r*0.08,1,r*0.16);}
   // cape (warden: oxblood wool) / cloak (arcanist: dusk cloth with a worn gold hem)
   path(x,[[r*0.05,-r*0.86],[-r*0.8,-r*0.98+s*r*0.08],[-r*1.3,-r*0.42],[-r*1.4+s*r*0.08,0],[-r*1.3,r*0.42],[-r*0.8,r*0.98-s*r*0.08],[r*0.05,r*0.86]]);
-  shadeFill(x,-r*0.5,0,r*1.3,W?'#4a1c18':'#281c2e',1.3);x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;for(const k of [-0.5,-0.15,0.2,0.55]){x.beginPath();x.moveTo(-r*0.3,k*r);x.lineTo(-r*1.25,k*r*1.12);x.stroke();}
-  if(!W){x.strokeStyle='#7a6440';x.lineWidth=1.3;x.beginPath();x.moveTo(-r*1.3,-r*0.42);x.lineTo(-r*1.4+s*r*0.08,0);x.lineTo(-r*1.3,r*0.42);x.stroke();}
+  shadeFill(x,-r*0.5,0,r*1.3,W?'#4a1c18':RG?'#263a1c':'#281c2e',1.3);x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;for(const k of [-0.5,-0.15,0.2,0.55]){x.beginPath();x.moveTo(-r*0.3,k*r);x.lineTo(-r*1.25,k*r*1.12);x.stroke();}
+  if(!W){x.strokeStyle=RG?'#6a5a34':'#7a6440';x.lineWidth=1.3;x.beginPath();x.moveTo(-r*1.3,-r*0.42);x.lineTo(-r*1.4+s*r*0.08,0);x.lineTo(-r*1.3,r*0.42);x.stroke();}
   const torso=(c)=>{x.beginPath();x.ellipse(-r*0.06,0,r*0.52,r*0.9,0,0,TAU);shadeFill(x,-r*0.06,0,r*0.9,c,1.4);};
   const pauldron=(sd,c,lames,trim)=>{for(let k=lames-1;k>=0;k--){const cy=sd*r*(0.62+k*0.1),rx=r*(0.38-k*0.06),ry=r*(0.3-k*0.04);oval(x,-r*0.02-k*r*0.04,cy,rx,ry,c,1.1);
       x.strokeStyle='rgba(255,245,225,.35)';x.lineWidth=0.8;x.beginPath();x.ellipse(-r*0.02-k*r*0.04,cy,rx*0.75,ry*0.7,0,sd>0?3.6:-0.5,sd>0?5.6:1.5);x.stroke();}
@@ -223,12 +223,12 @@ function heroPaint(x,r,f,cls,body,helm,tier){const W=cls==='warden',s=swing(f),T
     for(const sd of [-1,1])pauldron(sd,'#4e3420',1);grit(x,0,0,r*0.8,30);}
   else if(body==='robe'){torso(W?'#4a4036':'#3e2e44');x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;for(const k of [-0.6,-0.2,0.2,0.6]){x.beginPath();x.moveTo(r*0.3,k*r*0.8);x.quadraticCurveTo(-r*0.1,k*r,-r*0.55,k*r*1.05);x.stroke();}
     x.strokeStyle='#8a7448';x.lineWidth=1.4;for(const sd of [-1,1]){x.beginPath();x.arc(-r*0.06,0,r*0.56,sd*0.85,sd*1.75,sd<0);x.stroke();}strap(-r*0.12,-r*0.85,-r*0.12,r*0.85,'#5a2a22');grit(x,0,0,r*0.8,24);}
-  else{torso(W?'#5a4a38':'#3a2c3e');strap(-r*0.12,-r*0.85,-r*0.12,r*0.85);grit(x,0,0,r*0.8,24);}
+  else{torso(W?'#5a4a38':RG?'#3e3a24':'#3a2c3e');strap(-r*0.12,-r*0.85,-r*0.12,r*0.85);grit(x,0,0,r*0.8,24);}
   // head
   if(W){if(helm){oval(x,r*0.12,0,r*0.37,r*0.35,T?T[0]:'#6a6660',1.3);x.fillStyle='#070504';x.fillRect(r*0.36,-r*0.2,r*0.08,r*0.4);x.fillRect(r*0.28,-r*0.03,r*0.16,r*0.06);
       x.strokeStyle='rgba(255,248,230,.5)';x.lineWidth=1.4;x.beginPath();x.moveTo(-r*0.2,0);x.lineTo(r*0.42,0);x.stroke();for(const sd of [-1,1])dot(x,r*0.12,sd*r*0.28,0.9,'#c8bca0');}
     else{oval(x,r*0.12,0,r*0.33,r*0.31,'#a8805e',1.2);x.fillStyle='#2a1a10';x.beginPath();x.ellipse(-r*0.02,0,r*0.26,r*0.3,0,0,TAU);x.fill();grit(x,-r*0.02,0,r*0.24,12,'rgba(0,0,0,.4)','rgba(120,80,50,.4)');}}
-  else{oval(x,r*0.06,0,r*0.4,r*0.38,'#30243a',1.3);x.fillStyle='#08060a';x.beginPath();x.ellipse(r*0.28,0,r*0.17,r*0.22,0,0,TAU);x.fill();dot(x,r*0.32,0,r*0.1,'rgba(168,138,112,.55)');
+  else{oval(x,r*0.06,0,r*0.4,r*0.38,RG?'#2e4224':'#30243a',1.3);x.fillStyle='#08060a';x.beginPath();x.ellipse(r*0.28,0,r*0.17,r*0.22,0,0,TAU);x.fill();dot(x,r*0.32,0,r*0.1,'rgba(168,138,112,.55)');
     if(helm){x.strokeStyle='#9a8a62';x.lineWidth=1.6;x.beginPath();x.ellipse(r*0.06,0,r*0.3,r*0.32,0,-1.9,1.9);x.stroke();dot(x,r*0.36,0,1.4,'#7fe0ff');}}}
 function heroSprite(cls,r,f){const c=G.char,b=c&&c.equip.body,h=c&&c.equip.helm,kind=b?b.kind||'chain':'none',tier=b?b.tier||1:1;
   return sprite(`hero|${cls}|${Math.round(r)}|${f}|${kind}|${tier}|${h?1:0}`,r*2,x=>heroPaint(x,r,f,cls,kind,!!h,tier));}

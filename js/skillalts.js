@@ -63,8 +63,13 @@ const SKILL_ALTS={
       desc:r=>`Open a black hole for 2.5s: it pulls enemies in and crushes them for ${pct(0.6+0.08*(r-1))} damage twice a second, then collapses for ${pct(3+0.35*(r-1))}. Costs 60 Mana.`,
       cast(r){const a=aimPoint(400),big=hasMod('holeBig'),quick=hasMod('holeQuick'),T=quick?1:big?3.5:2.5; // Event Horizon, Singularity, Nova Star
         G.skz.push({k:'hole',x:a.x,y:a.y,t:T,tick:0.5,R:HOLE_R*(big?1.4:1),m:0.6+0.08*(r-1),end:(3+0.35*(r-1))*(quick?1.6:1),fire:hasMod('holeFire'),fm:0.3+0.04*(r-1),sk:G.sk});
-        G.fx.push({type:'tele',x:a.x,y:a.y,r:120*(big?1.4:1),t:0,max:T,col:'#a06aff',own:1});}}
-]};
+        G.fx.push({type:'tele',x:a.x,y:a.y,r:120*(big?1.4:1),t:0,max:T,col:'#a06aff',own:1});}}],
+  ranger:[ // v1.0.124: listed, coming in a later step
+    {id:'pierce',name:'Piercing Shot',icon:'➹',cd:0.9,cost:0,soon:true,desc:r=>'A heavy arrow that passes through every enemy in a line.',cast(){}},
+    {id:'vault',name:'Vault',icon:'🤸',cd:5,cost:15,soon:true,desc:r=>'Flip backwards out of danger, leaving caltrops behind.',cast(){}},
+    {id:'firetrap',name:'Fire Trap',icon:'🔥',cd:6,cost:25,soon:true,desc:r=>'A trap that bursts into burning ground.',cast(){}},
+    {id:'hawk',name:'Hawk',icon:'🦅',cd:12,cost:30,soon:true,desc:r=>'A hawk that marks enemies so they take more damage.',cast(){}},
+    {id:'explosive',name:'Explosive Arrow',icon:'💣',cd:8,cost:40,soon:true,desc:r=>'An arrow that sticks and explodes.',cast(){}}]};
 // Modifiers of the second skills (v1.0.114): 3 each, unlocked at ranks MOD_UNLOCK like the first skills' (skillmods.js).
 // v1.0.114 balance (per button, against the first skill): Ice Shards 45% a shard, Seismic Wave 180% a quake, Firewall
 // 60% a tick, Black Hole collapse 300%.
@@ -100,7 +105,8 @@ const ALT_MODS={
      {k:'orbNova',name:'Overcharged',t:'Ends with a lightning burst for 3 zaps\' damage around it'}],
     [{k:'holeBig',name:'Event Horizon',t:'Pulls from 40% farther and lasts 1s longer'},
      {k:'holeQuick',name:'Singularity',t:'Lasts only 1s, but collapses for 60% more'},
-     {k:'holeFire',name:'Nova Star',t:'The collapse leaves burning ground for 3s'}]]};
+     {k:'holeFire',name:'Nova Star',t:'The collapse leaves burning ground for 3s'}]],
+  ranger:[[],[],[],[],[]]}; // v1.0.124: the Ranger's come with his second skills
 const altOf=(cls,i)=>(SKILL_ALTS[cls]||[])[i]||null;
 // A hit from button i's FIRST skill (for uniques and rules made for it; G.sk is the button the hit comes from).
 const firstSk=i=>G.sk===i&&!altOn(G.char,i);

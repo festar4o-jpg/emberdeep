@@ -200,7 +200,9 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
   // points of interest: shrines (and the odd cursed chest / thief) from the encounter system, then the zone's own
   const regs=L.regions.filter(r=>!used.has(r));placeEncounters(depth,regs,L.start,L.exit,false,spot);
   const hide=L.hide.slice(),take=()=>{const h=hide.shift();return h?{x:(h[0]+0.5)*TILE,y:(h[1]+0.5)*TILE}:null;};
-  const midRegion=L.regions.filter(r=>!used.has(r)).sort((a,b)=>Math.abs(D[a.cy*MW+a.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45)-Math.abs(D[b.cy*MW+b.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45))[0];
+  // v1.0.124: a small layout can run out of free rooms (a5z4 did, 1 build in 16): the waypoint then shares a room
+  const freeR=L.regions.filter(r=>!used.has(r)),wpPool=freeR.length?freeR:L.regions.filter(r=>r!==L.start&&r!==L.exit);
+  const midRegion=wpPool.sort((a,b)=>Math.abs(D[a.cy*MW+a.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45)-Math.abs(D[b.cy*MW+b.cx]-D[L.exit.cy*MW+L.exit.cx]*0.45))[0];
   if(midRegion&&!Z.map){used.add(midRegion);const q=spot(midRegion);G.feats.push(zoneFeat('wp',q.x,q.y));} // maps have no waypoint
   const hc=take();if(hc)G.feats.push(zoneFeat('hchest',hc.x,hc.y));
   if(Z.gate==='key'&&!zst(G.char,zid).key){const k=take()||spot(freeRegs()[0]||L.exit);G.feats.push(zoneFeat('key',k.x,k.y));

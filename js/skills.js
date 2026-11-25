@@ -71,19 +71,29 @@ const SKILLS={
         G.delayed.push({sk:G.sk,t:T,fn:()=>{aoe(x,y,120,(3.8+0.45*(r-1))*(fast?0.8:1),ice?{freeze:1.5}:{});G.shake=12;G.hitStop=0.06;fxExplosion(x,y,120,ice?'#9fe4ff':undefined);burst(x,y,50,ice?'#bff0ff':'#ff8a2a',300);G.fx.push({type:'ring',x,y,r0:20,r1:130,t:0,max:0.35,col:ice?'#bfe8ff':'#ffb04a'});
           if(!ice)G.hazards.push({sk:G.sk,x,y,r:molten?165:110,t:molten?6:3,tick:0,mult:0.3+0.04*(r-1)});}});
         if(hasPw('meteorShower'))for(let k=0;k<3;k++){const a=rand(0,TAU),mx=x+Math.cos(a)*95,my=y+Math.sin(a)*95;G.delayed.push({sk:G.sk,t:1+k*0.15,fn:()=>{aoe(mx,my,70,(3.8+0.45*(r-1))*0.4,{});fxExplosion(mx,my,70);}});}}}
+  ],
+  // v1.0.124: the Ranger. Arrow Shot works; the others come in the next steps (soon: shown, not learnable yet).
+  ranger:[
+    {name:'Arrow Shot',icon:'🏹',cd:0.5,cost:0,
+      desc:r=>`Loose an arrow for ${pct(1+0.12*(r-1))} weapon damage. Each hit restores 3 Focus.`,
+      cast(r){const a=aimPoint(600);shoot(a,760,4,'#e8dcc4',{mult:1+0.12*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(3),arrow:true});startAtk('bow','mh',0);}},
+    {name:'Multishot',icon:'🎯',cd:3,cost:20,soon:true,desc:r=>'A fan of 5 arrows.',cast(){}},
+    {name:'Spike Trap',icon:'🪤',cd:6,cost:25,soon:true,desc:r=>'A trap that explodes and Stuns when an enemy steps on it.',cast(){}},
+    {name:'Call of the Wild',icon:'🐺',cd:12,cost:30,soon:true,desc:r=>'A wolf that fights beside you.',cast(){}},
+    {name:'Rain of Arrows',icon:'🌧️',cd:10,cost:45,soon:true,desc:r=>'A barrage of arrows over an area.',cast(){}}
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
 function skillCd(i){const sk=skillAt(G.char,i),w=G.char.cls==='warden';
-  if(altOn(G.char,i))return i===0?sk.cd/(G.stats.wspd*(1+(w?G.stats.aspd:(G.stats.cspd||0))/100)):sk.cd*(1-G.stats.cdr/100); // skillalts.js: second skills (their own rules come with them)
+  if(altOn(G.char,i))return i===0?sk.cd/(G.stats.wspd*(1+(G.char.cls!=='arcanist'?G.stats.aspd:(G.stats.cspd||0))/100)):sk.cd*(1-G.stats.cdr/100); // skillalts.js: second skills (their own rules come with them)
   if(w&&i===1&&hasPw('bloodleap'))return 0.35;if(w&&i===4&&hasPw('faultline'))return sk.cd*0.5*(1-G.stats.cdr/100);
   const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush
-  if(!w&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
+  if(G.char.cls==='arcanist'&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
   if(w&&i===1&&hasMod('longleap'))return Math.max(0.5,(sk.cd-1.5)*(1-G.stats.cdr/100));
-  if(!w&&i===1)return sk.cd*(1-G.stats.cdr/100)/(1+(G.stats.cspd||0)/100); // v1.0.101: Cast Speed also speeds up Fireball
-  return i===0?sk.cd/(G.stats.wspd*(1+(w?G.stats.aspd:(G.stats.cspd||0))/100)*mod):sk.cd*(1-G.stats.cdr/100);} // Warden: Attack Speed, Arcanist: Cast Speed
+  if(G.char.cls==='arcanist'&&i===1)return sk.cd*(1-G.stats.cdr/100)/(1+(G.stats.cspd||0)/100); // v1.0.101: Cast Speed also speeds up Fireball
+  return i===0?sk.cd/(G.stats.wspd*(1+(G.char.cls==='arcanist'?(G.stats.cspd||0):G.stats.aspd)/100)*mod):sk.cd*(1-G.stats.cdr/100);} // Warden and Ranger: Attack Speed, Arcanist: Cast Speed
 // Attack animation: style from the weapon archetype (swing, stab, heavy, flick, thrust); duration fits inside the attack interval.
-const ATK_DUR={swing:0.24,stab:0.14,heavy:0.46,flick:0.2,thrust:0.28};
+const ATK_DUR={swing:0.24,stab:0.14,heavy:0.46,flick:0.2,thrust:0.28,bow:0.22};
 function startAtk(style,hand,i){const p=G.p,s=G.stats;if(!style){const w=wOf(G.char.equip.mainhand)||FIST;style=w.anim;}
   const dur=Math.min(ATK_DUR[style]||0.24,i===0?skillCd(0)*0.95:0.5);p.atk={style,hand:hand||'mh',t:0,dur};
   if(i===0&&G.char.cls==='warden')skillSfx('warden',0,style);} // sfx.js: the weapon's whoosh
@@ -92,6 +102,7 @@ function tryCast(i){
   // v1.0.98: other skills can be used during Leap Slam (in the air) and Whirlwind; only Leap Slam waits for its own landing
   const r=rk(i);if(r<=0||p.cd[i]>0||p.leap&&i===1)return;
   const sk=skillAt(G.char,i); // skillalts.js
+  if(sk.soon)return; // v1.0.124: a skill that isn't ready yet
   const lc=lifeCost(i); // Bloodleap Greaves: pay Life instead of Fury
   const cost=modCost(i,sk.cost); // skillmods.js: Rapid Fire
   if(lc?p.hp<=lc+1:p.res<cost)return;
@@ -100,5 +111,5 @@ function tryCast(i){
   if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);
     if(combo('Eye of the Storm'))for(let j=1;j<5;j++)if(j!==i&&p.cd[j]>0)p.cd[j]=Math.max(0,p.cd[j]-1);}
   G.sk=i;try{sk.cast(r);}finally{G.sk=null;}if(sk.sfx)playSfx(sk.sfx);else skillSfx(G.char.cls,i); /* skillalts.js: a second skill's own sound */ // sfx.js; G.sk: hits from this cast count as this skill (+% skill damage)
-  if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
+  if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(G.char.cls==='ranger'){if(i>0)startAtk('bow','mh',i);}else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
 }
