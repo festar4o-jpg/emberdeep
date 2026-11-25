@@ -148,6 +148,18 @@ const tierLabel=it=>it.tier?'Tier '+TIER_NAME[it.tier-1]+(it.myth?' Mythic':''):
 function typeLabel(it){if(it.slot==='charm')return (CHARM[it.size]||CHARM.small).name;if(it.slot==='weapon'){const w=wOf(it);return (w.hands===2?'Two-Handed ':'One-Handed ')+w.name;}if(it.slot==='focus')return (FOCUS[it.kind]||FOCUS.orb).name;if(KINDS[it.slot]&&KINDS[it.slot][it.kind])return KINDS[it.slot][it.kind].name;return it.slot==='body'&&BODY[it.kind]?BODY[it.kind].name:TYPES[it.slot].name;}
 // PoE-style rarity colours: normal white, magic blue, rare yellow, unique orange-brown; Runebind teal, set green. Currency (gold, gems, runes) is CURRENCY_COL.
 const RCOL=['#c8c8c8','#8888ff','#ffff77','#c8743a','#5fd0c0','#3fe05a'],CURRENCY_COL='#c8b48a';
+// Ancient items (v1.0.118): a unique or set item can drop Ancient (it.anc = 1, name "Ancient …", its own colour): every
+// stat, its weapon damage or armour, its implicits and its "+N to skill" are ANC_MUL stronger (skills round up); its
+// powers and set bonuses are the same. Only from Hell, maps and Ember Rifts (ancCh). One multiplier (ancM) on top of
+// the item's own: upgMul / affMul / flat stats, so crafting, upgrades and old saves keep working unchanged.
+const ANC_MUL=1.25,ANC_COL='#ff9a2a';
+const ancM=it=>it&&it.anc?ANC_MUL:1;
+const itCol=it=>it&&it.anc?ANC_COL:RCOL[it?it.rarity:0];
+const ancSkill=(it,v)=>it&&it.anc?Math.ceil(v*ANC_MUL):v;
+// The chance a unique or set drop is Ancient here: Rifts 10% + 0.5% a level (at most 20%), maps 10%, Hell 5%, else none.
+function ancCh(){const c=G.char;if(!c)return 0;if(typeof inRift==='function'&&inRift())return Math.min(0.2,0.1+0.005*(c.mapRun.rift||0));
+  if(typeof inMap==='function'&&inMap())return 0.1;return diffHere()>=2?0.05:0;}
+function makeAncient(it){if(!it||it.anc||(it.rarity!==3&&it.rarity!==5))return it;it.anc=1;it.name='Ancient '+it.name;return it;}
 const RNAME=['Common','Magic','Rare','Unique','Runebind','Set']; // Runebinds (4) never drop: they're forged from runes. Set items are 5.
 const SKILL_REQ=[1,2,4,7,10];
 const POT_MAX=10;
@@ -308,7 +320,9 @@ let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 // bad-luck protection, the class roll for weapons and off-hands, and the base tier. opt.act = the act whose tiers drop
 // (default: from item level); opt.top = always that act's tier (bosses). Rare and better items always come in the
 // current act's tier, so a rare from the current act is often an upgrade; whites and blues can come in older tiers.
-function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){
+// Every drop roll: a unique or set item may come out Ancient (ancCh).
+function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){const it=rollDrop0(c,ilvl,boost,minRarity,opt);if(it&&(it.rarity===3||it.rarity===5)&&G.char===c&&Math.random()<ancCh())makeAncient(it);return it;}
+function rollDrop0(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
   const tier0=opt.act||tierOfLvl(ilvl);
   {const r=G.char===c&&typeof inMap==='function'&&inMap()?c.mapRun:null;MYTH_NEXT=!!(r&&r.sig.tier>=5&&Math.random()<0.06+0.01*(r.sig.tier-5));} // Mythic bases from maps of Tier 5+
@@ -399,7 +413,7 @@ function genItem(ilvl,cls,boost=0,forceType,minRarity=0,forceWt,tier,forceSet,fo
   const ns=rollSockets(it);if(ns)it.sockets=ns;
   return it;
 }
-function affVal(a,m){const d=AFF[a.k];let v=a.v*(d&&d.flat?1:m);return d&&d.dec?v.toFixed(1):Math.round(v);}
+function affVal(a,m,fm=1){const d=AFF[a.k];let v=a.v*(d&&d.flat?fm:m); /* fm: flat stats on an Ancient item */return d&&d.dec?v.toFixed(1):Math.round(v);}
 // Affixes follow the tier: a tiered item rolls its affixes at an "affix level" inside its tier's act (Tier III: item
 // levels 11-15), so an older tier dropped late still rolls older, smaller numbers (Tier V Life ~4x Tier I, Damage % and
 // Crit Damage ~2-2.5x, Crit, Attack/Move Speed and Cooldown ~1.5-1.8x). Tier V keeps climbing in the endless depths.
@@ -452,8 +466,9 @@ function pickAffKeys(pool,n,p,q){const out=[];let np=0,ns=0;for(const k of pool.
 // v1.0.47 gave affixes +4% per tier) are reset to the current rules when they load (bakeUpgrades, v1.0.49).
 const UPG_STEP=0.02,JEWEL_STEP=0.04,UPG_VER=3;
 const upgStep=it=>it.tier?UPG_STEP:JEWEL_STEP;
-const upgMul=it=>1+upgStep(it)*(it.upg||0);
-const affMul=it=>it.tier?1:upgMul(it);
+const upgRaw=it=>1+upgStep(it)*(it.upg||0);
+const upgMul=it=>upgRaw(it)*ancM(it); // base damage, armour, implicits (and Ancient)
+const affMul=it=>(it.tier?1:upgRaw(it))*ancM(it);
 // v1.0.49: every item is brought to the current rules, as if it had dropped today; its +level stays (now +4%/level).
 // Each affix keeps its place in its range: a roll at the top of the old range lands at the top of the new one for
 // the item's tier. Items from v1.0.48 (uv 2) either rolled under the new rules already (kept as they are) or had the
@@ -479,7 +494,7 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
   for(const a of it.imp||[])if(scaledAff(a))a.v=AFF[a.k].dec?+(+a.v).toFixed(1):Math.max(1,Math.round(a.v));
   if(it.dmin!=null){it.dmin=+it.dmin.toFixed(3);it.dmax=+it.dmax.toFixed(3);}if(it.arm)it.arm=+it.arm.toFixed(3);
   it.uv=UPG_VER;return it;}
-function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${skName(cls,a.s)}`;if(AFF[a.k]&&AFF[a.k].skd!=null)return `+${affVal(a,m)}% ${skName(cls,AFF[a.k].skd)} damage`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
+function affText(a,m,cls,fm=1){if(a.k==='skill')return `+${fm>1?Math.ceil(a.v*fm):a.v} to ${skName(cls,a.s)}`;if(AFF[a.k]&&AFF[a.k].skd!=null)return `+${affVal(a,m,fm)}% ${skName(cls,AFF[a.k].skd)} damage`;return AFF[a.k].t.replace('{v}',affVal(a,m,fm));}
 // The tier tag after a stat line on item cards: T1-T2 gold, T3 bright, the rest dim.
 const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64','#7c6c58','#6c5c4c','#5c4e42'];
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
@@ -579,8 +594,8 @@ function calcStats(c,swap,at){
     if(it.arm)s.armor+=it.arm*m*qm;
     if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const a=stoneStat(sg,h,c.cls);s[a.k]+=a.v;}} // gems and runes: flat, not upgraded
     const am=affMul(it); /* affixes: upgrades and the tier bonus; implicits: upgrades only */
-    const fx=spdFixed(it);for(const a of it.affs){if(a.k==='skill')s.skill[a.s]+=a.v;else s[fx?spdKey(a.k,c.cls):a.k]+=a.v*(AFF[a.k].flat?1:am);}
-    for(const a of it.imp||[]){if(a.k==='skill')s.skill[a.s]+=a.v;else if(a.k==='allsk')s.skill=s.skill.map(x=>x+a.v); /* Sunfire Crucible */else s[spdKey(a.k,c.cls)]+=a.v*(AFF[a.k].flat?1:m);}
+    const fx=spdFixed(it);const fm=ancM(it);for(const a of it.affs){if(a.k==='skill')s.skill[a.s]+=ancSkill(it,a.v);else s[fx?spdKey(a.k,c.cls):a.k]+=a.v*(AFF[a.k].flat?fm:am);}
+    for(const a of it.imp||[]){if(a.k==='skill')s.skill[a.s]+=ancSkill(it,a.v);else if(a.k==='allsk')s.skill=s.skill.map(x=>x+a.v); /* Sunfire Crucible */else s[spdKey(a.k,c.cls)]+=a.v*(AFF[a.k].flat?fm:m);}
   }
   addSetStats(EQ_SLOTS.map(sl=>eq[sl]).filter(Boolean),s); // set bonuses
   addCharmStats(c,s); // charm pouch

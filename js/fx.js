@@ -84,8 +84,9 @@ function drawBeam(l,col,big){const rgb=rgbOf(col),named=l.item&&(l.item.rarity==
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // The moment a good item hits the ground: rares give a small golden spark; set items and uniques a burst of light,
 // a shockwave, a shake and a call-out over the item (the sound is in sfx.js dropSfx).
-function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=RCOL[it.rarity];l.born=G.time;buzz(it.rarity===3?'unique':it.rarity===5?'set':'rare');
+function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=itCol(it);l.born=G.time;buzz(it.rarity===3?'unique':it.rarity===5?'set':'rare');
   if(it.rarity===2){burst(l.x,l.y,10,col,120);return;}
+  if(it.anc){burst(l.x,l.y,40,ANC_COL,330);G.fx.push({type:'ring',x:l.x,y:l.y,r0:6,r1:100,t:0,max:0.7,col:ANC_COL});G.shake=Math.max(G.shake,4);} // items.js: Ancient
   if(it.rarity===3||it.rarity===5){burst(l.x,l.y,34,col,260);burst(l.x,l.y,14,'#ffffff',180);
     G.fx.push({type:'ring',x:l.x,y:l.y,r0:10,r1:150,t:0,max:0.6,col});G.fx.push({type:'ring',x:l.x,y:l.y,r0:4,r1:90,t:0,max:0.45,col:'#ffffff'});
     G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}

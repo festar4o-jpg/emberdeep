@@ -146,7 +146,7 @@ function renderFilter(){
 
 // ---------- inventory UI ----------
 function cellHtml(it,label,sl){if(!it)return `<div class="cell empty">${sl?slotIcon(sl,G.char.cls):''}${label?`<span class="lbl">${label}</span>`:''}</div>`;
-  const better=!label&&isBetter(it),other=!label&&it.slot!=='charm'&&!fitsFor(G.char,it).length;return `<div class="cell${other?' other':''}" style="border-color:${RCOL[it.rarity]}">${itemIcon(it)}${it.tier?`<span class="tier">${TIER_NAME[it.tier-1]}</span>`:''}${it.sockets?`<span class="socks">${'●'.repeat((it.socketed||[]).length)}${'○'.repeat(freeSockets(it))}</span>`:''}${it.upg?`<span class="up">+${it.upg}</span>`:''}${it.lock?'<span class="lock">🔒</span>':''}${better?'<span class="better">▲</span>':''}${label?`<span class="lbl">${label}</span>`:''}</div>`;}
+  const better=!label&&isBetter(it),other=!label&&it.slot!=='charm'&&!fitsFor(G.char,it).length;return `<div class="cell${other?' other':''}" style="border-color:${itCol(it)}">${itemIcon(it)}${it.tier?`<span class="tier">${TIER_NAME[it.tier-1]}</span>`:''}${it.sockets?`<span class="socks">${'●'.repeat((it.socketed||[]).length)}${'○'.repeat(freeSockets(it))}</span>`:''}${it.upg?`<span class="up">+${it.upg}</span>`:''}${it.lock?'<span class="lock">🔒</span>':''}${better?'<span class="better">▲</span>':''}${label?`<span class="lbl">${label}</span>`:''}</div>`;}
 function isBetter(it){const c=G.char;return power(calcStats(c,it))>power(calcStats(c))*1.01;}
 function toggleInv(){if(!G.char)return;const o=$('invOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden')){$('bagDot').classList.add('hidden');renderInv();}setPause();}
 function renderInv(){
@@ -172,7 +172,7 @@ function setCell(c,sl){const it=c.equip[sl],g=it?setGlow(it,c):'',h=cellHtml(it,
   return h.replace('<div class="cell',`<div title="${esc(S.name)}: ${g==='full'?'full set':'set bonus'} active" class="cell sglow${g==='full'?' full':''}`).replace(' style="',` style="--sg:${S.aura||'63,224,90'};`);}
 // v1.0.50: fewer drops, so each salvaged item gives 1.5x the gold (SALV_GOLD); the shop price formula halves its factor to stay the same.
 const SALV_GOLD=1.5;
-function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)*SALV_GOLD+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
+function salvageValue(it){return Math.round((it.ilvl*3+5)*([1,2,5,12,15,12][it.rarity]||1)*(it.anc?2:1)*SALV_GOLD+upgradeSpent(it)*0.5);} // half of the upgrade gold comes back
 // Upgrades are cheaper than before (they no longer touch affixes): x1.45 per level.
 // v1.0.51: upgrades cost 30% less (x0.7), so normal play pays for about one weapon and one armor upgrade per zone.
 const UPG_PRICE=0.7;
@@ -257,7 +257,7 @@ function renderShop(){
   const pb=$('buyPot');pb.textContent=p.potions>=potMax()?'Full':`Buy (${pp}🪙)`;pb.classList.toggle('dis',c.gold<pp||p.potions>=potMax());
   const grid=$('shopGrid');
   if(!G.shop.length){grid.innerHTML='<p class="sub" style="grid-column:1/-1">Sold out — come back next time.</p>';return;}
-  grid.innerHTML=G.shop.map(w=>`<div class="cell" style="border-color:${RCOL[w.it.rarity]}">${itemIcon(w.it)}${isBetter(w.it)?'<span class="better">▲</span>':''}<span class="price${c.gold<w.price?' no':''}">${w.price}</span></div>`).join('');
+  grid.innerHTML=G.shop.map(w=>`<div class="cell" style="border-color:${itCol(w.it)}">${itemIcon(w.it)}${isBetter(w.it)?'<span class="better">▲</span>':''}<span class="price${c.gold<w.price?' no':''}">${w.price}</span></div>`).join('');
   [...grid.children].forEach((el,i)=>el.onclick=()=>{const w=G.shop[i];if(w)openItem(w.it,false,w.price);});
 }
 tap('buyPot',()=>{const c=G.char,p=G.p,pp=potionPrice();if(c.gold<pp||p.potions>=potMax())return;c.gold-=pp;p.potions++;renderShop();saveChar();});
@@ -372,8 +372,8 @@ function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[
   const m=upgMul(it)*(1+(it.q||0)/100);
   if(it.slot==='weapon'){add('wdmg','Weapon Dmg',(it.dmin+it.dmax)/2*m,null,null);add('wspd','Attacks/s',wOf(it).spd,null,null);}
   if(it.arm)add('barm','Base Armor',it.arm*m,null,null);
-  for(const a0 of it.imp||[]){const a=spdA(a0,G.char&&G.char.cls);if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),a.v,null,'skill');else add(a.k,shortName(a.k),a.v*(AFF[a.k].flat?1:upgMul(it)),null,a.k);}
-  for(const a0 of it.affs){const a=spdFixed(it)?spdA(a0,G.char&&G.char.cls):a0;if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),a.v,null,'skill');else if(AFF[a.k])add(a.k,AFF[a.k].skd!=null?SKILLS[cls][AFF[a.k].skd].name:shortName(a.k),+affVal(a,affMul(it)),a.t,a.k);}
+  for(const a0 of it.imp||[]){const a=spdA(a0,G.char&&G.char.cls);if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),ancSkill(it,a.v),null,'skill');else add(a.k,shortName(a.k),a.v*(AFF[a.k].flat?ancM(it):upgMul(it)),null,a.k);}
+  for(const a0 of it.affs){const a=spdFixed(it)?spdA(a0,G.char&&G.char.cls):a0;if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),ancSkill(it,a.v),null,'skill');else if(AFF[a.k])add(a.k,AFF[a.k].skd!=null?SKILLS[cls][AFF[a.k].skd].name:shortName(a.k),+affVal(a,affMul(it),ancM(it)),a.t,a.k);}
   if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const st=stoneStat(sg,h);add(st.k,shortName(st.k),st.v,null,st.k);}}
   for(const pw of itemPowers(it))R['pw:'+pw]={label:'★ '+(UPOW[pw]?UPOW[pw].t:pw),v:1,pw:1};
   return R;}
@@ -403,7 +403,7 @@ function equipSummary(c,it,slot){const s0=calcStats(c),s1=calcStats(c,it,slot),o
 function compareHtml(c,it,cur,slot,multi){const cls=it.cls||c.cls,A=itemRows(it,cls),B=itemRows(cur,cur.cls||c.cls),keys=[...new Set(Object.keys(A).concat(Object.keys(B)))];
   const order=k=>k==='wdmg'?0:k==='wspd'?1:k==='barm'?2:k.startsWith('pw:')?9:k.startsWith('sk')?8:3;keys.sort((a,b)=>order(a)-order(b));
   const sum=equipSummary(c,it,slot);
-  const head=x=>`<div class="cvh"><div class="cvn" style="color:${RCOL[x.rarity]}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="cvs">${x.tier?tierLabel(x)+' · ':''}iLvl ${x.ilvl}${x.q?' · Q'+x.q+'%':''}${x.sockets?' · '+(x.socketed||[]).length+'/'+x.sockets+'◇':''}</div></div>`;
+  const head=x=>`<div class="cvh"><div class="cvn" style="color:${itCol(x)}">${esc(x.name)}${x.upg?' +'+x.upg:''}</div><div class="cvs">${x.tier?tierLabel(x)+' · ':''}iLvl ${x.ilvl}${x.q?' · Q'+x.q+'%':''}${x.sockets?' · '+(x.socketed||[]).length+'/'+x.sockets+'◇':''}</div></div>`;
   const cell=(r,k)=>!r?'<span class="cvz">–</span>':r.pw?'<span class="cvpw">✓</span>':`${r.k?fmtNum(r.k,r.v):k==='wspd'?(+r.v).toFixed(2):Math.round(r.v)}${r.t?`<span class="cvt" style="color:${TIER_COL[r.t]}">T${r.t}</span>`:''}`;
   let rows='';for(const k of keys){const a=A[k],b=B[k],lab=(a||b).label;let dt='',cl='';
     if(!(a&&a.pw||b&&b.pw)){const d=(a?a.v:0)-(b?b.v:0);if(Math.abs(d)>=(k==='wspd'?0.005:0.05)){cl=d>0?'up':'dn';const kk=(a||b).k;dt=(d>0?'+':'−')+(kk?fmtNum(kk,Math.abs(d)):k==='wspd'?Math.abs(d).toFixed(2):Math.round(Math.abs(d)));}}
@@ -428,7 +428,7 @@ function statDeltaHtml(c,it,target,cur,multi){
 // right), powers in full (orange, with their live numbers), set, sockets, corruption, a waiting catalyst. D (a
 // comparison): each line shows how it differs from the equipped item, and what you'd lose is listed at the end.
 // O.pick (the Blacksmith): stat lines can be tapped to choose one (data-a), O.sel is the chosen one.
-function tipCard(x,c,D,O){const mm=upgMul(x),col=RCOL[x.rarity],cls=x.cls||c.cls,seen=new Set();
+function tipCard(x,c,D,O){const mm=upgMul(x),col=itCol(x),cls=x.cls||c.cls,seen=new Set();
   const diff=k=>{if(!D||seen.has(k))return '';seen.add(k);const a=D.A[k],b=D.B[k];if(!a)return '';if(a.pw)return b?'':'<span class="tdf up">new</span>';
     const d=a.v-(b?b.v:0);if(Math.abs(d)<(k==='wspd'?0.005:0.05))return '';const kk=a.k,t=kk?fmtNum(kk,Math.abs(d)):k==='wspd'?Math.abs(d).toFixed(2):Math.round(Math.abs(d));return `<span class="tdf ${d>0?'up':'dn'}">${d>0?'▲ +':'▼ −'}${t}</span>`;};
   const line=(text,k,cls2,badge,attr)=>`<div class="tl ${cls2||''}"${attr||''}><span class="tt">${text}</span><span class="tr">${k!=null?diff(k):''}${badge||''}</span></div>`;
@@ -442,10 +442,10 @@ function tipCard(x,c,D,O){const mm=upgMul(x),col=RCOL[x.rarity],cls=x.cls||c.cls
   if(x.arm)b+=line(`Armor <b>${Math.round(x.arm*mm*(1+(x.q||0)/100))}</b>`,'barm');
   if(b)h+=rule+b;
   // implicits
-  if((x.imp||[]).length){h+=rule;for(const a0 of x.imp){const a=spdA(a0,G.char&&G.char.cls);h+=line(esc(affText(a,mm,cls)),a.k==='skill'?'sk'+a.s:a.k,a.corrupt?'tcor':a.myth?'tmyth':'timp');}}
+  if((x.imp||[]).length){h+=rule;for(const a0 of x.imp){const a=spdA(a0,G.char&&G.char.cls);h+=line(esc(affText(a,mm,cls,ancM(x))),a.k==='skill'?'sk'+a.s:a.k,a.corrupt?'tcor':a.myth?'tmyth':'timp');}}
   if(x.upg)h+=`<div class="tl tupgl"><span class="tt">⚒ Upgraded +${x.upg}: +${Math.round(upgStep(x)*100*x.upg)}% ${x.tier?'base stats':'to its stats'}</span></div>`;
   // stats
-  if(x.affs.length){h+=rule;x.affs.forEach((a0,i)=>{const a=spdFixed(x)?spdA(a0,G.char&&G.char.cls):a0,k=a.k==='skill'?'sk'+a.s:a.k;h+=line(esc(affText(a,affMul(x),cls)),k,(a.k==='skill'?'tskl':'taff r'+x.rarity)+(O&&O.pick?' sm-aff'+(O.sel===i?' sel':''):''),a.t?`<span class="tbadge" style="color:${TIER_COL[a.t]};border-color:${TIER_COL[a.t]}">T${a.t}</span>`:'',O&&O.pick?` data-a="${i}"`:'');});}
+  if(x.affs.length){h+=rule;x.affs.forEach((a0,i)=>{const a=spdFixed(x)?spdA(a0,G.char&&G.char.cls):a0,k=a.k==='skill'?'sk'+a.s:a.k;h+=line(esc(affText(a,affMul(x),cls,ancM(x))),k,(a.k==='skill'?'tskl':'taff r'+x.rarity)+(O&&O.pick?' sm-aff'+(O.sel===i?' sel':''):''),a.t?`<span class="tbadge" style="color:${TIER_COL[a.t]};border-color:${TIER_COL[a.t]}">T${a.t}</span>`:'',O&&O.pick?` data-a="${i}"`:'');});}
   // powers, set
   const pws=itemPowers(x);if(pws.length){h+=rule;for(const k of pws)h+=powerHtml(k,c)+(D&&!D.B['pw:'+k]?'<div class="tl"><span class="tr"><span class="tdf up">new power</span></span></div>':'');}
   if(setOf(x))h+=rule+setHtml(x,c);

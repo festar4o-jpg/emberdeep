@@ -61,7 +61,7 @@ function render(){
     if(l.eng){drawEngLoot(l,bob);continue;}
     if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}
       lootLabel(l.x,l.y-14,`${l.gold} Gold`,CURRENCY_COL,'rgba(200,180,138,.55)',null,null,true);continue;}
-    const col=RCOL[l.item.rarity];
+    const col=itCol(l.item);
     if(l.item.rarity>=2)drawBeam(l,col,l.item.rarity!==2); // fx.js: rare = short beam, unique/set/Runebind = tall
     const iy=l.y+bob; // rarity-coloured disc with the item's own inventory icon on top
     softShadow(l.x,l.y+12,15-bob,6,0.8);
@@ -126,7 +126,7 @@ function drawLootTip(){
   let best=null,bd=TIP_R;for(const l of G.loot){if(!l.item||l.taken||lootHidden(l.item))continue;const d=Math.hypot(l.x-p.x,l.y-p.y);if(d<bd){bd=d;best=l;}}
   if(!best)return;
   const it=best.item,cmp=lootCmp(best),lines=[];
-  lines.push([it.name,RCOL[it.rarity],'bold 13px']);
+  lines.push([it.name,itCol(it),'bold 13px']);
   lines.push([`${RNAME[it.rarity]} ${typeLabel(it)}${it.tier?' · '+tierLabel(it):''}`,'#9c8b72','11px']);
   if(it.slot==='weapon')lines.push([`Damage ${Math.round(it.dmin)}–${Math.round(it.dmax)}`,'#e8dcc4','12px']);else if(it.arm)lines.push([`Armor ${Math.round(it.arm)}`,'#e8dcc4','12px']);
   if(it.sockets)lines.push([`${it.sockets} socket${it.sockets>1?'s':''}`,'#9fb8d8','11px']);
@@ -150,7 +150,7 @@ function drawLootTip(){
   const lh=16,pad=7,bw=w+pad*2,bh=lines.length*lh+pad*2-2;
   const sx=(best.x-G.cam.x)*Z+CW/2,sy=(best.y-G.cam.y)*Z+CH/2-34*Z;
   const x=clamp(sx-bw/2,6,CW-bw-6),y=clamp(sy-bh,6,CH-bh-6);
-  ctx.fillStyle='rgba(16,11,8,.92)';ctx.strokeStyle=RCOL[it.rarity];ctx.lineWidth=1.5;
+  ctx.fillStyle='rgba(16,11,8,.92)';ctx.strokeStyle=itCol(it);ctx.lineWidth=1.5;
   ctx.beginPath();ctx.rect(x,y,bw,bh);ctx.fill();ctx.stroke();
   ctx.textAlign='left';ctx.textBaseline='top';
   lines.forEach(([t,col,f],i)=>{ctx.font=f+' sans-serif';ctx.fillStyle=col;ctx.fillText(t,x+pad,y+pad+i*lh);});
@@ -398,6 +398,6 @@ function drawMinimap(){
   mctx.fillStyle='#e33';for(const e of G.enemies){if(e.dead||e.hidden)continue;if(G.explored[Math.floor(e.y/TILE)*MW+Math.floor(e.x/TILE)]&&Math.hypot(e.x-G.p.x,e.y-G.p.y)<400)mctx.fillRect(e.x/TILE*s-2,e.y/TILE*s-2,4,4);}
   if(!G.inTown)minimapFeatures(s);
   for(const l of G.loot){if(l.taken||l.gold||!G.explored[tileIdx(l.x,l.y)]||l.item&&lootHidden(l.item))continue; /* ground items */
-    mctx.fillStyle=l.item?RCOL[l.item.rarity]:l.cur?CURS[l.cur].col:l.sig?SIG_COL[l.sig.rarity]:l.eng?ENG[l.eng.k].col:'#c8e8ff';mctx.save();mctx.translate(l.x/TILE*s,l.y/TILE*s);mctx.rotate(Math.PI/4);mctx.fillRect(-2.2,-2.2,4.4,4.4);mctx.restore();}
+    mctx.fillStyle=l.item?itCol(l.item):l.cur?CURS[l.cur].col:l.sig?SIG_COL[l.sig.rarity]:l.eng?ENG[l.eng.k].col:'#c8e8ff';mctx.save();mctx.translate(l.x/TILE*s,l.y/TILE*s);mctx.rotate(Math.PI/4);mctx.fillRect(-2.2,-2.2,4.4,4.4);mctx.restore();}
   mctx.fillStyle='#fff';mctx.beginPath();mctx.arc(G.p.x/TILE*s,G.p.y/TILE*s,4.5,0,TAU);mctx.fill();
 }

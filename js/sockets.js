@@ -79,14 +79,16 @@ const pouchCount=(c,s)=>pouchOf(c)[stoneKey(s)]||0;
 const pouchTotal=c=>Object.values(pouchOf(c)).reduce((a,b)=>a+b,0);
 
 // ---------- the book (shared by all characters): runes ever found, recipes forged, set pieces found ----------
-const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{},uqs:{}};
+const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{},uqs:{},anc:{}}; // anc (v1.0.119): Ancient copies found, 'u:<unique>' / 's:<set piece>'
 const isObj=o=>o&&typeof o==='object',BOOK_NOW=()=>BOOK; // (tests: BOOK is a let)
 // uqs (v1.0.59): uniques found, for the set/unique guarantee (items.js newNamed). Seeded from every hero and the stash.
-function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(isObj(b))BOOK={runes:b.runes||{},made:b.made||{},sets:isObj(b.sets)?b.sets:{},uqs:isObj(b.uqs)?b.uqs:{}};}catch(e){}
+function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(isObj(b))BOOK={runes:b.runes||{},made:b.made||{},sets:isObj(b.sets)?b.sets:{},uqs:isObj(b.uqs)?b.uqs:{},anc:isObj(b.anc)?b.anc:{}};}catch(e){}
   const all=[];if(STASH)all.push(...STASH.tabs.flat());for(const h of SAVES||[])if(isObj(h)){all.push(...Object.values(h.equip||{}),...(h.bag||[]));}noteSetPieces(all);}
 // Records set pieces and uniques in the book the first time any character gets one (returns the new set pieces).
 const namedFound=it=>!!(it&&(it.uq?BOOK.uqs[it.uq]:it.si?BOOK.sets[it.si]:false));
-function noteSetPieces(items){let n=0,u=0;for(const it of items){if(!it)continue;if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(it.uq&&!BOOK.uqs[it.uq]){BOOK.uqs[it.uq]=1;u++;}}if(n||u)storeBook();return n;}
+const ancKey=it=>it.uq?'u:'+it.uq:it.si?'s:'+it.si:null;
+function noteSetPieces(items){let n=0,u=0;for(const it of items){if(!it)continue;if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(it.uq&&!BOOK.uqs[it.uq]){BOOK.uqs[it.uq]=1;u++;}
+    const ak=it.anc&&ancKey(it);if(ak&&!BOOK.anc[ak]){BOOK.anc[ak]=1;u++;if(typeof toast==='function')toast('First Ancient!',`${it.name} · marked in 📖 Book`);}}if(n||u)storeBook();return n;}
 function noteSetPiece(it){if(noteSetPieces([it]))toast('New set piece!',`${it.name} · ${SETS[setOf(it)].name}`);}
 function storeBook(){storeSafe(BOOK_KEY,JSON.stringify(BOOK));backupSoon();} // core.js
 const recipeKnown=k=>!!BOOK.made[k]||RUNEBINDS[k].runes.every(r=>BOOK.runes[r]);
@@ -206,15 +208,15 @@ function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS)
     const txt=l=>l.map(setStatText).map(esc).join(', ');
     return `<div class="slot rb set${kn?'':' unk'}"><div class="info"><b style="${kn?'color:#3fe05a':''}">${kn?esc(S.name):'Unknown set'}${full?' <span class="fdim">✓ complete</span>':''}</b>
       <div class="fdim">${who} · ${S.items.length} pieces · ${where}</div>
-      <div class="rrow">${S.items.map(si=>BOOK.sets[si]?`<span class="rchip on">${esc(SET_ITEMS[si].name)}</span>`:`<span class="rchip q">? ${TYPES[SET_ITEMS[si].type].name}</span>`).join('')}</div>
+      <div class="rrow">${S.items.map(si=>BOOK.sets[si]?`<span class="rchip on">${BOOK.anc['s:'+si]?'🔸 ':''}${esc(SET_ITEMS[si].name)}</span>`:`<span class="rchip q">? ${TYPES[SET_ITEMS[si].type].name}</span>`).join('')}</div>
       ${kn?(S.bonus||[]).map(([n,l])=>`<div>(${n}) ${txt(l)}</div>`).join('')+(S.full&&S.full.length?`<div style="color:#3fe05a">Full set: ${txt(S.full)}</div>`:''):''}</div></div>`;}).join('');}
 // Bosses tab: what each act boss drops that nothing else does (farm them through the Waystone).
 function renderBossBook(){const c=G.char;
-  $('bookSub').textContent=`Every act boss has its own uniques that nothing else drops: each kill has a ${Math.round(BOSS_UQ_CH*100)}% chance at one of them (those your class can use), and a ${Math.round(BOSS_SET_CH*100)}% chance at a set piece, on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
+  $('bookSub').textContent=`🔸 = found as Ancient (${Object.keys(BOOK.anc).length} so far). Every act boss has its own uniques that nothing else drops: each kill has a ${Math.round(BOSS_UQ_CH*100)}% chance at one of them (those your class can use), and a ${Math.round(BOSS_SET_CH*100)}% chance at a set piece, on top of its usual loot. The Endless Depths add 10%. Travel back with the 🌀 Waystone (Boss only).`;
   $('bookList').innerHTML=BOSS_LOOT.map((L,a)=>{const A=ACTS[a],reached=c&&(c.diffDone?25:c.maxDepth||1)>=a*5+5,ks=c?bossLootFor(a,c.cls):L;
     const sets=Object.keys(SETS).filter(s=>SETS[s].act<=a+1&&(!SETS[s].cls||!c||SETS[s].cls===c.cls)).map(s=>SETS[s].name);
     return `<div class="slot rb${reached?'':' unk'}"><div class="info"><b style="color:${A.col}">${esc(A.boss)}</b> <span class="fdim">Act ${a+1} · depth ${a+1}-5${reached?'':' · not reached yet'}</span>
-      ${ks.map(k=>{const U=UNIQUES[k];return `<div style="color:${RCOL[3]}">${BOOK.uqs[k]?'✓ ':''}${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>${U.pw.map(p=>`<div class="fdim">✦ ${esc(UPOW[p].t)}</div>`).join('')}`;}).join('')}
+      ${ks.map(k=>{const U=UNIQUES[k];return `<div style="color:${RCOL[3]}">${BOOK.uqs[k]?'✓ ':''}${BOOK.anc['u:'+k]?'🔸 ':''}${esc(U.name)} <span class="fdim">(${TYPES[U.type].name})</span></div>${U.pw.map(p=>`<div class="fdim">✦ ${esc(UPOW[p].t)}</div>`).join('')}`;}).join('')}
       ${a===4?`<div class="fdim">Also: 40% extra Relics of the Ember Core piece</div>`:''}
       <div class="fdim">Set pieces from: ${sets.map(esc).join(', ')||'none'}</div></div></div>`;}).join('');}
 tap('pouchBtn',()=>openPouch(null));

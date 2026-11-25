@@ -128,7 +128,7 @@ let curFor=null; // {it, equipped}: crafting this item; null: just looking
 function openCurrency(it,equipped){curFor=it?{it,equipped}:null;renderCurrency();$('curOv').classList.remove('hidden');if(!it)setPause();}
 function closeCurrency(){$('curOv').classList.add('hidden');const f=curFor;curFor=null;if(f)openItem(f.it,f.equipped);else setPause();}
 function renderCurrency(){const it=curFor&&curFor.it;
-  $('curSub').innerHTML=it?`Crafting <b style="color:${RCOL[it.rarity]}">${esc(it.name)}</b>: tap a currency to use one.`:'Currency drops from monsters and is shared by all your heroes. Use it at the ✦ Crafting Bench in town.';
+  $('curSub').innerHTML=it?`Crafting <b style="color:${itCol(it)}">${esc(it.name)}</b>: tap a currency to use one.`:'Currency drops from monsters and is shared by all your heroes. Use it at the ✦ Crafting Bench in town.';
   $('curList').innerHTML=CUR_KEYS.map(k=>{const C=CURS[k],n=curCount(k),why=it?(n<1?'None left':curBlock(k,it)):null;
     return `<div class="slot${it&&!why?' cur-ok':''}${it&&why?' unk':''}" data-cur="${k}"><div class="ic" style="color:${C.col}">${C.ic}</div><div class="info"><b style="color:${C.col}">${C.name}</b> <span class="fdim">×${n}</span><div>${esc(C.desc)}</div>${why&&n>0?`<div class="fdim">${esc(why)}</div>`:''}</div></div>`;}).join('');
   if(it)$('curList').querySelectorAll('[data-cur]').forEach(el=>el.onclick=()=>{const k=el.dataset.cur,msg=useCur(k,it);if(!msg)return;toast(CURS[k].name,msg);refreshStats();renderInv();saveChar();renderCurrency();});}

@@ -1,6 +1,22 @@
 {
-  "latest": "1.0.117",
+  "latest": "1.0.119",
   "notes": [
+    {
+      "v": "1.0.119",
+      "t": [
+        "📖 Book marks every unique and set piece you have found as Ancient (🔸)",
+        "Salvaging an Ancient item gives double gold and materials",
+        "How to play explains Ancient items"
+      ]
+    },
+    {
+      "v": "1.0.118",
+      "t": [
+        "Ancient items: any unique or set item can drop Ancient, with 25% stronger stats, damage and armour (and its +skills round up)",
+        "They drop in Hell (1 in 20 uniques), maps (1 in 10) and Ember Rifts (1 in 10, up to 1 in 5 at Rift 20)",
+        "Ancient items glow orange and drop with their own burst and sound"
+      ]
+    },
     {
       "v": "1.0.117",
       "t": [

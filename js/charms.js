@@ -64,7 +64,7 @@ function migrateCharms(c){const keep=[];let used=0;
 // ---------- UI: the charm row in the inventory, and the charm item card ----------
 function renderCharms(){
   const c=G.char,cs=charmsOf(c);let h='';
-  for(const it of cs)h+=`<div class="cell" style="grid-column:span ${charmSlots(it)};border-color:${RCOL[it.rarity]}">${itemIcon(it)}${it.lock?'<span class="lock">🔒</span>':''}</div>`;
+  for(const it of cs)h+=`<div class="cell" style="grid-column:span ${charmSlots(it)};border-color:${itCol(it)}">${itemIcon(it)}${it.lock?'<span class="lock">🔒</span>':''}</div>`;
   for(let i=charmUsed(c);i<CHARM_SLOTS;i++)h+='<div class="cell empty"></div>';
   $('charmGrid').innerHTML=h;$('charmN').textContent=`${charmUsed(c)}/${CHARM_SLOTS}`;
   [...$('charmGrid').children].forEach((el,i)=>{if(cs[i])el.onclick=()=>openItem(cs[i],'charm');});

@@ -319,7 +319,7 @@ function update(dt){
     if(l.gold&&d<60){l.x+=(p.x-l.x)*Math.min(1,dt*10);l.y+=(p.y-l.y)*Math.min(1,dt*10);}
     if(d<32){if(l.gem)pickStone(l);else if(l.cur)pickCur(l);else if(l.sig)pickSigil(l);else if(l.eng)pickEng(l);else if(l.gold){const v=Math.round(l.gold*(1+(G.stats.gold||0)/100));G.char.gold+=v;l.taken=true;playSfx('gold');floatText(p.x,p.y-30,'+'+v+' gold','#f2d04a',false);}
       else if(autoSalvages(G.char,l.item)){const r=autoSalvage(G.char,l.item);l.taken=true;floatText(l.x,l.y-20,`+${r.gold}🪙 ${matText(r.mats)}`,RCOL[0],false);}
-      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);hintItem(l.item); /* hints.js */floatText(l.x,l.y-20,l.item.name,RCOL[l.item.rarity],false);$('bagDot').classList.remove('hidden');}
+      else if(G.char.bag.length<30){G.char.bag.push(l.item);l.taken=true;playSfx('pickup');noteSetPiece(l.item);hintItem(l.item); /* hints.js */floatText(l.x,l.y-20,l.item.name,itCol(l.item),false);$('bagDot').classList.remove('hidden');}
       else if(G.bagFullT<=0){G.bagFullT=3;toast('Bag is full','Salvage items in 🎒');}}}
   G.loot=G.loot.filter(l=>!l.taken);
   // fx

@@ -98,7 +98,7 @@ function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===fal
   const now=a.currentTime;if(now-(sfxAt[k]??-9)<(GAP[k]??0.06))return false;if(voices>=MAX_VOICES&&!SFX_MUST.has(k))return false;
   sfxAt[k]=now;try{SFX[k](a,now+(delay||0)+0.005);}catch(e){return false;}return true;}
 // What a drop sounds like: nothing for common/magic items and gold.
-function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
+function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
 // Each skill's sound (SKILLS order in skills.js); the basic attack (slot 0) of a Warden is the weapon's swing.
 const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor']};
 const SWING_SFX={swing:'swing',heavy:'heavy',stab:'stab',thrust:'stab',flick:null};

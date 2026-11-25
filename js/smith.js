@@ -31,7 +31,7 @@ const RARITY_MAT=['scrap','dust','essence','primal','primal','primal'],RARITY_MA
 const itemAct=it=>clamp(Math.floor(((it.ilvl||1)-1)/5)+1,1,5);
 const salvageMul=it=>1+0.5*(itemAct(it)-1);
 // What salvaging an item gives besides gold (charms give dust, grand charms also essence). Fixed, so previews are exact.
-function salvageMats(it){const mul=salvageMul(it);
+function salvageMats(it){const mul=salvageMul(it)*(it.anc?2:1); // items.js: Ancient salvage gives double
   if(it.slot==='charm')return it.size==='grand'?{dust:Math.round(2*mul),essence:Math.round(mul)}:{dust:Math.round(mul)};
   const k=RARITY_MAT[it.rarity];return k?{[k]:Math.round(RARITY_MAT_N[it.rarity]*mul)}:{};}
 // Auto-salvage on pickup (loot filter option): plain white items only; socketed whites are Runebind bases and are kept.
@@ -255,7 +255,7 @@ function renderSmith(){
 function renderSalvageInfo(){const c=G.char,it=smithSel;
   if(!it){$('smithInfo').innerHTML=`<p class="fdim">Tap a bag item to salvage it, or switch to ☑ Select to salvage several at once. Salvaging gives gold and ${MAT_HELP}</p>`;return;}
   const g=salvageMats(it),stones=(it.socketed||[]).length&&!it.rb;
-  $('smithInfo').innerHTML=`<div class="iname" style="color:${RCOL[it.rarity]}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)} · Item level ${it.ilvl} · Act ${itemAct(it)} (x${salvageMul(it)})</div>
+  $('smithInfo').innerHTML=`<div class="iname" style="color:${itCol(it)}">${esc(it.name)}</div><div class="isub">${RNAME[it.rarity]} ${typeLabel(it)} · Item level ${it.ilvl} · Act ${itemAct(it)} (x${salvageMul(it)})</div>
     <div style="margin:8px 0">${matLine(salvageValue(it),g)}</div>${stones?'<div class="fdim">Its gems and runes go back to your pouch.</div>':''}
     ${isLocked(it)?'<div class="fdim">🔒 Locked: unlock it to salvage.</div>':''}
     <div class="row"><div class="btn sm" id="smLock">${isLocked(it)?'🔓 Unlock':'🔒 Lock'}</div><div class="btn sm red${isLocked(it)?' dis':''}" id="smSalv">Salvage</div></div>`;
@@ -264,7 +264,7 @@ function renderSalvageInfo(){const c=G.char,it=smithSel;
 // Confirmation popup (bulk salvage, Upgrade Base): smithAskFn holds what to do on confirm.
 function askSmith(html,yes,fn){smithAskFn=fn;$('smithAskNo').classList.remove('hidden');$('smithAskBody').innerHTML=html;$('smithAskYes').textContent=yes;$('smithAsk').classList.remove('hidden');}
 function askUpbase(it){const c=G.char;if(smithBlock('upbase',it))return;const cost=upbaseCost(it);if(!canPay(c,cost))return;
-  askSmith(`<h3 style="color:${RCOL[it.rarity]}">Upgrade ${esc(it.name)}?</h3>
+  askSmith(`<h3 style="color:${itCol(it)}">Upgrade ${esc(it.name)}?</h3>
     <table class="upcmp">${upbasePreview(it).map(([a,b,n])=>`<tr><td class="fdim">${a}</td><td>${b}</td><td>→</td><td class="up2">${n}</td></tr>`).join('')}</table>
     <p class="fdim">Stats, sockets${it.sup?', Superior':''} and +${it.upg||0} upgrades stay.${it.rarity===3||it.rarity===5?' Uniques and set items can only do this once.':''}</p><p>Cost: ${costHtml(cost)}</p>`,'Upgrade',()=>{
     if(smith('upbase',it)){toast('Base upgraded',`${it.name} · Tier ${TIER_NAME[it.tier-1]}`);renderSmith();}});}
