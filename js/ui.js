@@ -38,6 +38,7 @@ function updateHud(){
   const D=G.depth,where=D>25?`Endless ${D-25} · ${ACTS[actIdx(D)].name}`:`${diffTag()}Act ${actIdx(D)+1} · ${ACTS[actIdx(D)].name} ${stageOf(D)}/5`;
   hud($('depthTxt'),'text',G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(PD())}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`); /* area level (bossfight.js) */
   hud($('buffTxt'),'text',shrineText());
+  {const rr=riftRun(),on=!!(rr&&inRift()&&!rr.guard&&!rr.done),rb=$('riftbar');hud(rb,'.hidden',!on);if(on)hud(rb.firstElementChild,'width',pc(Math.min(1,rr.prog/rr.need)));} // rifts.js
   const sk=SKILLS[c.cls];
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);hud(el,'.locked',r<=0);hud(el,'.nores',r>0&&p.res<sk[i].cost);
     const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;hud(el.children[0],'--p',r2(f));hud(el.children[1],'text',(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'');}
@@ -114,7 +115,8 @@ tap('winGo',()=>{$('winOv').classList.add('hidden');setPause();toast('The portal
 tap('winExit',()=>{$('winOv').classList.add('hidden');setPause();$('quitBtn').click();});
 // Rise again: in a zone, inside the same instance (portal.js); on boss arenas and depth levels, the level is rebuilt.
 function respawnHero(){$('deathOv').classList.add('hidden');G.char.deaths=(G.char.deaths||0)+1;G.char.gold=Math.floor(G.char.gold*0.9);
-  if(G.zone==='map'&&G.char.mapRun){const r=G.char.mapRun;r.lives--;if(r.lives<=0&&!r.done){const town=r.town;endMap('fail');G.p.dead=false;G.p.hp=G.stats.life;startTown(town);return;}toast(`${r.lives} ${r.lives===1?'life':'lives'} left in this map`,'');} // sigils.js
+  if(G.zone==='map'&&G.char.mapRun&&G.char.mapRun.rift)riftDeath(); // rifts.js: costs time, no lives
+  else if(G.zone==='map'&&G.char.mapRun){const r=G.char.mapRun;r.lives--;if(r.lives<=0&&!r.done){const town=r.town;endMap('fail');G.p.dead=false;G.p.hp=G.stats.life;startTown(town);return;}toast(`${r.lives} ${r.lives===1?'life':'lives'} left in this map`,'');} // sigils.js
   if(G.zone&&ZONES[G.zone].layout!=='boss')zoneRespawn();else if(G.zone)startZone(G.zone,'respawn');else startDepth(G.depth);}
 tap('respawnBtn',respawnHero);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();saveChar();if(G.char&&!G.paused)toggleMenu();}});

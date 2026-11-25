@@ -184,10 +184,11 @@ function closeBook(){$('bookOv').classList.add('hidden');setPause();}
 let bookTab='rb';
 function setBookTab(t){bookTab=t;renderBook();}
 function renderBook(){
-  $('bookTabs').innerHTML=[['rb','Runebinds'],['sets','Sets'],['boss','Bosses']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
+  $('bookTabs').innerHTML=[['rb','Runebinds'],['sets','Sets'],['boss','Bosses'],['rift','Rifts']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
   $('bookTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>setBookTab(el.dataset.t));
   if(bookTab==='sets')return renderSetBook();
   if(bookTab==='boss')return renderBossBook();
+  if(bookTab==='rift')return renderRiftBook(); // rifts.js
   const known=Object.keys(RUNEBINDS).filter(recipeKnown).length,made=Object.keys(BOOK.made).length;
   $('bookSub').textContent=`${known}/10 recipes known · ${made} forged. A recipe's runes appear as you find them. Socket them in this order into a white item with exactly that many sockets.`;
   $('bookList').innerHTML=Object.entries(RUNEBINDS).map(([k,R])=>{const kn=recipeKnown(k);

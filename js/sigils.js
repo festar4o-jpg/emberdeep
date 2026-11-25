@@ -74,13 +74,15 @@ function sigUseCur(k,s){if(curCount(k)<1||sigCurBlock(k,s))return null;let msg='
 // ---------- the open map ----------
 const mapsOpen=c=>!!c&&(c.diffDone||0)>=3;
 const inMap=()=>!!(G.char&&G.char.mapRun&&G.zone==='map'&&!G.inTown);
-const mapPD=r=>75+2*(r.sig.tier+(r.eg&&r.eg.abyss||0));
+const mapPD=r=>r.rift?riftPD(r.rift):75+2*(r.sig.tier+(r.eg&&r.eg.abyss||0)); // rifts.js: Ember Rifts
 // The map's modifiers as one table {key: value}.
 function mapModsOf(r){const o={};for(const m of r.sig.mods.concat(r.extra||[]))o[m.k]=Math.max(o[m.k]||0,modV(m));return o;} // corrupted nodes add r.extra
 const MAPM=()=>inMap()?(G.char.mapRun.mm||(G.char.mapRun.mm=mapModsOf(G.char.mapRun))):null;
 // The zone a map is built from: a main or side zone (not an act boss arena), its boss and champions random.
 function mapSource(){const zs=Object.keys(ZONES).filter(z=>!ZONES[z].map&&ZONES[z].layout!=='boss'&&ZONES[z].act);return pick(zs);}
 function regMapZone(r){const Z=ZONES[r.src]||ZONES.a1z1,mm=mapModsOf(r);
+  if(r.rift){ZONES.map=Object.assign({},Z,{name:'Ember Rift '+r.rift,sub:`${Z.name} · power like depth ${riftPD(r.rift)}`,map:true,rift:true,parent:null,side:null,next:null,gate:'boss',key:null,captive:null,hoard:0,arch:null,
+    boss:r.boss,su:r.su,density:(Z.density||1.2)*1.6,elite:(Z.elite??0.2)*1.3});return ZONES.map;} // rifts.js: packed, the Guardian comes later
   if(r.pinnacle){ZONES.map=Object.assign({},ZONES.a5z5,{name:'The Hollow Sun',sub:'The pinnacle · power like depth 105',map:true,pinnacle:true,parent:null,side:null,next:null});return ZONES.map;}
   const T=r.ntype&&r.ntype!=='plain'?ATLAS_TYPES[r.ntype].name+' · ':'',nm=r.sig.mods.length+(r.extra||[]).length;
   ZONES.map=Object.assign({},Z,{name:'Map: '+Z.name,sub:`${T}Tier ${r.sig.tier} · ${nm} modifier${nm===1?'':'s'}`,map:true,parent:null,side:null,next:null,gate:'boss',
@@ -100,7 +102,7 @@ function endMap(why){const c=G.char,r=c&&c.mapRun;if(!r)return;if(r.shrine&&G.p&
   if(why==='fail')toast('The map collapses','No lives left: the Sigil is lost');else if(why==='abandon')toast('Your map closed','You travelled away from it');saveChar();return r;}
 function mapLeave(){const c=G.char,town=c.mapRun?c.mapRun.town:25;endMap('done');startTown(town);}
 // Map boss down: the map is complete; Sigils drop (often a tier up), the portal home opens (zones.js zoneBossDown).
-function mapComplete(e){const c=G.char,r=c.mapRun;if(!r||r.done)return;r.done=true;const M=c.maps||(c.maps={done:0,best:0});M.done++;M.best=Math.max(M.best,r.sig.tier);
+function mapComplete(e){const c=G.char,r=c.mapRun;if(!r||r.done)return;if(r.rift)return riftDone(e); /* rifts.js */r.done=true;const M=c.maps||(c.maps={done:0,best:0});M.done++;M.best=Math.max(M.best,r.sig.tier);
   const at=(dx=40)=>[e.x+rand(-dx,dx),e.y+rand(-dx,dx)],boss=r.ntype==='boss';
   const eg=r.eg||{},n=1+(Math.random()<0.4?1:0)+(atl(c,'s5')?1:0)+(boss?1:0)+(eg.hunt?1:0);for(let i=0;i<n;i++){const t=r.sig.tier+(Math.random()<0.35+(atl(c,'s2')?0.15:0)+(eg.asc||0)/100?1:Math.random()<0.25?-1:0);dropSigil(...at(),genSigil(t,atl(c,'s3')?(Math.random()<0.2?2:Math.random()<0.6?1:0):undefined));}
   // the Atlas tree's Bosses branch, and Boss nodes
@@ -144,10 +146,13 @@ let mapSel=null;
 function openMapDevice(){const c=G.char;if(!mapsOpen(c))return;mapSel=null;$('mapOv').classList.remove('hidden');renderMapDevice();setPause();}
 function closeMapDevice(){$('mapOv').classList.add('hidden');setPause();}
 function renderMapDevice(){const c=G.char,r=c.mapRun,M=c.maps||{done:0,best:0};
-  $('mapTabs').innerHTML=[['atlas','Atlas'],['sigils','Sigils'],['eng',`Engravings (${ENGS.length})`],['tree',`Atlas tree${treeFree(c)>0?' ('+treeFree(c)+')':''}`],['help','? Help']].map(([k,n])=>`<div class="tab${mapTab===k?' on':''}" data-mt="${k}">${n}</div>`).join('');
+  $('mapTabs').innerHTML=[['atlas','Atlas'],['sigils','Sigils'],['eng',`Engravings (${ENGS.length})`],['tree',`Atlas tree${treeFree(c)>0?' ('+treeFree(c)+')':''}`],['rift','🔥 Rift'],['help','? Help']].map(([k,n])=>`<div class="tab${mapTab===k?' on':''}" data-mt="${k}">${n}</div>`).join('');
   $('mapTabs').querySelectorAll('[data-mt]').forEach(el=>el.onclick=()=>setMapTab(el.dataset.mt));
-  const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)} ${r.done?'(complete)':''}<div class="fdim">Stat tiers on drops: ${tierOddsText(runQR(c,r).r)}</div><div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
+  const open=r&&r.lives>0?`<div class="pinfo"><b>Open map:</b> ${esc(ZONES.map?ZONES.map.name:'')} · ${r.rift?'⏱ '+clockTxt(r.t):`Tier ${r.sig.tier} · ${'♥'.repeat(r.lives)}`} ${r.done?'(complete)':''}<div class="fdim">Stat tiers on drops: ${tierOddsText(runQR(c,r).r)}</div><div class="row"><div class="btn sm" id="mapBack">Return to it</div><div class="btn sm red" id="mapQuit">Abandon</div></div></div>`:'';
   $('mapSub').innerHTML=`${M.done} maps done · best Tier ${M.best||'–'} · ${SIGILS.length}/${SIG_CAP} Sigils (shared by your heroes). Each map: ${mapLives(c)} lives.`;
+  if(mapTab==='rift'){$('mapList').innerHTML=open+riftHtml(c);$('mapInfo').innerHTML='';$('mapInfo').style.display='none';riftBind(c); // rifts.js
+    if($('mapBack'))$('mapBack').onclick=()=>{closeMapDevice();closeWay();regMapZone(r);startZone('map',hasInstance('map')?'tp':'fresh');};
+    if($('mapQuit'))$('mapQuit').onclick=()=>{endMap('abandon');renderMapDevice();};return;}
   if(mapTab==='help'){$('mapList').innerHTML=MAP_HELP;$('mapInfo').innerHTML='';$('mapInfo').style.display='none';return;}
   if(mapTab==='atlas'||mapTab==='tree'||mapTab==='eng'){$('mapList').innerHTML=open+(mapTab==='atlas'?sunRow(c)+renderAtlas():mapTab==='eng'?renderEngs():renderTree());$('mapInfo').innerHTML='';$('mapInfo').style.display='none';
     $('mapList').querySelectorAll('[data-n]').forEach(el=>el.onclick=()=>{atlasSel=+el.dataset.n;const sc=$('mapList').querySelector('.atlasview'),st=sc?sc.scrollLeft:0,tp=sc?sc.scrollTop:0;renderMapDevice();const s2=$('mapList').querySelector('.atlasview');if(s2){s2.scrollLeft=st;s2.scrollTop=tp;}});

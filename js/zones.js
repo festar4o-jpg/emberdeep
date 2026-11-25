@@ -191,7 +191,7 @@ function genZone(Z,mode){const zid=G.zone;let L=null;G.road=null;
       rollPack(depth,elite).forEach((type,m)=>{let x=c.x+rand(-50,50),y=c.y+rand(-50,50);if(!safe(x,y,ETYPES[type].r)){x=c.x;y=c.y;}G.enemies.push(makeEnemy(type,x,y,depth,elite&&m<4,id,affs));});}}
   const freeRegs=()=>shuffle(L.regions.filter(r=>!used.has(r)&&far(r)));
   // zone boss: near the exit for a boss gate (it guards the way), otherwise somewhere deep
-  if(Z.boss||Z.arch){const cand=L.regions.filter(r=>!used.has(r)&&far(r)).sort((a,b)=>D[b.cy*MW+b.cx]-D[a.cy*MW+a.cx]);const r=Z.gate==='boss'?cand[0]:cand[Math.min(cand.length-1,randi(1,3))];
+  if((Z.boss||Z.arch)&&!Z.rift){const cand=L.regions.filter(r=>!used.has(r)&&far(r)).sort((a,b)=>D[b.cy*MW+b.cx]-D[a.cy*MW+a.cx]);const r=Z.gate==='boss'?cand[0]:cand[Math.min(cand.length-1,randi(1,3))];
     if(r){used.add(r);const q=spot(r);if(Z.arch){const b=makeArchBoss(Z.arch,q.x,q.y,depth);G.enemies.push(b);G.boss=b;}else{const b=makeZoneBoss(Z.boss,q.x,q.y,depth);G.enemies.push(b);G.zboss=b;
       if(zst(G.char,zid).boss)b.hp=b.maxHp; /* bosses come back on every visit */}}} // pinnacle.js: a Citadel's guardian
   // champions with an escort
@@ -312,7 +312,7 @@ function drawElder(){const E=G.elder;if(!E)return;const t=G.time,W=E.who;softSha
 function elderTick(){const p=G.p;G.elderNear=!!(G.inTown&&G.elder&&p&&Math.hypot(p.x-G.elder.x,p.y-G.elder.y)<70);}
 // HUD line: zone name, area level, objective.
 function zoneHud(){const Z=ZONES[G.zone];if(!Z)return null;const left=G.enemies.filter(e=>!e.dead).length;
-  if(Z.map&&G.char.mapRun){const r=G.char.mapRun;if(r.pinnacle)return `☀ The Hollow Sun · Lv ${areaLvl(PD())} · ${r.done?'Extinguished: take the portal home':'Extinguish it'} · ${'♥'.repeat(Math.max(0,r.lives))}`;return `Map T${r.sig.tier} · ${Z.name.replace(/^Map: /,'')} · Lv ${areaLvl(PD())} · ${r.done?'Complete: take the portal home':zoneGoal()} · ${'♥'.repeat(Math.max(0,r.lives))} · ${left} foes`;} // sigils.js
+  if(Z.map&&G.char.mapRun){const r=G.char.mapRun;if(r.rift)return riftHud(); /* rifts.js */if(r.pinnacle)return `☀ The Hollow Sun · Lv ${areaLvl(PD())} · ${r.done?'Extinguished: take the portal home':'Extinguish it'} · ${'♥'.repeat(Math.max(0,r.lives))}`;return `Map T${r.sig.tier} · ${Z.name.replace(/^Map: /,'')} · Lv ${areaLvl(PD())} · ${r.done?'Complete: take the portal home':zoneGoal()} · ${'♥'.repeat(Math.max(0,r.lives))} · ${left} foes`;} // sigils.js
   return `${diffTag()}Act ${Z.act} · ${Z.name} · Lv ${areaLvl(powDepth(Z.depth))} · ${zoneGoal()} · ${left} foes`;}
 // ---------- minimap ----------
 function minimapZone(s){if(!G.zone||G.inTown)return;const S=G.sidePortal;

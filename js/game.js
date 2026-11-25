@@ -62,6 +62,7 @@ function killEnemy(e){
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
   if(e.type==='boss'&&!e.ab)pasBossKill(e); // passives.js: first kill of each act boss
+  riftKill(e); // rifts.js: the Rift bar
   if(e.type==='boss'&&e.ab)archDown(e); // pinnacle.js: a Citadel guardian or the Hollow Sun
   else if(e.type==='boss'){const L=bossDef(e).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,PD()+L.ilvl,3,min,{act:dropAct(PD()),top:true}));}
@@ -74,8 +75,8 @@ function killEnemy(e){
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);dropUCharm(e);saveChar();} // after the boss toast, so a trophy's toast shows
   else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
   else if(e.su)superDown(e);
-  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.03:0))*lootHere().drop))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
-  else if(Math.random()<normalDrop(T)*lootHere().drop)dropItem(e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
+  else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.03:0))*lootHere().drop*riftDropMul()))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
+  else if(Math.random()<normalDrop(T)*lootHere().drop*riftDropMul())dropItem( /* rifts.js: half in a Rift */e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
 }
 // Item drop chances (v1.0.77): normal monsters about 1.9-2.9% (tougher kinds more), champion/magic pack members 10%
 // (13% with 3+ affixes). Super uniques, zone bosses and act bosses drop fixed amounts (zones.js superDown/zoneBossDown,
@@ -210,7 +211,7 @@ function startTown(next){
 // ---------- update ----------
 const joy={active:false,id:null,ox:0,oy:0,dx:0,dy:0};
 function update(dt){
-  const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;
+  const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;riftTick(dt); // rifts.js: the Rift clock
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
   p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt);perkTick(p,dt);bossPwTick(p,dt); /* skillmods.js, ailments.js, subclasses.js, uniques.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
