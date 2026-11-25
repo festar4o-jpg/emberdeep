@@ -23,7 +23,14 @@ const SUBCLASSES={
      perks:[{k:'kindling',t:'+15% chance to Ignite on every hit'},{k:'longBurn',t:'Your burning ground lasts 50% longer'},
        {k:'venomBlood',t:'Your poison deals 30% more damage'},{k:'pyreBurst',t:'Enemies that die while burning explode for 30% of their Life to enemies nearby'}]}
   ],
-  ranger:[] // v1.0.124: the Ranger's paths (Beastmaster, Sharpshooter) come in a later step
+  ranger:[ // v1.0.131
+    {k:'beastmaster',name:'Beastmaster',icon:'🐺',col:'#c8a070',t:'Wolf and hawk: stronger, tougher companions that hunt beside you.',
+     perks:[{k:'packLeader',t:'Your wolf and hawk deal 40% more damage'},{k:'thickHide',t:'Your wolf has 60% more Life and heals three times as fast'},
+       {k:'wildCall',t:'Call of the Wild and Hawk cost no Focus and recharge 30% faster'},{k:'alphaRoar',t:'When your wolf or hawk kills an enemy, you heal 5% of your Life'}]},
+    {k:'sharpshooter',name:'Sharpshooter',icon:'🎯',col:'#9fd8a0',t:'Arrows and precision: crits, piercing and long shots.',
+     perks:[{k:'eagleEye',t:'+10% crit chance'},{k:'longShot',t:'Arrows deal up to 30% more damage the farther they fly (full at 400 paces)'},
+       {k:'pinpoint',t:'Your arrows pierce 1 more enemy'},{k:'headshot',t:'Every 6th arrow that hits is a Headshot: triple damage'}]}
+  ]
 };
 for(const cls in SUBCLASSES)for(const S of SUBCLASSES[cls])S.perks.forEach((P,i)=>{P.lvl=SUB_PERK_LVLS[i];if(P.live==null)P.live=true;});
 function subOf(c){c=c||G.char;return c&&c.sub?(SUBCLASSES[c.cls]||[]).find(S=>S.k===c.sub)||null:null;}
@@ -53,7 +60,8 @@ function pathHtml(c){const L=SUBCLASSES[c.cls]||[],mine=subOf(c);
 // Hooks: game.js dmgPlayer (Block Heal, Block Stun, Last Stand), items.js calcStats (Iron Hide, Heavy Crit: perkStats),
 // game.js hitEnemy (Deep Cuts: bleedMul, Blood Scent), game.js killEnemy (Kill Rush), skills.js skillCd (Kill Rush).
 function perkStats(c,s,eq){if(perkOn(c,'ironHide')){s.armor*=1.3;s.thorns*=1.3;}if(perkOn(c,'heavyCrit')&&is2h(eq.mainhand))s.crit+=10;
-  if(perkOn(c,'kindling'))s.igniteCh=Math.min(AIL_CH_CAP,s.igniteCh+15);}
+  if(perkOn(c,'kindling'))s.igniteCh=Math.min(AIL_CH_CAP,s.igniteCh+15);
+  if(perkOn(c,'eagleEye'))s.crit+=10;if(perkOn(c,'pinpoint'))s.pierce=(s.pierce||0)+1;} // v1.0.131: Sharpshooter
 function perkTakenMul(){const p=G.p;return hasPerk('lastStand')&&p.hp<G.stats.life*0.3?0.7:1;}
 function perkBlock(src){const p=G.p;if(hasPerk('blockHeal'))healPlayer(G.stats.life*0.02,true);
   if(hasPerk('blockStun')&&src&&!src.dead&&src.hp!=null&&!(src.stunCd>0)){src.stun=Math.max(src.stun||0,src.type==='boss'?0.3:1);src.stunCd=1.5;floatText(src.x,src.y-src.r-20,'Stun','#ffd54a',false);}}
@@ -72,3 +80,12 @@ function perkHitAfter(e,opts){if(e.shockT>0&&!opts.dot&&!opts.haz&&hasPerk('stor
 function pyreBurst(e){if(!(e.burnT>0)||!hasPerk('pyreBurst'))return;const R=90,dmg=e.maxHp*0.3;fxExplosion(e.x,e.y,R);
   for(const o of G.enemies){if(o===e||o.dead||o.hidden||Math.hypot(o.x-e.x,o.y-e.y)>R+o.r)continue;const d=Math.max(1,Math.round(dmg*(o.type==='boss'?0.5:1)*(1-(o.dr||0))));
     o.hp-=d;o.flash=0.1;floatText(o.x+rand(-8,8),o.y-o.r-6,d,'#ff9a4a',false);if(o.type==='boss')bossGate(o);if(o.hp<=0&&!o.dead)killEnemy(o);}}
+// Ranger (v1.0.131). Hooks: ranger.js (Pack Leader: petMul, Thick Hide in callWolf/petTick, Alpha Roar: petKill),
+// skills.js skillCd + skillmods.js modCost (Wild Call), game.js projectiles (Long Shot, Headshot: arrowMul), perkStats.
+const petMul=()=>hasPerk('packLeader')?1.4:1;
+function petKill(e){if(e.dead&&hasPerk('alphaRoar'))healPlayer(G.stats.life*0.05,true);}
+// an arrow q hitting: Long Shot by how far it flew, Headshot on every 6th arrow hit
+function arrowMul(q,e){if(!q.arrow)return 1;let m=1;
+  if(hasPerk('longShot')&&q.sx!=null)m*=1+0.3*Math.min(1,Math.hypot(q.x-q.sx,q.y-q.sy)/400);
+  if(hasPerk('headshot')){const p=G.p;p.hsN=(p.hsN||0)+1;if(p.hsN>=6){p.hsN=0;m*=3;floatText(e.x,e.y-e.r-26,'Headshot!','#ffd36b',true);}}
+  return m;}

@@ -128,4 +128,4 @@ function boltCharge(){if(!hasMod('overcharge'))return false;const p=G.p;p.ocN=((
 // Fireball: Big Bang / Rapid Fire scale speed, size, blast and damage
 function fireballMod(){return hasMod('bigbang')?{spd:0.7,size:1.4,blast:1.6,mult:1.25}:hasMod('rapid')?{spd:1.4,size:0.85,blast:1,mult:0.8}:{spd:1,size:1,blast:1,mult:1};}
 // a skill's Mana/Fury cost after modifiers (Rapid Fire halves Fireball's)
-function modCost(i,cost){const c=G.char;if(!c||altOn(c,i))return cost;if(c.cls==='arcanist'&&i===1&&hasMod('rapid'))return cost/2;if(c.cls==='ranger'&&i===4&&hasMod('rnStorm'))return 60;return cost;} // Rapid Fire, Arrow Storm
+function modCost(i,cost){const c=G.char;if(c&&c.cls==='ranger'&&i===3&&hasPerk('wildCall'))return 0; /* subclasses.js: Wild Call */if(!c||altOn(c,i))return cost;if(c.cls==='arcanist'&&i===1&&hasMod('rapid'))return cost/2;if(c.cls==='ranger'&&i===4&&hasMod('rnStorm'))return 60;return cost;} // Rapid Fire, Arrow Storm

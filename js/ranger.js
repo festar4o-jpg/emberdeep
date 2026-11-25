@@ -28,18 +28,18 @@ const WOLF_SPD=215,WOLF_R=12,WOLF_BITE=1,WOLF_LEASH=260,WOLF_FAR=620;
 function wolfLife(r){return Math.round(G.stats.life*(0.4+0.03*(r-1)));}
 // v1.0.128 modifiers (skillmods.js): Pack (two wolves, 60% Life, 70% damage), Alpha (one big wolf, twice the Life, +40% damage), Bond (ranger.js bites, modTakenMul).
 function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];const pack=hasMod('wfPack'),alpha=hasMod('wfAlpha'),n=pack?2:1;
-  const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)),m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
+  const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)*(hasPerk('thickHide')?1.6:1)) /* subclasses.js: Thick Hide */,m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
   for(const q of G.pets)if(q.kind==='hawk')q.hp=0; /* a hawk or wolves, not both */let ws=G.pets.filter(q=>q.kind==='wolf');for(const w of ws.slice(n))w.hp=0;ws=ws.slice(0,n);G.pets=G.pets.filter(q=>q.hp>0);
   for(const w of ws){w.maxHp=life;w.hp=life;w.m=m;w.big=alpha;floatText(w.x,w.y-20,'Healed','#7fe07f',false);}
   while(ws.length<n){const k=ws.length,b=p.face+Math.PI+(n>1?(k?0.6:-0.6):0);let x=p.x+Math.cos(b)*30,y=p.y+Math.sin(b)*30;if(blockedAt(x,y,WOLF_R)){x=p.x;y=p.y;}
     const w={kind:'wolf',x,y,r:WOLF_R*(alpha?1.3:1),hp:life,maxHp:life,m,big:alpha,face:p.face,bite:0,walk:0,hurt:0};G.pets.push(w);ws.push(w);}
   for(const w of ws){G.fx.push({type:'ring',x:w.x,y:w.y,r0:6,r1:60,t:0,max:0.4,col:'#c8c0b0'});burst(w.x,w.y,16,'#bfb8a8',180);}}
 function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
-  let wi=0;for(const w of G.pets){if(w.hp<=0)continue;if(w.kind==='hawk'){hawkTick(w,dt);continue;}const side=wi++?1:-1;w.hurt=Math.max(0,w.hurt-dt);w.bite-=dt;w.hp=Math.min(w.maxHp,w.hp+w.maxHp*0.02*dt);
+  let wi=0;for(const w of G.pets){if(w.hp<=0)continue;if(w.kind==='hawk'){hawkTick(w,dt);continue;}const side=wi++?1:-1;w.hurt=Math.max(0,w.hurt-dt);w.bite-=dt;w.hp=Math.min(w.maxHp,w.hp+w.maxHp*(hasPerk('thickHide')?0.06:0.02)*dt);
     const dp=Math.hypot(p.x-w.x,p.y-w.y);if(dp>WOLF_FAR||G.inTown&&dp>200){w.x=p.x;w.y=p.y;} // left behind (a new area, a portal): back at your side
     const t=G.inTown?null:nearest(p.x,p.y,WOLF_LEASH);let gx=p.x-Math.cos(p.face+side*0.5)*34,gy=p.y-Math.sin(p.face+side*0.5)*34;
     if(t){const reach=t.r+w.r+6,d=Math.hypot(t.x-w.x,t.y-w.y);gx=t.x;gy=t.y;w.face=Math.atan2(t.y-w.y,t.x-w.x);
-      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m,{weapon:true,kb:20});G.sk=sk;gainRes(1);if(hasMod('wfBond'))healPlayer(G.stats.life*0.005,true);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
+      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m*petMul(),{weapon:true,kb:20});G.sk=sk;petKill(t); /* subclasses.js: Pack Leader, Alpha Roar */gainRes(1);if(hasMod('wfBond'))healPlayer(G.stats.life*0.005,true);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
     const dx=gx-w.x,dy=gy-w.y,dd=Math.hypot(dx,dy);if(dd>8){const st=Math.min(dd,WOLF_SPD*(t?1.15:dp>120?1.3:1)*dt);moveEnt(w,dx/dd*st,dy/dd*st);w.walk+=st;if(!t)w.face=Math.atan2(dy,dx);}
     // monsters next to it hit it now and then (every one of their attack times)
     for(const e of G.enemies){if(e.dead||e.hidden||!e.aggro||!(e.dmg>0))continue;if(Math.hypot(e.x-w.x,e.y-w.y)>e.r+w.r+8){continue;}
@@ -88,7 +88,7 @@ function callHawk(r){const p=G.p;if(!G.pets)G.pets=[];for(const q of G.pets)if(q
 function hawkTick(h,dt){const p=G.p;h.t-=dt;h.walk+=dt;if(h.t<=0){h.hp=0;burst(h.x,h.y,10,'#c8b088',120);return;}
   h.cd-=dt;let gx,gy;
   if(h.dive&&(h.dive.dead||h.dive.hidden))h.dive=null;
-  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m,{weapon:true,kb:10,bleed:h.bleed});G.sk=sk;
+  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m*petMul(),{weapon:true,kb:10,bleed:h.bleed});G.sk=sk;petKill(e);
       e.markAmt=Math.max(e.markUntil>G.time&&e.markAmt||0,h.mark);e.markUntil=G.time+(h.markT||MARK_T);burst(e.x,e.y,8,'#e8d8a8',140);h.dive=null;h.cd=(h.every||HAWK_EVERY)/(1+(G.stats.aspd||0)/100);}}
   else{h.ang+=dt*2.4;gx=p.x+Math.cos(h.ang)*55;gy=p.y+Math.sin(h.ang)*30-30;
     if(h.cd<=0&&!G.inTown){const t=nearest(p.x,p.y,320);if(t){h.dive=t;playSfx('screech');}}}

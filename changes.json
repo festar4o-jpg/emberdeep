@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.130",
+  "latest": "1.0.131",
   "notes": [
+    {
+      "v": "1.0.131",
+      "t": [
+        "Ranger paths at level 20 (✨ › Path): 🐺 Beastmaster or 🎯 Sharpshooter, 4 perks each",
+        "Beastmaster: stronger, tougher wolf and hawk, free and quicker to call, pet kills heal you",
+        "Sharpshooter: +10% crit, more damage at long range, +1 pierce, and every 6th arrow is a triple-damage Headshot"
+      ]
+    },
     {
       "v": "1.0.130",
       "t": [
