@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.128",
+  "latest": "1.0.129",
   "notes": [
+    {
+      "v": "1.0.129",
+      "t": [
+        "Ranger second skills (swap with ⇄ on the ✨ screen): Piercing Shot, Vault, Fire Trap, Hawk and Explosive Arrow",
+        "Vault flips you out of danger and leaves caltrops; Fire Trap leaves burning ground; the Hawk Marks enemies so they take more damage",
+        "Their modifiers come in the next update"
+      ]
+    },
     {
       "v": "1.0.128",
       "t": [

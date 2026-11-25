@@ -6,7 +6,7 @@ function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(firstSk(0)&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e)*bossPwHitMul(e,opts)*emberHitMul(e); /* embers.js: Glacier */ /* uniques.js: Tyrant's Stride, Rimebound Seal */ /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e);emberOnHit(e,r.d,opts); /* embers.js: Leech, Storm */ /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(firstSk(0)&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e)*bossPwHitMul(e,opts)*emberHitMul(e)*markMul(e); /* ranger.js: Hawk's Mark */ /* embers.js: Glacier */ /* uniques.js: Tyrant's Stride, Rimebound Seal */ /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e);emberOnHit(e,r.d,opts); /* embers.js: Leech, Storm */ /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
@@ -232,7 +232,8 @@ function update(dt){
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.charge)chargeTick(p,dt); // skillalts.js: Charge
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);leapMods(p,L);}}
+    if(t>=1&&L.vault)p.leap=null; /* ranger.js: Vault lands softly */
+    else if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);leapMods(p,L);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];
     if(t===T_LAVA){p.burnT=(p.burnT||0)-dt;if(p.burnT<=0){p.burnT=0.4;burnPlayer(s.life*0.04*resMul('fres'));burst(p.x,p.y,5,'#ff8a2a',90);}}else p.burnT=0;

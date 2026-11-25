@@ -74,6 +74,7 @@ const SFX={
   twang:(a,t)=>{tone(a,vr(220),t,0.14,0.07,'triangle',140);tone(a,vr(440),t,0.06,0.03,'square',300);noise(a,t,0.08,0.06,'highpass',vr(2500),3000,0.7,0.002);},
   snap:(a,t)=>{noise(a,t,0.12,0.16,'bandpass',vr(1800),600,2,0.002);tone(a,110,t,0.18,0.1,'square',60);},
   howl:(a,t)=>{tone(a,320,t,0.9,0.06,'sine',560);tone(a,640,t+0.25,0.6,0.025,'sine',420);noise(a,t,0.5,0.03,'bandpass',900,1200,3,0.2);},
+  screech:(a,t)=>{tone(a,vr(1900),t,0.32,0.035,'sawtooth',1200);tone(a,vr(2400),t+0.05,0.2,0.015,'sine',1500);},
   bite:(a,t)=>{noise(a,t,0.07,0.07,'lowpass',vr(900),400,1,0.002);tone(a,vr(160),t,0.06,0.04,'square',90);},
   bolt:(a,t)=>{tone(a,vr(900),t,0.16,0.06,'sine',450);tone(a,vr(1350),t,0.1,0.03,'triangle',700);},
   fireball:(a,t)=>{noise(a,t,0.4,0.16,'lowpass',400,1800,1,0.08);tone(a,110,t,0.3,0.05,'sawtooth',70);},

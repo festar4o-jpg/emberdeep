@@ -76,10 +76,11 @@ function render(){
   const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));G.crowd=ents.length;/* big crowds skip the per-monster top light (sprites.js litBlit) */ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
   drawCorpses(); // sprites.js: falling bodies
-  drawTraps(onScreen); // ranger.js: Spike Traps
+  drawTraps(onScreen);drawCaltrops(onScreen); // ranger.js: traps, caltrops, Explosive Arrows
   if(G.pets)for(const w of G.pets)if(onScreen(w.x,w.y,40))ents.push(w); // ranger.js: the wolf
   ents.sort((a,b)=>a.y-b.y);
-  for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else if(e.kind==='wolf')drawPet(e);else drawEnemy(e);}
+  for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else if(e.kind==='wolf'||e.kind==='hawk')drawPet(e);else drawEnemy(e);}
+  drawMarks(onScreen); // ranger.js: Hawk's Mark
   // projectiles
   drawProjectiles(); // fx.js
   // fx

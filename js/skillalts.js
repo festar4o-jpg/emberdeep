@@ -64,12 +64,23 @@ const SKILL_ALTS={
       cast(r){const a=aimPoint(400),big=hasMod('holeBig'),quick=hasMod('holeQuick'),T=quick?1:big?3.5:2.5; // Event Horizon, Singularity, Nova Star
         G.skz.push({k:'hole',x:a.x,y:a.y,t:T,tick:0.5,R:HOLE_R*(big?1.4:1),m:0.6+0.08*(r-1),end:(3+0.35*(r-1))*(quick?1.6:1),fire:hasMod('holeFire'),fm:0.3+0.04*(r-1),sk:G.sk});
         G.fx.push({type:'tele',x:a.x,y:a.y,r:120*(big?1.4:1),t:0,max:T,col:'#a06aff',own:1});}}],
-  ranger:[ // v1.0.124: listed, coming in a later step
-    {id:'pierce',name:'Piercing Shot',icon:'➹',cd:0.9,cost:0,soon:true,desc:r=>'A heavy arrow that passes through every enemy in a line.',cast(){}},
-    {id:'vault',name:'Vault',icon:'🤸',cd:5,cost:15,soon:true,desc:r=>'Flip backwards out of danger, leaving caltrops behind.',cast(){}},
-    {id:'firetrap',name:'Fire Trap',icon:'🔥',cd:6,cost:25,soon:true,desc:r=>'A trap that bursts into burning ground.',cast(){}},
-    {id:'hawk',name:'Hawk',icon:'🦅',cd:12,cost:30,soon:true,desc:r=>'A hawk that marks enemies so they take more damage.',cast(){}},
-    {id:'explosive',name:'Explosive Arrow',icon:'💣',cd:8,cost:40,soon:true,desc:r=>'An arrow that sticks and explodes.',cast(){}}]};
+  ranger:[ // v1.0.129 (moving parts in ranger.js)
+    {id:'pierce',name:'Piercing Shot',icon:'➹',cd:0.9,cost:0,elem:'phys',sfx:'twang',
+      desc:r=>`A heavy, fast arrow that passes through every enemy in a line for ${pct(1.6+0.14*(r-1))} weapon damage. Each hit restores 2 Focus. Slower than Arrow Shot.`,
+      cast(r){const a=aimPoint(700);shoot(a,1000,5,'#f0e6d0',{mult:1.6+0.14*(r-1),weapon:true,pierce:99,onhit:()=>gainRes(2),arrow:true});G.proj[G.proj.length-1].heavy=true;startAtk('bow','mh',0);}},
+    {id:'vault',name:'Vault',icon:'🤸',cd:5,cost:15,sfx:'dodge',
+      desc:r=>`Flip backwards out of danger (nothing can hit you in the air), leaving caltrops that slow enemies by 50% and hit them for ${pct(0.35+0.04*(r-1))} damage twice a second for ${CALTROP_T}s. Costs 15 Focus.`,
+      cast(r){vault(r);}},
+    {id:'firetrap',name:'Fire Trap',icon:'🔥',cd:6,cost:25,elem:'fire',sfx:'swing',
+      desc:r=>`Throw a trap that springs when an enemy steps close: a fire burst for ${pct(1.6+0.18*(r-1))} damage (it can Ignite), then burning ground for ${FTRAP_T}s that deals ${pct(0.4+0.045*(r-1))} twice a second. Shares the limit of ${TRAP_MAX} traps. Costs 25 Focus.`,
+      cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
+        placeTrap(x,y,1.6+0.18*(r-1),0,G.sk,0.4+0.045*(r-1));}},
+    {id:'hawk',name:'Hawk',icon:'🦅',cd:12,cost:30,sfx:'screech',
+      desc:r=>`A hawk circles you for ${HAWK_T}s and dives at enemies near you for ${pct(0.7+0.07*(r-1))} weapon damage (faster with Attack Speed), Marking them: Marked enemies take ${Math.round((0.15+0.01*(r-1))*100)}% more damage for ${MARK_T}s. It replaces your wolf. Costs 30 Focus.`,
+      cast(r){callHawk(r);}},
+    {id:'explosive',name:'Explosive Arrow',icon:'💣',cd:8,cost:40,elem:'fire',sfx:'twang',
+      desc:r=>`An arrow that sticks in the first enemy it hits and explodes ${BOMB_T}s later for ${pct(3.2+0.38*(r-1))} weapon damage around it (it can Ignite). Costs 40 Focus.`,
+      cast(r){const a=aimPoint(600),sk=G.sk,m=3.2+0.38*(r-1);shoot(a,700,5,'#ff9a3a',{mult:0.3,weapon:true,arrow:true,onhit:e=>{if(e)stickBomb(e,m,sk);}});G.proj[G.proj.length-1].fire=true;startAtk('bow','mh',0);}}]};
 // Modifiers of the second skills (v1.0.114): 3 each, unlocked at ranks MOD_UNLOCK like the first skills' (skillmods.js).
 // v1.0.114 balance (per button, against the first skill): Ice Shards 45% a shard, Seismic Wave 180% a quake, Firewall
 // 60% a tick, Black Hole collapse 300%.
@@ -151,7 +162,7 @@ function skzTick(p,dt){if(!G.skz||!G.skz.length)return;
     else if(z.k==='hole'){const R=z.R||HOLE_R;pullTo(z.x,z.y,R,140*dt);z.tick-=dt;if(fr(0,1)<0.8)part(z.x+fr(-90,90),z.y+fr(-90,90),0,0,0.3,'#a06aff',3);
       if(z.tick<=0&&z.t>0){z.tick=0.5;aoe(z.x,z.y,110,z.m,{quiet:true});}
       if(z.t<=0){aoe(z.x,z.y,150,z.end,{});fxExplosion(z.x,z.y,150,'#a06aff');G.shake=Math.max(G.shake,10);if(z.fire)G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:120,t:3,tick:0,mult:z.fm});}}
-    else if(typeof RZ!=='undefined'&&RZ[z.k])RZ[z.k](z,p,dt); // ranger.js: Spike Trap, Rain of Arrows
+    else if(typeof RZ!=='undefined'&&RZ[z.k])RZ[z.k](z,p,dt); // ranger.js: Spike Trap, Fire Trap, Rain of Arrows, caltrops, Explosive Arrow
     G.sk=null;}
   G.skz=G.skz.filter(z=>z.t>0);}
 // Pull enemies toward a point (heavy ones and bosses less), like uniques.js pullIn.
