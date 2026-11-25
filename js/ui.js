@@ -41,7 +41,7 @@ function updateHud(){
   hud($('buffTxt'),'text',shrineText());
   {const rr=riftRun(),on=!!(rr&&inRift()&&!rr.guard&&!rr.done),rb=$('riftbar');hud(rb,'.hidden',!on);if(on)hud(rb.firstElementChild,'width',pc(Math.min(1,rr.prog/rr.need)));} // rifts.js
   const sk=[0,1,2,3,4].map(i=>skillAt(c,i)); // skillalts.js
-  for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);hud(el,'.locked',r<=0);hud(el,'.nores',r>0&&p.res<sk[i].cost);
+  for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i),lc=r>0?lifeCost(i):0;hud(el,'.locked',r<=0);hud(el,'.nores',r>0&&(lc?p.hp<=lc+1:p.res<modCost(i,sk[i].cost))); /* uniques.js lifeCost: Blood Magic, Bloodleap */
     const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;hud(el.children[0],'--p',r2(f));hud(el.children[1],'text',(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'');}
   const pb=$('potBtn');hud($('potCnt'),'text',String(p.potions));hud(pb,'.locked',p.potions<=0);hud(pb.querySelector('.cd'),'--p',r2(p.potCd>0?p.potCd:0));
   const b=G.boss&&!G.boss.dead?G.boss:G.zboss&&!G.zboss.dead&&G.zboss.aggro?G.zboss:null,bb=$('bossbar');if(b&&!b.dead&&b.aggro){hud(bb,'.hidden',false);
@@ -286,7 +286,7 @@ function renderSkills(){
   $('skList').innerHTML=sk.map((s,i)=>{const base=c.skills[i],bonus=G.stats.skill[i],r=rk(i),req=SKILL_REQ[i];const locked=c.lvl<req;
     const can=!locked&&c.skillPts>0&&base<15;
     return `<div class="skrow${locked?' locked':''}"><div class="ic">${s.icon}</div><div class="info"><b>${s.name}</b> ${base?`Rank ${base}${bonus?` <span style="color:#f2d04a">(+${bonus})</span>`:''}`:locked?`· Requires level ${req}`:'· Not learned'}
-      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${!altOn(c,i)&&skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}${altRowHtml(c,i)}</div>
+      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${base&&hasKs('bloodmagic')&&s.cost>0?`<div style="color:#e04060">Blood Magic: costs ${lifeCost(i)} Life instead</div>`:''}${!altOn(c,i)&&skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}${altRowHtml(c,i)}</div>
       <div class="btn sm${can?'':' dis'}" data-i="${i}">${base?'+':'Learn'}</div></div>`;}).join('');
   $('skList').querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>{if(pickAlt(c,+b.dataset.alt))renderSkills();}); // skillalts.js
   $('skList').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.m.split(':').map(Number);if(pickMod(i,j))renderSkills();}); // skillmods.js

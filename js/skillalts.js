@@ -120,7 +120,7 @@ function altRowHtml(c,i){const A=altOf(c.cls,i);if(!A)return '';const on=altOn(c
 // ---------- Warden: the moving parts ----------
 // Charge (game.js update, instead of walking): fast dash, each enemy touched is hit once.
 function chargeTick(p,dt){const C=p.charge;C.t+=dt;moveEnt(p,Math.cos(C.a)*1050*dt,Math.sin(C.a)*1050*dt);p.face=C.a;
-  if(Math.random()<0.8)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(C.a)*80,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
+  if(fr(0,1)<0.8)part(p.x+fr(-8,8),p.y+p.r*0.6,-Math.cos(C.a)*80,-20,0.35,'#c8b090',3);
   G.sk=C.sk;for(const e of G.enemies){if(e.dead||e.hidden||C.hit.includes(e))continue;if(dist(e,p)<p.r+e.r+12){C.hit.push(e);hitEnemy(e,C.mult,{kb:90,stun:C.stun});}}
   if(C.t>=C.dur){p.charge=null;G.shake=Math.max(G.shake,5);G.fx.push({type:'ring',x:p.x,y:p.y,r0:8,r1:60,t:0,max:0.25,col:'#ffcc88'});
     if(hasMod('chargeQuake')){aoe(p.x,p.y,110,C.mult*1.25,{stun:0.5});fxCracks(p.x,p.y,110);G.shake=Math.max(G.shake,9);} // Trample
@@ -131,7 +131,7 @@ const BANNER_R=180;
 function bannerTick(p,dt){if(p.chargeGuardT>0)p.chargeGuardT-=dt;const B=G.banner;p.bannerOn=0;if(!B)return;B.t-=dt;if(B.t<=0||G.inTown){G.banner=null;return;}
   if(Math.hypot(p.x-B.x,p.y-B.y)<BANNER_R&&!p.dead){p.bannerOn=B.amt;if(B.regen)healPlayer(G.stats.life*B.regen*dt,true);if(hasMod('banFury'))gainRes(8*dt);}
   B.fx-=dt;if(B.fx<=0){B.fx=1;G.fx.push({type:'ring',x:B.x,y:B.y,r0:BANNER_R-20,r1:BANNER_R,t:0,max:0.6,col:p.bannerOn?'#ffcc55':'#a08040'});}
-  if(Math.random()<dt*10)G.parts.push({x:B.x+rand(-4,4),y:B.y-rand(10,40),vx:0,vy:-30,life:0.5,max:0.5,col:'#ffcc55',s:2});}
+  if(fr(0,1)<dt*10)part(B.x+fr(-4,4),B.y-fr(10,40),0,-30,0.5,'#ffcc55',2);}
 // ---------- Arcanist: the moving parts (G.skz, ticked in game.js update, cleared with the area) ----------
 const HOLE_R=230;
 function skzTick(p,dt){if(!G.skz||!G.skz.length)return;
@@ -139,10 +139,10 @@ function skzTick(p,dt){if(!G.skz||!G.skz.length)return;
     if(z.k==='barrier'){if(z.mana&&p.barrier>0)gainRes(G.stats.res*0.04*dt);
       if(!(p.barrier>0)||z.t<=0){z.t=0;aoe(p.x,p.y,150,z.m,z.freeze?{freeze:1.5}:{chill:2.5});G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:155,t:0,max:0.4,col:'#9fe4ff'});burst(p.x,p.y,24,'#bff0ff',220);}}
     else if(z.k==='orb'){z.x+=z.vx*dt;z.y+=z.vy*dt;if(blockedAt(z.x,z.y,8)){z.vx=0;z.vy=0;}
-      if(Math.random()<0.9)G.parts.push({x:z.x+rand(-6,6),y:z.y+rand(-6,6),vx:rand(-30,30),vy:rand(-30,30),life:0.25,max:0.25,col:'#a0d0ff',s:4});
+      if(fr(0,1)<0.9)part(z.x+fr(-6,6),z.y+fr(-6,6),fr(-30,30),fr(-30,30),0.25,'#a0d0ff',4);
       z.zap-=dt;if(z.zap<=0){z.zap=z.every||1/3;const hit=new Set();for(let k=0;k<(z.n||3);k++){const e=nearest(z.x,z.y,150,hit);if(!e)break;hit.add(e);hitEnemy(e,z.m,{});G.fx.push({type:'bolt',pts:[{x:z.x,y:z.y},{x:e.x,y:e.y}],t:0,max:0.15});}}
       if(z.t<=0&&z.nova){aoe(z.x,z.y,140,z.m*3,{});fxExplosion(z.x,z.y,140,'#9fd8ff');}}
-    else if(z.k==='hole'){const R=z.R||HOLE_R;pullTo(z.x,z.y,R,140*dt);z.tick-=dt;if(Math.random()<0.8)G.parts.push({x:z.x+rand(-90,90),y:z.y+rand(-90,90),vx:0,vy:0,life:0.3,max:0.3,col:'#a06aff',s:3});
+    else if(z.k==='hole'){const R=z.R||HOLE_R;pullTo(z.x,z.y,R,140*dt);z.tick-=dt;if(fr(0,1)<0.8)part(z.x+fr(-90,90),z.y+fr(-90,90),0,0,0.3,'#a06aff',3);
       if(z.tick<=0&&z.t>0){z.tick=0.5;aoe(z.x,z.y,110,z.m,{quiet:true});}
       if(z.t<=0){aoe(z.x,z.y,150,z.end,{});fxExplosion(z.x,z.y,150,'#a06aff');G.shake=Math.max(G.shake,10);if(z.fire)G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:120,t:3,tick:0,mult:z.fm});}}
     G.sk=null;}
