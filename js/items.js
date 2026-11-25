@@ -500,7 +500,7 @@ const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64'
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=15; // 15: second skills (c.alt, all first skills on old heroes) · 14: Ember Rifts (c.rift) · 13: passive tree (c.pas empty, c.pasBoss from progress) · 12: subclasses (c.sub, none on old heroes) · 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
+const SAVE_VER=16; // 16: Ember gems (c.emb, none on old heroes) · 15: second skills (c.alt, all first skills on old heroes) · 14: Ember Rifts (c.rift) · 13: passive tree (c.pas empty, c.pasBoss from progress) · 12: subclasses (c.sub, none on old heroes) · 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -556,6 +556,7 @@ function migrateChar(c){
   fixPassives(c); // v13: passive tree (passives.js)
   fixRift(c); // v14: Ember Rifts (rifts.js)
   fixAlts(c); // v15: second skills (skillalts.js)
+  fixEmbers(c); // v16: Ember gems (embers.js)
   c.equip=eq;c.ver=SAVE_VER;return c;
 }
 function migrateSaves(){
@@ -602,6 +603,7 @@ function calcStats(c,swap,at){
   if(!s.mh&&s.oh){s.mh=s.oh;s.oh=null;} // off-hand weapon with empty main hand acts as the main weapon
   if(s.mh&&s.oh){s.dmin=(s.mh.dmin+s.oh.dmin)/2;s.dmax=(s.mh.dmax+s.oh.dmax)/2;s.wspd=(s.mh.spd+s.oh.spd)/2*1.15;} // dual wield: alternate hands, +15% attack rate
   else if(s.mh){s.dmin=s.mh.dmin;s.dmax=s.mh.dmax;s.wspd=s.mh.spd;}
+  emberStats(c,s); // embers.js: worn Ember gems
   pasStats(c,s); // passives.js: the passive tree (Paragon levels give tree points since v1.0.104)
   s.cdr=Math.min(s.cdr,40);s.block=Math.min(s.block,50);s.bleed=Math.min(s.bleed,75);s.stunCh=Math.min(s.stunCh,50);s.splash=Math.min(s.splash,50);s.levelMul=1+0.05*(L-1);
   s.life*=1+s.lifepct/100;s.evade=Math.min(s.evade,40);for(const k of ['igniteCh','shockCh','poisonCh'])s[k]=Math.min(s[k],AIL_CH_CAP);s.dr=Math.min(s.dr,30); // v1.0.70 stats (caps: evade 40%, less damage 30%)

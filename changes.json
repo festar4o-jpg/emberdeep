@@ -1,6 +1,22 @@
 {
-  "latest": "1.0.121",
+  "latest": "1.0.123",
   "notes": [
+    {
+      "v": "1.0.123",
+      "t": [
+        "Ember gems now work: Wrath, Glacier, Haste, Leech, Bastion, Fortune, Storm and Pyre grow stronger with every level",
+        "📖 Book › Embers lists every gem and which of your heroes has it",
+        "How to play explains Ember gems"
+      ]
+    },
+    {
+      "v": "1.0.122",
+      "t": [
+        "Ember gems: 8 gems that only Ember Rift Guardians drop (about 1 clear in 4); they level up with every Rift you clear in time",
+        "Ember slots in the 🎒 bag: the first opens with your first Rift cleared in time, the second at Rift 15",
+        "The gems' effects arrive in the next update"
+      ]
+    },
     {
       "v": "1.0.121",
       "t": [

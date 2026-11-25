@@ -31,7 +31,7 @@ function applyAilments(e,d,opts){if(e.dead||opts.dot||opts.haz||opts.splashed)re
   if(stat)shockHit(e,2);else if(sh>0&&Math.random()*100<sh)shockHit(e,1);
   if(el==='cold')chillHit(e,opts.chill?0.5:CHILL_SLOW,Math.max(CHILL_DUR,opts.chill||0),!!opts.chill); // Cold Snap (opts.chill): slows only, never builds a freeze
   if((s.poisonCh||0)>0&&Math.random()*100<s.poisonCh)poisonHit(e,d);}
-function igniteHit(e,d){const dps=d*IGNITE_DPS*(1-(e.dr||0));e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,IGNITE_DUR);}
+function igniteHit(e,d){const dps=d*IGNITE_DPS*(1-(e.dr||0))*(1+(G.stats&&G.stats.embPyre||0)/100); /* embers.js: Pyre */e.burnDps=e.burnT>0?Math.max(e.burnDps,dps):dps;e.burnT=Math.max(e.burnT||0,IGNITE_DUR);}
 function shockHit(e,n){const was=e.shockT>0;e.shockN=Math.min(shockMax(),(was?e.shockN||0:0)+n); /* subclasses.js: High Voltage */e.shockT=SHOCK_DUR;if(!was)floatText(e.x,e.y-e.r-16,'Shocked',AIL_COL.shock,false);}
 function chillHit(e,amt,t,noFreeze){e.chillAmt=Math.max(e.chillT>0?e.chillAmt||0:0,amt);e.chillT=Math.max(e.chillT||0,t);if(noFreeze)return;e.chillN=(e.chillN||0)+1;
   if(e.chillN>=freezeAt()){ /* subclasses.js: Quick Freeze */e.chillN=0;e.frozen=Math.max(e.frozen,e.type==='boss'?0.35:1);floatText(e.x,e.y-e.r-16,'Frozen',AIL_COL.chill,false);}}

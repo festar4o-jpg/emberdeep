@@ -47,7 +47,7 @@ function riftDone(e){const c=G.char,r=c.mapRun,R=riftOf(c);if(r.done)return;r.do
   const L=r.rift,used=Math.round(RIFT_TIME-r.t);
   if(r.late)toast(`Rift ${L}: too late`,'The Guardian falls, but no new level opens. Take the portal home');
   else{const gain=1+(r.t>RIFT_TIME/2?1:0)+(r.t>RIFT_TIME*2/3?1:0);R.top=Math.max(R.top,L+gain);R.best=Math.max(R.best,L);if(!(R.bt[L]<=used))R.bt[L]=used;
-    const u=riftReward(e,L,false);toast(`Rift ${L} cleared in ${clockTxt(used)}`,`Rift ${L+gain} is open${gain>1?` (+${gain} levels)`:''}${u?` · milestone: ${u>1?u+' unique or set items':'a unique or set item'}`:''} · take the portal home`);playSfx('unique');}
+    const u=riftReward(e,L,false),em=riftEmbers(L); /* embers.js */toast(`Rift ${L} cleared in ${clockTxt(used)}`,`Rift ${L+gain} is open${gain>1?` (+${gain} levels)`:''}${u?` · milestone: ${u>1?u+' unique or set items':'a unique or set item'}`:''} · take the portal home${em}`);playSfx('unique');}
   if(r.late)riftReward(e,L,true);saveChar();}
 // The Guardian's loot on top of a map boss's: in time, 1 rare + 1 more per 4 levels (some better), crafting orbs and
 // gold that grow with the level, and a unique for each new 5th level; too late, one rare and a little gold.

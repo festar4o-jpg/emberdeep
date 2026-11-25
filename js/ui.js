@@ -151,6 +151,7 @@ function isBetter(it){const c=G.char;return power(calcStats(c,it))>power(calcSta
 function toggleInv(){if(!G.char)return;const o=$('invOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden')){$('bagDot').classList.add('hidden');renderInv();}setPause();}
 function renderInv(){
   const c=G.char,s=G.stats;
+  {const b=$('emberBox');b.innerHTML=emberHtml(c);emberBind(c,b);} // embers.js
   const twoH=is2h(c.equip.mainhand);
   $('eqgrid').innerHTML=EQ_SLOTS.map(sl=>sl==='offhand'&&twoH?`<div class="cell empty blocked">${itemIcon(c.equip.mainhand)}<span class="lbl">Off Hand</span><span class="tag">2H</span></div>`:setCell(c,sl)).join('');
   [...$('eqgrid').children].forEach((el,i)=>el.onclick=()=>{const sl=EQ_SLOTS[i],it=c.equip[sl];if(sl==='offhand'&&twoH){toast('Off Hand blocked','Your two-handed weapon needs both hands');return;}if(it)openItem(it,sl);});
