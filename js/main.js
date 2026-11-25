@@ -17,6 +17,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 watchBattery();loadHints();$('hintBox').onclick=()=>nextHint(); // hints.js
+startUpdates(); // updates.js: the update check
  // perf.js: Battery saver turns on by itself on low battery
 migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();
 resize();showTitle();requestAnimationFrame(frame);

@@ -33,7 +33,7 @@
       <div class="ib pe" id="bagBtn">🎒<b class="dot hidden" id="bagDot"></b></div>
       <div class="ib pe" id="skBtn">✨<b class="dot hidden" id="skDot"></b></div>
       <div class="ib pe" id="treeBtn">🌳<b class="dot hidden" id="treeDot"></b></div>
-      <div class="ib pe" id="menuBtn">☰</div>
+      <div class="ib pe" id="menuBtn">☰<b class="dot hidden" id="menuDot"></b></div>
     </div>
     <canvas id="minimap" width="220" height="220"></canvas>
   </div>
@@ -197,6 +197,10 @@
   <div id="treeTop"><b>🌳 Passive tree</b><span id="treePts" class="fdim"></span><span style="flex:1"></span><div class="btn" id="treeFitBtn">Whole tree</div><div class="btn" id="treeClose">Close</div></div>
   <div id="treeInfo" class="hidden"></div>
 </div>
+<div id="updOv" class="overlay hidden" style="z-index:14"><div class="panel">
+  <h2 id="updTitle"></h2><p class="sub" id="updSub"></p><div id="updBody"></div>
+  <div class="row"><div class="btn" id="updGo">Update now</div><div class="btn" id="updLater">Later</div></div>
+</div></div>
 <div id="questOv" class="overlay hidden"><div class="panel"><h2>📜 Quests</h2><div id="questList"></div><div class="row"><div class="btn" id="questClose">Close</div></div></div></div>
 <div id="wayOv" class="overlay hidden"><div class="panel">
   <h2>Waystone</h2>
@@ -210,6 +214,8 @@
 
 <div id="menuOv" class="overlay hidden"><div class="panel">
   <h2>Paused</h2>
+  <div class="filt"><b style="color:var(--gold)">Game version</b> <span id="updVer" class="fdim"></span>
+    <div class="row"><div class="btn sm" id="updCheck">🔄 Check for updates</div><div class="btn sm" id="updNews">What's new</div></div></div>
   <div class="filt">
     <b style="color:var(--gold)">Loot filter</b> <span class="fdim">hide items below</span>
     <div class="tabs" id="filtTier"></div>
@@ -342,6 +348,7 @@
 <script src="js/perf.js"></script>
 <script src="js/hints.js"></script>
 <script src="js/treeui.js"></script>
+<script src="js/updates.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -367,3 +367,4 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 #riftbar{width:170px;height:7px;margin-top:3px;background:#0009;border:1px solid #000;box-shadow:0 0 0 1px #7a3a14;border-radius:2px;overflow:hidden;}
 #riftbar>i{display:block;height:100%;width:0;background:linear-gradient(#ffb04a,#c8400a);}
 .altrow{display:flex;gap:8px;align-items:center;margin-top:5px;font-size:12px;}.altrow .btn{white-space:nowrap;}
+#updBody{max-height:50vh;overflow:auto;margin:6px 0 10px;font-size:14px;}#updBody .updv{margin-bottom:8px;}#updBody .updv b{color:var(--gold);}

@@ -1,0 +1,26 @@
+{
+  "latest": "1.0.116",
+  "notes": [
+    {"v": "1.0.116", "t": [
+      "The game now tells you when an update is ready, with what's new, and updates with one tap",
+      "☰ menu: Check for updates and What's new"]},
+    {"v": "1.0.115", "t": [
+      "Blood Magic: the skill screen shows each skill's Life cost",
+      "Fixed: the new skills' sparkles could change loot and crit rolls"]},
+    {"v": "1.0.114", "t": [
+      "3 modifiers for each of the 10 new skills (30 in all)",
+      "Balance: Seismic Wave, Firewall and Black Hole stronger, Ice Shards a little weaker"]},
+    {"v": "1.0.113", "t": [
+      "Arcanist second skills: Ice Shards, Firewall, Ice Barrier, Storm Orb, Black Hole"]},
+    {"v": "1.0.112", "t": [
+      "Warden second skills: Rending Strike, Charge, Blade Fan, Battle Banner, Seismic Wave"]},
+    {"v": "1.0.111", "t": [
+      "Every skill button can hold a second skill: swap with ⇄ on the ✨ screen"]},
+    {"v": "1.0.110", "t": [
+      "Ember Rifts balance: the same bar on every map, Rift 1 easier, the Guardian quicker to kill"]},
+    {"v": "1.0.109", "t": [
+      "Ember Rifts rewards: better Guardian loot each level, a unique or set item every 5th level, 📖 Book › Rifts"]},
+    {"v": "1.0.108", "t": [
+      "Ember Rifts: endless timed challenges from the Map Device's 🔥 Rift tab (after Hell)"]}
+  ]
+}
