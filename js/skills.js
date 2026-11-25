@@ -74,7 +74,8 @@ const SKILLS={
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
-function skillCd(i){const sk=SKILLS[G.char.cls][i],w=G.char.cls==='warden';
+function skillCd(i){const sk=skillAt(G.char,i),w=G.char.cls==='warden';
+  if(altOn(G.char,i))return i===0?sk.cd/(G.stats.wspd*(1+(w?G.stats.aspd:(G.stats.cspd||0))/100)):sk.cd*(1-G.stats.cdr/100); // skillalts.js: second skills (their own rules come with them)
   if(w&&i===1&&hasPw('bloodleap'))return 0.35;if(w&&i===4&&hasPw('faultline'))return sk.cd*0.5*(1-G.stats.cdr/100);
   const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush
   if(!w&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
@@ -90,7 +91,7 @@ function tryCast(i){
   const p=G.p;if(G.paused||!p||p.dead||playerFrozen())return; // ailments.js: no casting while frozen
   // v1.0.98: other skills can be used during Leap Slam (in the air) and Whirlwind; only Leap Slam waits for its own landing
   const r=rk(i);if(r<=0||p.cd[i]>0||p.leap&&i===1)return;
-  const sk=SKILLS[G.char.cls][i];
+  const sk=skillAt(G.char,i); // skillalts.js
   const lc=lifeCost(i); // Bloodleap Greaves: pay Life instead of Fury
   const cost=modCost(i,sk.cost); // skillmods.js: Rapid Fire
   if(lc?p.hp<=lc+1:p.res<cost)return;
@@ -98,6 +99,6 @@ function tryCast(i){
   p.cd[i]=skillCd(i);p.cdMax[i]=p.cd[i];
   if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);
     if(combo('Eye of the Storm'))for(let j=1;j<5;j++)if(j!==i&&p.cd[j]>0)p.cd[j]=Math.max(0,p.cd[j]-1);}
-  G.sk=i;try{sk.cast(r);}finally{G.sk=null;}skillSfx(G.char.cls,i); // sfx.js; G.sk: hits from this cast count as this skill (+% skill damage)
+  G.sk=i;try{sk.cast(r);}finally{G.sk=null;}if(sk.sfx)playSfx(sk.sfx);else skillSfx(G.char.cls,i); /* skillalts.js: a second skill's own sound */ // sfx.js; G.sk: hits from this cast count as this skill (+% skill damage)
   if(G.char.cls==='arcanist')startAtk(null,'mh',i);else if(i===1||i===4)startAtk(is2h(G.char.equip.mainhand)?'heavy':'swing','mh',i);
 }

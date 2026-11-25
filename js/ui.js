@@ -5,8 +5,9 @@ let skillEls=[];
 function buildSkillBar(){
   const box=$('skills');
   // Only rebuild when the class changes; rebuilding mid-press (level-up) left held[] stuck on desktop.
-  if(box.dataset.cls===G.char.cls+SETTINGS.lefty&&skillEls.length){$('skDot').classList.toggle('hidden',!canLearnAny());return;}
-  box.dataset.cls=G.char.cls+SETTINGS.lefty;box.innerHTML='';skillEls=[];held.fill(false);const sk=SKILLS[G.char.cls];
+  const key=G.char.cls+SETTINGS.lefty+fixAlts(G.char).join(''); // skillalts.js: a swap rebuilds the bar
+  if(box.dataset.cls===key&&skillEls.length){$('skDot').classList.toggle('hidden',!canLearnAny());return;}
+  box.dataset.cls=key;box.innerHTML='';skillEls=[];held.fill(false);const sk=[0,1,2,3,4].map(i=>skillAt(G.char,i));
   const pos=[null,[132,14],[116,73],[73,116],[14,132]];
   for(let i=0;i<5;i++){const d=document.createElement('div');d.className='sk pe'+(i===0?' big':'');d.innerHTML=sk[i].icon+'<div class="cd"></div><span class="cdt"></span>';
     if(i>0){d.style[SETTINGS.lefty?'left':'right']=pos[i][0]+'px';d.style.bottom=pos[i][1]+'px';}
@@ -39,7 +40,7 @@ function updateHud(){
   hud($('depthTxt'),'text',G.zone&&!G.inTown?zoneHud():G.inTown?`${townOf(D).name} · next: ${where}`:`${where} · Lv ${areaLvl(PD())}${D%5===0&&G.levelMode!=='noboss'?' · Boss':''} · ${left} foes`); /* area level (bossfight.js) */
   hud($('buffTxt'),'text',shrineText());
   {const rr=riftRun(),on=!!(rr&&inRift()&&!rr.guard&&!rr.done),rb=$('riftbar');hud(rb,'.hidden',!on);if(on)hud(rb.firstElementChild,'width',pc(Math.min(1,rr.prog/rr.need)));} // rifts.js
-  const sk=SKILLS[c.cls];
+  const sk=[0,1,2,3,4].map(i=>skillAt(c,i)); // skillalts.js
   for(let i=0;i<5;i++){const el=skillEls[i];if(!el)continue;const r=rk(i);hud(el,'.locked',r<=0);hud(el,'.nores',r>0&&p.res<sk[i].cost);
     const f=p.cd[i]>0?p.cd[i]/p.cdMax[i]:0;hud(el.children[0],'--p',r2(f));hud(el.children[1],'text',(i>0&&p.cd[i]>0.05)?p.cd[i].toFixed(p.cd[i]<1?1:0):'');}
   const pb=$('potBtn');hud($('potCnt'),'text',String(p.potions));hud(pb,'.locked',p.potions<=0);hud(pb.querySelector('.cd'),'--p',r2(p.potCd>0?p.potCd:0));
@@ -156,7 +157,7 @@ function renderInv(){
   const avg=Math.round((s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100));
   const red=Math.round(Math.min(0.75,s.armor/(s.armor+30+10*PD()))*100);
   const weak=RES_KEYS.map(k=>[k,sheetEhp(s,k)]).sort((a,b)=>a[1]-b[1])[0];
-  $('statsum').innerHTML=[['Passive points',`${pasFree(c)} <span class="fdim">(spend them in 🌳)</span>`],['Path',subOf(c)?`<span style="color:${subOf(c).col}">${subOf(c).icon} ${subOf(c).name}</span>`:`<span class="fdim">${c.lvl>=SUB_LVL?'choose one (✨ Path)':'at level '+SUB_LVL}</span>`],[`DPS <span class="fdim">(${SKILLS[c.cls][0].name})</span>`,kfmt(sheetDps(c,s))],['Effective Life <span class="fdim">(physical)</span>',kfmt(sheetEhp(s))],[`Effective Life vs <span style="color:${RES_COL[weak[0]]}">${RES_NAME[weak[0]]}</span> <span class="fdim">(your lowest element)</span>`,kfmt(weak[1])],['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],c.cls==='arcanist'?['Casts/s',(1/skillCd(0)).toFixed(2)]:['Attacks/s',(1/skillCd(0)).toFixed(2)],c.cls==='arcanist'?['Cast Speed','+'+Math.round(s.cspd||0)+'%']:['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
+  $('statsum').innerHTML=[['Passive points',`${pasFree(c)} <span class="fdim">(spend them in 🌳)</span>`],['Path',subOf(c)?`<span style="color:${subOf(c).col}">${subOf(c).icon} ${subOf(c).name}</span>`:`<span class="fdim">${c.lvl>=SUB_LVL?'choose one (✨ Path)':'at level '+SUB_LVL}</span>`],[`DPS <span class="fdim">(${skName(c.cls,0)})</span>`,kfmt(sheetDps(c,s))],['Effective Life <span class="fdim">(physical)</span>',kfmt(sheetEhp(s))],[`Effective Life vs <span style="color:${RES_COL[weak[0]]}">${RES_NAME[weak[0]]}</span> <span class="fdim">(your lowest element)</span>`,kfmt(weak[1])],['Damage',avg],['Life',Math.round(s.life)],['Armor',`${Math.round(s.armor)} (${red}%)`],['Block',Math.round(s.block)+'%'],['Crit',s.crit.toFixed(1)+'%'],['Crit Dmg','+'+Math.round(s.critd)+'%'],c.cls==='arcanist'?['Casts/s',(1/skillCd(0)).toFixed(2)]:['Attacks/s',(1/skillCd(0)).toFixed(2)],c.cls==='arcanist'?['Cast Speed','+'+Math.round(s.cspd||0)+'%']:['Atk Speed','+'+Math.round(s.aspd)+'%'],['Cooldown','-'+Math.round(s.cdr)+'%'],['Move','+'+Math.round(s.move)+'%'],['Life on Hit',Math.round(s.loh)],['Regen',s.regen.toFixed(1)+'/s'],['Potions',`${potFloor()} (max ${potMax()})`]].concat(s.spell?[['Spell Dmg','+'+Math.round(s.spell)+'%']]:[],s.gold?[['Gold Found','+'+Math.round(s.gold)+'%']]:[],(s.xp?[['Experience','+'+Math.round(s.xp)+'%']]:[]),[0,1,2,3,4].filter(i=>s['skd'+i]).map(i=>[SKILLS[c.cls][i].name,'+'+Math.round(s['skd'+i])+'%']),(s.bossdmg?[['Boss Damage','+'+Math.round(s.bossdmg)+'%']]:[]),[['Bleed','bleed'],['Ignite','igniteCh'],['Shock','shockCh'],['Poison','poisonCh']].filter(([,k])=>s[k]>0).map(([n,k])=>[n+' chance',Math.round(s[k])+'%']),(s.lifepct?[['Max Life','+'+Math.round(s.lifepct)+'%']]:[]),(s.thorns?[['Thorns',Math.round(s.thorns)]]:[]),(s.evade?[['Evade',s.evade.toFixed(1)+'%']]:[]),(s.dr?[['Less Damage',s.dr.toFixed(1)+'%']]:[]),(s.lpk?[['Life per Kill',Math.round(s.lpk)]]:[]),(s.potheal?[['Potion Healing','+'+Math.round(s.potheal)+'%']]:[]),[['Item Rarity','+'+Math.round((s.rarity||0)+lootHere().rar)+'%'+(lootHere().rar?` <span class="fdim">(${DIFFS[diffHere()].name} +${lootHere().rar}%)</span>`:'')]],s.bleed?[['Bleed',Math.round(s.bleed)+'%']]:[],s.stunCh?[['Stun',Math.round(s.stunCh)+'%']]:[],s.oh?[['Dual Wield','+15% rate']]:[],
     // resistances after the difficulty's penalty (red below 0, gold at the 75% cap)
     RES_KEYS.map(k=>{const v=resOf(s,k);return [`<span style="color:${RES_COL[k]}">${RES_NAME[k]} Res</span>`,`<span style="color:${v<0?'#ff6a5a':v>=resCap(s)?'#f2d04a':'inherit'}">${Math.round(v)}%</span>`];}),
     resPenalty()?[['Res penalty',`<span style="color:${DIFFS[curDiff()]?.col||'#ff6a5a'}">−${resPenalty()}%</span>`]]:[]).concat(PAS_KEYS.filter(K=>s.ks&&s.ks[K.ks]).map(K=>['Keystone',`<span style="color:#e0a0c0">${K.name}</span>`])).map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -273,7 +274,7 @@ tap('shopClose',closeShop);
 function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden'))renderSkills();setPause();}
 let skTab='skills';
 function renderSkills(){
-  const c=G.char,sk=SKILLS[c.cls];fixMods(c);G.modDot=false; // hints.js: seen
+  const c=G.char,sk=[0,1,2,3,4].map(i=>skillAt(c,i));fixMods(c);fixAlts(c);G.modDot=false; // hints.js: seen; skillalts.js: the chosen skills
   { const pathDot=c.lvl>=SUB_LVL&&!c.sub?' <span style="color:#f55">●</span>':''; // subclasses.js: the Path tab
     $('skTabs').innerHTML=[['skills','Skills'],['path','Path'+pathDot]].map(([k,n])=>`<div class="tab${skTab===k?' on':''}" data-t="${k}">${n}</div>`).join('');
     $('skTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{skTab=el.dataset.t;subAsk=null;renderSkills();});
@@ -285,8 +286,9 @@ function renderSkills(){
   $('skList').innerHTML=sk.map((s,i)=>{const base=c.skills[i],bonus=G.stats.skill[i],r=rk(i),req=SKILL_REQ[i];const locked=c.lvl<req;
     const can=!locked&&c.skillPts>0&&base<15;
     return `<div class="skrow${locked?' locked':''}"><div class="ic">${s.icon}</div><div class="info"><b>${s.name}</b> ${base?`Rank ${base}${bonus?` <span style="color:#f2d04a">(+${bonus})</span>`:''}`:locked?`· Requires level ${req}`:'· Not learned'}
-      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}</div>
+      <div>${s.desc(Math.max(1,r))}</div>${base&&base<15?`<div class="nx">Next rank: ${s.desc(r+1)}</div>`:''}${s.cd>=1?`<div>Cooldown ${s.cd}s</div>`:''}${!altOn(c,i)&&skillElemText(c.cls,i)?`<div class="elt">${skillElemText(c.cls,i)}</div>`:''}${modRowHtml(c,i)}${altRowHtml(c,i)}</div>
       <div class="btn sm${can?'':' dis'}" data-i="${i}">${base?'+':'Learn'}</div></div>`;}).join('');
+  $('skList').querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>{if(pickAlt(c,+b.dataset.alt))renderSkills();}); // skillalts.js
   $('skList').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.m.split(':').map(Number);if(pickMod(i,j))renderSkills();}); // skillmods.js
   $('skList').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(c.skillPts<=0||c.lvl<SKILL_REQ[i]||c.skills[i]>=15)return;c.skills[i]++;c.skillPts--;hintMod(i); /* hints.js */renderSkills();buildSkillBar();saveChar();});
 }
@@ -370,8 +372,8 @@ function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[
   const m=upgMul(it)*(1+(it.q||0)/100);
   if(it.slot==='weapon'){add('wdmg','Weapon Dmg',(it.dmin+it.dmax)/2*m,null,null);add('wspd','Attacks/s',wOf(it).spd,null,null);}
   if(it.arm)add('barm','Base Armor',it.arm*m,null,null);
-  for(const a0 of it.imp||[]){const a=spdA(a0,G.char&&G.char.cls);if(a.k==='skill')add('sk'+a.s,SKILLS[cls][a.s].name,a.v,null,'skill');else add(a.k,shortName(a.k),a.v*(AFF[a.k].flat?1:upgMul(it)),null,a.k);}
-  for(const a0 of it.affs){const a=spdFixed(it)?spdA(a0,G.char&&G.char.cls):a0;if(a.k==='skill')add('sk'+a.s,SKILLS[cls][a.s].name,a.v,null,'skill');else if(AFF[a.k])add(a.k,AFF[a.k].skd!=null?SKILLS[cls][AFF[a.k].skd].name:shortName(a.k),+affVal(a,affMul(it)),a.t,a.k);}
+  for(const a0 of it.imp||[]){const a=spdA(a0,G.char&&G.char.cls);if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),a.v,null,'skill');else add(a.k,shortName(a.k),a.v*(AFF[a.k].flat?1:upgMul(it)),null,a.k);}
+  for(const a0 of it.affs){const a=spdFixed(it)?spdA(a0,G.char&&G.char.cls):a0;if(a.k==='skill')add('sk'+a.s,skName(cls,a.s),a.v,null,'skill');else if(AFF[a.k])add(a.k,AFF[a.k].skd!=null?SKILLS[cls][AFF[a.k].skd].name:shortName(a.k),+affVal(a,affMul(it)),a.t,a.k);}
   if(it.socketed){const h=hostOf(it);for(const sg of it.socketed){const st=stoneStat(sg,h);add(st.k,shortName(st.k),st.v,null,st.k);}}
   for(const pw of itemPowers(it))R['pw:'+pw]={label:'★ '+(UPOW[pw]?UPOW[pw].t:pw),v:1,pw:1};
   return R;}
@@ -383,10 +385,10 @@ function itemRows(it,cls){const R={},add=(key,label,v,t,k)=>{const r=R[key]||(R[
 // Effective Life: how much raw damage you can take before dying in this area: Life through armour (as on the sheet),
 // block, evasion and less damage taken; against an element, also through that resistance.
 const SKILL1_MULT={warden:r=>1+0.12*(r-1),arcanist:r=>0.95+0.12*(r-1)}; // = SKILLS[cls][0].desc (skills.js)
-function sheetDps(c,s){const sk=SKILLS[c.cls][0],r=Math.max(1,(c.skills[0]||1)+(s.skill[0]||0));
-  const hit=(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*SKILL1_MULT[c.cls](r)*(1+(s.skd0||0)/100)*(s.more||1); // passives.js: Glass Cannon
+function sheetDps(c,s){const sk=skillAt(c,0),r=Math.max(1,(c.skills[0]||1)+(s.skill[0]||0));
+  const hit=(s.dmin+s.dmax)/2*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*(sk.mult?sk.mult(r):SKILL1_MULT[c.cls](r))*(1+(s.skd0||0)/100)*(s.more||1); // passives.js: Glass Cannon
   const crit=1+Math.min(100,s.crit)/100*s.critd/100,aps=(s.wspd||1)*(1+(c.cls==='arcanist'?(s.cspd||0):s.aspd)/100)/sk.cd;
-  const ail=1+Math.min(75,s.bleed||0)/100*0.8+Math.min(AIL_CH_CAP,s.igniteCh||0)/100*IGNITE_DPS*IGNITE_DUR+Math.min(AIL_CH_CAP,s.poisonCh||0)/100*POISON_DPS*POISON_DUR;
+  const ail=1+(sk.bleed?100:Math.min(75,s.bleed||0))/100*0.8+Math.min(AIL_CH_CAP,s.igniteCh||0)/100*IGNITE_DPS*IGNITE_DUR+Math.min(AIL_CH_CAP,s.poisonCh||0)/100*POISON_DPS*POISON_DUR;
   return hit*crit*aps*ail;}
 function sheetEhp(s,el){const red=Math.min(0.75,s.armor/(s.armor+30+10*PD())),res=el?resOf(s,el)/100:0;
   return s.life/((1-red)*(1-Math.min(50,s.block)/100)*(1-Math.min(40,s.evade||0)/100)*(1-Math.min(30,s.dr||0)/100)*(1-res));}
@@ -416,7 +418,7 @@ function statDeltaHtml(c,it,target,cur,multi){
   const s0=calcStats(c),s1=calcStats(c,it,target);
     const lines=[['Damage',x=>(x.dmin+x.dmax)/2*x.levelMul*(1+x.dmg/100)],['Life',x=>x.life],['Armor',x=>x.armor],['Block %',x=>x.block],['Crit %',x=>x.crit],['Crit Dmg %',x=>x.critd],[G.char&&G.char.cls==='arcanist'?'Cast Rate %':'Atk Rate %',x=>x.wspd*(1+spdOf(x)/100)*100],['Spell Dmg %',x=>x.spell],['Bleed %',x=>x.bleed],['Stun %',x=>x.stunCh],['Splash %',x=>x.splash],['Pierce',x=>x.pierce],['Slain explode %',x=>x.explode],['Cooldown %',x=>x.cdr],['Move %',x=>x.move],['Life on Hit',x=>x.loh],['Regen',x=>x.regen],['Max '+CLASSES[c.cls].res,x=>x.res],['Potion Charges',x=>x.pot]];
     let cmp='';for(const [n,f] of lines){const d=f(s1)-f(s0);if(Math.abs(d)>=0.1)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${Math.abs(d)<10?d.toFixed(1):Math.round(d)} ${n}</div>`;}
-    s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${SKILLS[c.cls][i].name}</div>`;});
+    s1.skill.forEach((v,i)=>{const d=v-s0.skill[i];if(d)cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲ +':'▼ '}${d} ${skName(c.cls,i)}</div>`;});
     if(it.tier&&cur&&cur.tier&&it.tier!==cur.tier){const d=it.tier-cur.tier;cmp+=`<div class="${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${tierLabel(it)} vs ${tierLabel(cur)}${cur.upg?' +'+cur.upg:''}: ${d>0?'bigger':'smaller'} stat rolls</div>`;}
   return `<div class="cmp"><b>If equipped${multi?' in '+SLOT_NAME[target]:''}:</b>${cmp||'<div>No change</div>'}</div>`;}
 

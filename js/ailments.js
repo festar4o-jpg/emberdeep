@@ -19,15 +19,15 @@ function skillElemText(cls,i){const el=SKILL_ELEM[cls][i];if(cls==='arcanist'&&i
   if(el==='cold')return i===2&&hasMod('coldsnap')?'Cold: chills (Cold Snap never freezes)':`Cold: chills, ${freezeAt()} cold hits freeze`;
   return '';}
 // the element of the hit being dealt now (G.sk: the skill it comes from)
-function hitElem(){const c=G.char;if(!c||G.sk==null)return null;if(c.cls==='arcanist'&&G.sk===4&&hasMod('comet'))return 'cold';return SKILL_ELEM[c.cls][G.sk]||null;}
+function hitElem(){const c=G.char;if(!c||G.sk==null)return null;if(altOn(c,G.sk))return altOf(c.cls,G.sk).elem||null; /* skillalts.js */if(c.cls==='arcanist'&&G.sk===4&&hasMod('comet'))return 'cold';return SKILL_ELEM[c.cls][G.sk]||null;}
 // damage taken multiplier from Shock
 function shockMul(e){return e.shockT>0?1+SHOCK_PER*(e.shockN||0):1;}
 // called by hitEnemy after a hit lands (d: the damage dealt)
 function applyAilments(e,d,opts){if(e.dead||opts.dot||opts.haz||opts.splashed)return;
-  const s=G.stats,el=hitElem(),c=G.char,fb=c&&c.cls==='arcanist'&&G.sk===1;
-  let ig=(el==='fire'?(c.cls==='arcanist'&&G.sk===4?AIL_METEOR:AIL_BASE.fire):0)+(s.igniteCh||0);if(fb&&hasMod('ignite'))ig=100;
+  const s=G.stats,el=hitElem(),c=G.char,fb=c&&c.cls==='arcanist'&&firstSk(1);
+  let ig=(el==='fire'?(c.cls==='arcanist'&&firstSk(4)?AIL_METEOR:AIL_BASE.fire):0)+(s.igniteCh||0);if(fb&&hasMod('ignite'))ig=100;
   if(ig>0&&Math.random()*100<ig)igniteHit(e,d);
-  const stat=c&&c.cls==='arcanist'&&G.sk===3&&hasMod('static'),sh=(el==='light'?AIL_BASE.light:0)+(s.shockCh||0);
+  const stat=c&&c.cls==='arcanist'&&firstSk(3)&&hasMod('static'),sh=(el==='light'?AIL_BASE.light:0)+(s.shockCh||0);
   if(stat)shockHit(e,2);else if(sh>0&&Math.random()*100<sh)shockHit(e,1);
   if(el==='cold')chillHit(e,opts.chill?0.5:CHILL_SLOW,Math.max(CHILL_DUR,opts.chill||0),!!opts.chill); // Cold Snap (opts.chill): slows only, never builds a freeze
   if((s.poisonCh||0)>0&&Math.random()*100<s.poisonCh)poisonHit(e,d);}

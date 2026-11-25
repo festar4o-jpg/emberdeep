@@ -19,7 +19,7 @@ const charmPool=(it,cls)=>CHARM_POOL.filter(k=>(!AFF[k].cls||AFF[k].cls===cls)&&
 const charmRm=(it,k)=>AFF[k].nom?1:CHARM[it.size].m;
 const charmAff=(it,k)=>rollAff(k,it.ilvl,charmRm(it,k),{il:it.ilvl});
 function charmName(it){if(it.uc)return UCHARMS[it.uc].name;const C=CHARM[it.size],st=it.affs.filter(x=>x.k!=='skill'),a=st[0],b=st[1],sk=it.affs.find(x=>x.k==='skill');
-  return it.size==='grand'&&sk?`${a?AFF[a.k].pre+' ':''}Grand Charm of ${SKILLS[it.cls][sk.s].name}`:`${a?AFF[a.k].pre+' ':''}${C.name}${b?' '+AFF[b.k].suf:''}`;}
+  return it.size==='grand'&&sk?`${a?AFF[a.k].pre+' ':''}Grand Charm of ${skName(it.cls,sk.s)}`:`${a?AFF[a.k].pre+' ':''}${C.name}${b?' '+AFF[b.k].suf:''}`;}
 // ---------- unique charms: one per act boss, dropping in Hell (Waystone "Boss only" makes it a farm) ----------
 // Fixed stats [key, low, high]; large (3 slots); only one of each in the pouch.
 const UCHARMS={

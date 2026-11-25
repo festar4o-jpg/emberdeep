@@ -479,13 +479,13 @@ function bakeUpgrades(it){if(it.slot==='charm'||it.uv>=UPG_VER){if(it.slot!=='ch
   for(const a of it.imp||[])if(scaledAff(a))a.v=AFF[a.k].dec?+(+a.v).toFixed(1):Math.max(1,Math.round(a.v));
   if(it.dmin!=null){it.dmin=+it.dmin.toFixed(3);it.dmax=+it.dmax.toFixed(3);}if(it.arm)it.arm=+it.arm.toFixed(3);
   it.uv=UPG_VER;return it;}
-function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${SKILLS[cls][a.s].name}`;if(AFF[a.k]&&AFF[a.k].skd!=null)return `+${affVal(a,m)}% ${SKILLS[cls][AFF[a.k].skd].name} damage`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
+function affText(a,m,cls){if(a.k==='skill')return `+${a.v} to ${skName(cls,a.s)}`;if(AFF[a.k]&&AFF[a.k].skd!=null)return `+${affVal(a,m)}% ${skName(cls,AFF[a.k].skd)} damage`;return AFF[a.k].t.replace('{v}',affVal(a,m));}
 // The tier tag after a stat line on item cards: T1-T2 gold, T3 bright, the rest dim.
 const TIER_COL=[null,'#ffb347','#f2d04a','#e8dcc4','#b8a888','#a09070','#8c7c64','#7c6c58','#6c5c4c','#5c4e42'];
 const tierTag=a=>a&&a.t?` <span class="atier" style="color:${TIER_COL[a.t]}">(T${a.t})</span>`:'';
 
 // ---------- save migration (v1: weapon/helm/armor/ring → v2: 10 slots) ----------
-const SAVE_VER=14; // 14: Ember Rifts (c.rift) · 13: passive tree (c.pas empty, c.pasBoss from progress) · 12: subclasses (c.sub, none on old heroes) · 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
+const SAVE_VER=15; // 15: second skills (c.alt, all first skills on old heroes) · 14: Ember Rifts (c.rift) · 13: passive tree (c.pas empty, c.pasBoss from progress) · 12: subclasses (c.sub, none on old heroes) · 11: skill modifiers (c.mods, none picked on old heroes) · 10: affix tiers (each old stat gets the tier its value fits) · 9: 9: difficulties (c.diff, c.diffDone, c.dsave) and the endless reach apart (c.endMax) · 8: items reset to the v1.0.48 affix and upgrade rules (each old save is kept as a backup)
 const OLD_BODY_KIND={'Robe':'robe','Leather Vest':'leather','Chain Mail':'chain','Scale Coat':'chain','Plate Armor':'plate'};
 function migrateItem(it){
   if(!it||typeof it!=='object')return null;
@@ -540,6 +540,7 @@ function migrateChar(c){
   if(c.sub===undefined)c.sub=null;fixSub(c); // v12: subclasses (subclasses.js)
   fixPassives(c); // v13: passive tree (passives.js)
   fixRift(c); // v14: Ember Rifts (rifts.js)
+  fixAlts(c); // v15: second skills (skillalts.js)
   c.equip=eq;c.ver=SAVE_VER;return c;
 }
 function migrateSaves(){

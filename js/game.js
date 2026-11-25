@@ -1,19 +1,19 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;}if(G.p.souls&&hasPw('soulHarvest'))d*=1+0.02*G.p.souls; /* +% damage with this skill (G.sk: the skill this hit comes from) */if(s.more)d*=s.more; /* passives.js: Glass Cannon */const crit=!s.noCrit&&(Math.random()*100<s.crit||G.sk===2&&hasPw('whirlCrit')); /* Elemental Overload: never */if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(G.p.bannerOn)d*=1+G.p.bannerOn; /* skillalts.js: Battle Banner */if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;}if(G.p.souls&&hasPw('soulHarvest'))d*=1+0.02*G.p.souls; /* +% damage with this skill (G.sk: the skill this hit comes from) */if(s.more)d*=s.more; /* passives.js: Glass Cannon */const crit=!s.noCrit&&(Math.random()*100<s.crit||firstSk(2)&&hasPw('whirlCrit')); /* Elemental Overload: never */if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
   if(e.shieldT>0){aggroPack(e);if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune','#9ab0ff',false);}return;} // Shielded elite's bubble
-  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(G.sk===0&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e)*bossPwHitMul(e,opts); /* uniques.js: Tyrant's Stride, Rimebound Seal */ /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
+  const r=rollDmg(mult,opts.hand);if(G.stats.bossdmg&&(e.type==='boss'||e.zb))r.d*=1+G.stats.bossdmg/100;if(e.brokenUntil>G.time)r.d*=1.25; /* Quakeplate */if(firstSk(0)&&e.hp<e.maxHp*0.3&&hasMod('execute'))r.d*=1.5; /* skillmods.js: Executioner */r.d*=shockMul(e)*perkHitMul(e)*bossPwHitMul(e,opts); /* uniques.js: Tyrant's Stride, Rimebound Seal */ /* ailments.js: Shock; subclasses.js: Blood Scent */ /* +% damage to bosses */if(e.dr)r.d=Math.max(1,Math.round(r.d*(1-e.dr)));r.d=dmgTo(e,r.d,r.crit,opts);e.hp-=r.d;bossGate(e); /* bossfight.js: level rule, boss multipliers, hit cap, stagger, phase gates */
   hitFeel(e,r.d,r.crit,opts); // fx.js: flash, spray, sparks, splat, hit-stop
   if(hasAff(e,'reflect')&&!opts.splashed)reflectHit(e,r.d);if(e.type==='thief')thiefHit(e);e.flash=0.1;e.lastHit=G.time;aggroPack(e);
   const st=G.stats;
-  if(G.sk===4&&hasPw('shatterArmor'))e.brokenUntil=G.time+5;
-  if(G.sk===0&&hasPw('cleaveBleed')&&!opts.dot&&!opts.splashed){const dps=r.d*0.8/3*bleedMul();e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
-  if(G.sk===0&&hasPw('boltChain')&&!opts.chained&&!opts.splashed&&!opts.dot){const o=nearest(e.x,e.y,220,new Set([e]));if(o){G.fx.push({type:'bolt',pts:[{x:e.x,y:e.y},{x:o.x,y:o.y}],t:0,max:0.18});hitEnemy(o,mult*0.6,{chained:true});}}
-  if(st.bleed>0&&!opts.dot&&Math.random()*100<st.bleed){const dps=r.d*0.8/3*bleedMul(); /* subclasses.js: Deep Cuts */e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
+  if(firstSk(4)&&hasPw('shatterArmor'))e.brokenUntil=G.time+5;
+  if(firstSk(0)&&hasPw('cleaveBleed')&&!opts.dot&&!opts.splashed){const dps=r.d*0.8/3*bleedMul();e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
+  if(firstSk(0)&&hasPw('boltChain')&&!opts.chained&&!opts.splashed&&!opts.dot){const o=nearest(e.x,e.y,220,new Set([e]));if(o){G.fx.push({type:'bolt',pts:[{x:e.x,y:e.y},{x:o.x,y:o.y}],t:0,max:0.18});hitEnemy(o,mult*0.6,{chained:true});}}
+  if((opts.bleed||st.bleed>0&&Math.random()*100<st.bleed)&&!opts.dot){ /* opts.bleed: always (skillalts.js Rending Strike); opts.bleedX: Deep Wounds */const dps=r.d*0.8/3*bleedMul()*(opts.bleedX||1); /* subclasses.js: Deep Cuts */e.bleedDps=e.bleedT>0?Math.max(e.bleedDps,dps):dps;e.bleedT=3;}
   if(st.stunCh>0&&!opts.dot&&!(e.stunCd>0)&&Math.random()*100<st.stunCh){e.stun=Math.max(e.stun,e.type==='boss'?st.stunDur*0.3:st.stunDur);e.stunCd=1.5;floatText(e.x,e.y-e.r-20,'Stun','#ffd54a',false);}
   if(!opts.quiet)floatText(e.x+rand(-8,8),e.y-e.r-6,r.d,r.crit?'#ffd54a':'#fff',r.crit);
   else if(opts.dot)floatText(e.x+rand(-10,10),e.y-e.r-4,r.d,'#ff9a4a',false); // burning: small orange numbers
@@ -160,7 +160,7 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 
 // ---------- start / depth ----------
 function newChar(name,cls){
-  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
+  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],amods:[null,null,null,null,null],alt:[0,0,0,0,0],sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
   const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
@@ -193,8 +193,8 @@ function startDepth(d,mode){
 }
 function resetArea(){
   G.areaT=G.time;G.bossIntro=null;G.zoneTheme=null;G.elder=null; // a new area: no boss banner left over from the last one
-  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;G.tpField=null;G.tpBack=null;G.atTp=false;
-  const p=G.p;clearPlayerAils(p);p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
+  G.proj=[];G.fx=[];G.parts=[];G.texts=[];G.loot=[];G.hazards=[];G.banner=null;G.skz=[];G.ehaz=[];G.delayed=[];G.feats=[];G.walls=[];G.nearFeat=null;G.town=null;G.tpField=null;G.tpBack=null;G.atTp=false;
+  const p=G.p;clearPlayerAils(p);p.dead=false;p.tpCast=null;p.leap=null;p.dodge=null;p.charge=null;p.dodgeCd=0;p.spin=0;p.hp=G.stats.life;p.cd=[0,0,0,0,0];
   $('shopBtn').classList.add('hidden');$('stashBtn').classList.add('hidden');$('smithBtn').classList.add('hidden');$('benchBtn').classList.add('hidden');$('wayBtn').classList.add('hidden');$('descBtn').classList.add('hidden');$('useBtn').classList.add('hidden');useLabel='';
 }
 // Town sits between depths: safe, no enemies, merchant + portal to `next`.
@@ -212,6 +212,7 @@ function startTown(next){
 const joy={active:false,id:null,ox:0,oy:0,dx:0,dy:0};
 function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;riftTick(dt); // rifts.js: the Rift clock
+  bannerTick(p,dt);skzTick(p,dt); // skillalts.js: Battle Banner, Ice Barrier, Storm Orb, Black Hole
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
   p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt);perkTick(p,dt);bossPwTick(p,dt); /* skillmods.js, ailments.js, subclasses.js, uniques.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
@@ -226,6 +227,7 @@ function update(dt){
   else if(p.dodge){const D=p.dodge;D.t+=dt;if(!D.blink)moveEnt(p,Math.cos(D.a)*DODGE_SPD*dt,Math.sin(D.a)*DODGE_SPD*dt);p.face=D.a;
     if(!D.blink&&Math.random()<0.6)G.parts.push({x:p.x+rand(-8,8),y:p.y+p.r*0.6,vx:-Math.cos(D.a)*60,vy:-20,life:0.35,max:0.35,col:'#c8b090',s:3});
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
+  else if(p.charge)chargeTick(p,dt); // skillalts.js: Charge
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
     if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);leapMods(p,L);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
@@ -293,7 +295,7 @@ function update(dt){
     if(q.home)homeIn(q,dt);
     q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
     if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
-    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult,{weapon:q.weapon});if(q.onhit)q.onhit();
+    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult,{weapon:q.weapon,bleed:q.bleed});if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
         if(q.pierce>0){q.pierce--;q.life=life;hit=false;(q.hits||(q.hits=new Set())).add(e);continue;}}break;}}
       if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);G.sk=null;}
     else if(!p.dead&&Math.hypot(p.x-q.x,p.y-q.y)<p.r+q.r){q.life=0;if(dmgPlayer(q.dmg,q.src)&&q.slow)slowPlayer(q.slow,1.6);if(q.r>=7)burst(q.x,q.y,8,q.col,120);}

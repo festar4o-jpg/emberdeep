@@ -291,8 +291,8 @@ function shockwave(ang,mult){const p=G.p;
 function pullIn(r,step){const p=G.p;for(const e of G.enemies){if(e.dead||e.hidden)continue;const d=dist(e,p);if(d>r||d<p.r+e.r+6)continue;
   const k=e.type==='boss'?0.25:ETYPES[e.type].heavy?0.5:1,m=Math.min(step*k,d-p.r-e.r-6),a=Math.atan2(p.y-e.y,p.x-e.x);moveEnt(e,Math.cos(a)*m,Math.sin(a)*m);}}
 // Bloodleap Greaves: Leap Slam's cost in Life (0 = normal Fury cost).
-const lifeCost=i=>{const bl=G.char.cls==='warden'&&i===1&&hasPw('bloodleap')?Math.round(G.stats.life*0.08):0;if(!hasKs('bloodmagic'))return bl; // passives.js: Blood Magic
-  const cost=modCost(i,SKILLS[G.char.cls][i].cost);return Math.max(bl,cost>0?Math.max(1,Math.round(cost/Math.max(1,G.stats.res)*G.stats.life)):0);};
+const lifeCost=i=>{const bl=G.char.cls==='warden'&&i===1&&!altOn(G.char,i)&&hasPw('bloodleap')?Math.round(G.stats.life*0.08):0;if(!hasKs('bloodmagic'))return bl; // passives.js: Blood Magic
+  const cost=modCost(i,skillAt(G.char,i).cost);return Math.max(bl,cost>0?Math.max(1,Math.round(cost/Math.max(1,G.stats.res)*G.stats.life)):0);};
 // The Last Door: shockwave on block.
 function counterBlast(){const p=G.p;if(p.counterCd>0)return;p.counterCd=0.6;aoe(p.x,p.y,130,0.9,{kb:90,splashed:true});
   G.fx.push({type:'ring',x:p.x,y:p.y,r0:12,r1:135,t:0,max:0.3,col:'#cfd6dc'});}

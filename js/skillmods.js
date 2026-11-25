@@ -43,19 +43,24 @@ const SKILL_MODS={
 // mod keys this class has, for save cleanup
 function modKeys(cls,i){return (SKILL_MODS[cls]&&SKILL_MODS[cls][i]||[]).map(m=>m.k);}
 function modUnlocked(c,i,j){return (c.skills[i]||0)>=MOD_UNLOCK[j];}
-// keeps c.mods valid: 5 entries, each a key of that skill's own modifiers (still unlocked) or null
-function fixMods(c){const m=Array.isArray(c.mods)?c.mods:[];
-  c.mods=[0,1,2,3,4].map(i=>{const ks=modKeys(c.cls,i),j=ks.indexOf(m[i]);return j>=0&&modUnlocked(c,i,j)?m[i]:null;});return c.mods;}
+// keeps c.mods valid: 5 entries, each a key of that skill's own modifiers (still unlocked) or null.
+// v1.0.114: second skills (skillalts.js) keep theirs in c.amods, the same way (ALT_MODS).
+const altKeys=(cls,i)=>(ALT_MODS[cls]&&ALT_MODS[cls][i]||[]).map(m=>m.k);
+function fixMods(c){const m=Array.isArray(c.mods)?c.mods:[],am=Array.isArray(c.amods)?c.amods:[],ok=(ks,v,i)=>{const j=ks.indexOf(v);return j>=0&&modUnlocked(c,i,j)?v:null;};
+  c.mods=[0,1,2,3,4].map(i=>ok(modKeys(c.cls,i),m[i],i));c.amods=[0,1,2,3,4].map(i=>ok(altKeys(c.cls,i),am[i],i));return c.mods;}
+// The modifiers of the skill on button i now, and where its pick is kept.
+const modsAt=(c,i)=>altOn(c,i)?ALT_MODS[c.cls][i]:SKILL_MODS[c.cls][i];
+const pickOf=(c,i)=>(altOn(c,i)?c.amods:c.mods)||[];
 // the active modifier of skill i (key or null)
-function skMod(i){const c=G.char;return c&&c.mods?c.mods[i]||null:null;}
-// is modifier k active on any skill of the current hero
-function hasMod(k){const c=G.char;return !!(c&&c.mods&&c.mods.includes(k));}
+function skMod(i){const c=G.char;return c?pickOf(c,i)[i]||null:null;}
+// is modifier k active on any skill of the current hero (first skills from c.mods, second skills from c.amods)
+function hasMod(k){const c=G.char;if(!c)return false;for(let i=0;i<5;i++)if(pickOf(c,i)[i]===k)return true;return false;}
 // pick (or, if it is already active, clear) modifier j of skill i
-function pickMod(i,j){const c=G.char;fixMods(c);const M=SKILL_MODS[c.cls][i][j];
-  if(!modUnlocked(c,i,j)){toast(M.name,`${M.t}. Unlocks at ${SKILLS[c.cls][i].name} rank ${MOD_UNLOCK[j]}`);return false;}
-  c.mods[i]=c.mods[i]===M.k?null:M.k;playSfx('click');saveChar();return true;}
+function pickMod(i,j){const c=G.char;fixMods(c);const M=modsAt(c,i)[j],P=altOn(c,i)?c.amods:c.mods;
+  if(!modUnlocked(c,i,j)){toast(M.name,`${M.t}. Unlocks at ${skillAt(c,i).name} rank ${MOD_UNLOCK[j]}`);return false;}
+  P[i]=P[i]===M.k?null:M.k;playSfx('click');saveChar();return true;}
 // the modifier row for the skill screen
-function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=SKILL_MODS[c.cls][i],act=c.mods&&c.mods[i];
+function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=modsAt(c,i),act=pickOf(c,i)[i];
   const chips=ms.map((m,j)=>{const open=modUnlocked(c,i,j);
     return `<span class="mod${m.k===act?' on':''}${open?'':' lk'}" data-m="${i}:${j}">${open?'':'🔒 '}${m.name}${open?'':` <small>R${MOD_UNLOCK[j]}</small>`}</span>`;}).join('');
   const A=ms.find(m=>m.k===act);
@@ -64,7 +69,7 @@ function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=SKILL_MODS[c.cls
 // ---------- effects ----------
 // Hooks: skills.js (Cleave, Leap range, War Cry, Earthshatter, skillCd), game.js (Executioner in hitEnemy,
 // modTakenMul/Blade Ward in dmgPlayer, modTick, leapMods on landing, Bloodspin + spinMods while spinning, fleeStep).
-function modTakenMul(){const p=G.p;return (p.ironT>0?0.6:1)*(p.iceArmT>0?0.7:1);} // Iron Landing, Ice Armour
+function modTakenMul(){const p=G.p;return (p.ironT>0?0.6:1)*(p.iceArmT>0?0.7:1)*(p.chargeGuardT>0?0.6:1)*(p.bannerOn&&hasMod('banFury')?0.8:1);} // Iron Landing, Ice Armour; skillalts.js: Bull's Hide, Rally Point
 function modTick(p,dt){
   if(p.momT>0){p.momT-=dt;if(p.momT<=0)p.momN=0;}  // Momentum stacks run out
   if(p.ironT>0)p.ironT-=dt;if(p.iceArmT>0)p.iceArmT-=dt;
