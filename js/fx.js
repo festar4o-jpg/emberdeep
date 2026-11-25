@@ -8,11 +8,17 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
 // Bright, coloured particles glow; dark or dull ones (blood, dust, bone) don't.
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
 // Projectiles: a short fading tail and a hot core.
-function drawProjectiles(){if(!G.proj.length)return;ctx.globalCompositeOperation='lighter';
-  for(const q of G.proj){projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2;
+function drawProjectiles(){if(!G.proj.length)return;drawArrows();ctx.globalCompositeOperation='lighter';
+  for(const q of G.proj){if(q.arrow)continue;projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2;
     for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,q.y-q.vy*0.014*k-r,r*2,r*2);}
     ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,q.y-R,R*2,R*2);}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// v1.0.127: the Ranger's arrows: a wooden shaft along the flight, an iron head and pale fletching, a faint streak.
+function drawArrows(){for(const q of G.proj){if(!q.arrow)continue;const a=Math.atan2(q.vy,q.vx);ctx.save();ctx.translate(q.x,q.y);ctx.rotate(a);
+  ctx.globalAlpha=0.25;ctx.strokeStyle='#e8dcc4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(-14,0);ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle='#8a6a42';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(5,0);ctx.stroke();
+  ctx.fillStyle='#cfd6dc';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(3,-2.6);ctx.lineTo(3,2.6);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#e8e0d0';for(const sd of [-1,1]){ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(-16,sd*3);ctx.lineTo(-10,sd*1);ctx.closePath();ctx.fill();}ctx.restore();}}
 // Particles: dull ones as small dark flecks, hot ones as additive sparks.
 function drawParticles(){const P=G.parts;if(!P.length)return;
   for(const q of P){if(isHot(q.col))continue;const a=Math.max(0,q.life/q.max);

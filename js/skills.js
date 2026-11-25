@@ -80,7 +80,7 @@ const SKILLS={
     // v1.0.125
     {name:'Multishot',icon:'🎯',cd:1.2,cost:15,
       desc:r=>`Loose a fan of 5 arrows, each for ${pct(0.65+0.08*(r-1))} weapon damage. Each hit restores 1 Focus. Costs 15 Focus.`,
-      cast(r){const p=G.p,a=aimPoint(560),a0=p.face;for(let k=-2;k<=2;k++){const b=a0+k*0.13;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:0.65+0.08*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(1)});}p.face=a0;}},
+      cast(r){const p=G.p,a=aimPoint(560),a0=p.face;for(let k=-2;k<=2;k++){const b=a0+k*0.13;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:0.65+0.08*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(1),arrow:true});}p.face=a0;}},
     {name:'Spike Trap',icon:'🪤',cd:4,cost:25,
       desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${TRAP_MAX} at once. Costs 25 Focus.`,
       cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}

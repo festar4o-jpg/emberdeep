@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.126",
+  "latest": "1.0.127",
   "notes": [
+    {
+      "v": "1.0.127",
+      "t": [
+        "Ranger look and sound: real arrows in flight, a quiver on his back and a pointed hood, his other hand drawing the string",
+        "Spike Traps look like iron jaws (red glint once armed) and snap shut; the bow twangs, the wolf howls and bites"
+      ]
+    },
     {
       "v": "1.0.126",
       "t": [

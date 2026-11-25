@@ -76,6 +76,7 @@ function render(){
   const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));G.crowd=ents.length;/* big crowds skip the per-monster top light (sprites.js litBlit) */ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
   drawCorpses(); // sprites.js: falling bodies
+  drawTraps(onScreen); // ranger.js: Spike Traps
   if(G.pets)for(const w of G.pets)if(onScreen(w.x,w.y,40))ents.push(w); // ranger.js: the wolf
   ents.sort((a,b)=>a.y-b.y);
   for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else if(e.kind==='wolf')drawPet(e);else drawEnemy(e);}
@@ -268,6 +269,7 @@ function drawPlayer(){
   }else{
     const pose=(side,h)=>spin?[6,12*side,side*1.3]:A&&A.hand===h?handPose(A.style,u,side):[5,12*side,side*0.5];
     const [x,y,g]=pose(1,'mh');at(x,y,g,()=>{if(W){const WS=weaponSprite(mw.wt,!!A&&A.hand==='mh');ctx.drawImage(WS,-64,-64,128,128);}hand(0,0);});
+    if(W&&W.bow&&A)at(x-4-S*4,y-2,0,()=>hand(0,0)); // v1.0.127: the Ranger's other hand draws the string
     if(off&&off.slot==='weapon'){const [x2,y2,g2]=pose(-1,'oh');at(x2,y2,g2,()=>{ctx.scale(1,-1);const WS=weaponSprite(off.wt,false);ctx.drawImage(WS,-64,-64,128,128);hand(0,0);});}
     else if(off&&off.slot==='shield'){const lift=A&&A.hand==='mh'?-S*2:0;ctx.fillStyle='#4e3420';ctx.strokeStyle='#7a6a4a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(9,-13+lift,9.5,0,TAU);ctx.fill();ctx.stroke();
       ctx.strokeStyle='#5a3418';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(9,-22.5+lift);ctx.lineTo(9,-3.5+lift);ctx.stroke();ctx.fillStyle='#c9a24a';ctx.beginPath();ctx.arc(9,-13+lift,3,0,TAU);ctx.fill();}

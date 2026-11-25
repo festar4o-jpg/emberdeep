@@ -70,6 +70,11 @@ const SFX={
   warcry:(a,t)=>{tone(a,150,t,0.7,0.1,'sawtooth',220);tone(a,225,t,0.6,0.05,'sawtooth',330);noise(a,t,0.6,0.12,'bandpass',600,900,0.8,0.05);},
   slam:(a,t)=>{noise(a,t,0.7,0.3,'lowpass',600,60,1,0.01);tone(a,60,t,0.6,0.25,'sine',30);noise(a,t+0.05,0.5,0.08,'bandpass',1500,500,2);},
   // Arcanist skills
+  // v1.0.127: the Ranger: a bow's twang, a trap snapping shut, the wolf's howl and bite
+  twang:(a,t)=>{tone(a,vr(220),t,0.14,0.07,'triangle',140);tone(a,vr(440),t,0.06,0.03,'square',300);noise(a,t,0.08,0.06,'highpass',vr(2500),3000,0.7,0.002);},
+  snap:(a,t)=>{noise(a,t,0.12,0.16,'bandpass',vr(1800),600,2,0.002);tone(a,110,t,0.18,0.1,'square',60);},
+  howl:(a,t)=>{tone(a,320,t,0.9,0.06,'sine',560);tone(a,640,t+0.25,0.6,0.025,'sine',420);noise(a,t,0.5,0.03,'bandpass',900,1200,3,0.2);},
+  bite:(a,t)=>{noise(a,t,0.07,0.07,'lowpass',vr(900),400,1,0.002);tone(a,vr(160),t,0.06,0.04,'square',90);},
   bolt:(a,t)=>{tone(a,vr(900),t,0.16,0.06,'sine',450);tone(a,vr(1350),t,0.1,0.03,'triangle',700);},
   fireball:(a,t)=>{noise(a,t,0.4,0.16,'lowpass',400,1800,1,0.08);tone(a,110,t,0.3,0.05,'sawtooth',70);},
   nova:(a,t)=>{noise(a,t,0.6,0.12,'highpass',2500,6000,1,0.02);[1568,2093,2637].forEach((f,i)=>tone(a,f,t+i*0.03,0.5,0.035));tone(a,200,t,0.3,0.06,'sine',90);},
@@ -100,7 +105,7 @@ function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===fal
 // What a drop sounds like: nothing for common/magic items and gold.
 function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
 // Each skill's sound (SKILLS order in skills.js); the basic attack (slot 0) of a Warden is the weapon's swing.
-const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor'],ranger:['bolt','bolt','swing','warcry','swing']}; // the Ranger's own sounds come in a later step
+const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor'],ranger:['twang','twang','swing','howl','twang']}; // the Ranger's own sounds come in a later step
 const SWING_SFX={swing:'swing',heavy:'heavy',stab:'stab',thrust:'stab',flick:null};
 function skillSfx(cls,i,style){const k=(SKILL_SFX[cls]||[])[i];if(k)playSfx(k);else if(style&&SWING_SFX[style])playSfx(SWING_SFX[style]);}
 // Menu taps: a soft tick on any button, tab, slot or item cell.

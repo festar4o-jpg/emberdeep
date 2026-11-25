@@ -8,10 +8,9 @@ function placeTrap(x,y,m,stun,sk){const own=G.skz.filter(z=>z.k==='trap');if(own
 function rainAt(x,y,m,sk){G.skz.push({k:'rain',x,y,t:RAIN_T,tick:RAIN_T/RAIN_HITS,m,sk});G.fx.push({type:'tele',x,y,r:RAIN_R,t:0,max:RAIN_T,col:'#c8b088',own:1});}
 const RZ={
   trap(z,p,dt){if(z.arm>0){z.arm-=dt;return;}
-    z.fx-=dt;if(z.fx<=0){z.fx=0.6;G.fx.push({type:'ring',x:z.x,y:z.y,r0:14,r1:20,t:0,max:0.4,col:'#9a8a6a'});}
     const e=G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<TRAP_TRIG+e.r);
     if(e){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{stun:z.stun,kb:60});fxCracks(z.x,z.y,TRAP_R*0.8);burst(z.x,z.y,26,'#d8d0c0',260);G.fx.push({type:'ring',x:z.x,y:z.y,r0:10,r1:TRAP_R,t:0,max:0.35,col:'#e8dcc4'});
-      G.shake=Math.max(G.shake,7);playSfx('slam');}},
+      G.shake=Math.max(G.shake,7);playSfx('snap');}},
   rain(z,p,dt){z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-RAIN_R,RAIN_R)*0.8,z.y+fr(-RAIN_R,RAIN_R)*0.8-40,0,260,0.16,'#e8dcc4',2);
     if(z.tick<=0&&z.t>-0.01){z.tick+=RAIN_T/RAIN_HITS;aoe(z.x,z.y,RAIN_R,z.m,{weapon:true,quiet:true});burst(z.x,z.y,6,'#c8b088',120);}}};
 // ---------- Call of the Wild (v1.0.126): the wolf ----------
@@ -31,7 +30,7 @@ function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
     const dp=Math.hypot(p.x-w.x,p.y-w.y);if(dp>WOLF_FAR||G.inTown&&dp>200){w.x=p.x;w.y=p.y;} // left behind (a new area, a portal): back at your side
     const t=G.inTown?null:nearest(p.x,p.y,WOLF_LEASH);let gx=p.x-Math.cos(p.face)*34,gy=p.y-Math.sin(p.face)*34;
     if(t){const reach=t.r+w.r+6,d=Math.hypot(t.x-w.x,t.y-w.y);gx=t.x;gy=t.y;w.face=Math.atan2(t.y-w.y,t.x-w.x);
-      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m,{weapon:true,kb:20});G.sk=sk;gainRes(1);burst(t.x,t.y,5,'#c8c0b0',100);}}}
+      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m,{weapon:true,kb:20});G.sk=sk;gainRes(1);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
     const dx=gx-w.x,dy=gy-w.y,dd=Math.hypot(dx,dy);if(dd>8){const st=Math.min(dd,WOLF_SPD*(t?1.15:dp>120?1.3:1)*dt);moveEnt(w,dx/dd*st,dy/dd*st);w.walk+=st;if(!t)w.face=Math.atan2(dy,dx);}
     // monsters next to it hit it now and then (every one of their attack times)
     for(const e of G.enemies){if(e.dead||e.hidden||!e.aggro||!(e.dmg>0))continue;if(Math.hypot(e.x-w.x,e.y-w.y)>e.r+w.r+8){continue;}
@@ -48,3 +47,9 @@ function drawPet(w){const x=ctx;x.save();x.translate(w.x,w.y);x.rotate(w.face);c
   x.fillStyle=dark;for(const sd of [-1,1]){x.beginPath();x.moveTo(11,sd*3);x.lineTo(9,sd*8);x.lineTo(14,sd*4);x.fill();} // ears
   x.fillStyle='#ffd36b';for(const sd of [-1,1]){x.beginPath();x.arc(16,sd*2.2,1,0,TAU);x.fill();}x.restore();
   if(w.hp<w.maxHp){const W=26,f=Math.max(0,w.hp/w.maxHp);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(w.x-W/2,w.y-20,W,3);ctx.fillStyle='#7fd07f';ctx.fillRect(w.x-W/2,w.y-20,W*f,3);}}
+// v1.0.127: traps on the floor (render.js, under everything that moves): an iron jaw with spikes; red glints once armed.
+function drawTraps(onScreen){if(!G.skz)return;onScreen=onScreen||(()=>true);for(const z of G.skz){if(z.k!=='trap'||!onScreen(z.x,z.y,30))continue;const armed=!(z.arm>0);ctx.save();ctx.translate(z.x,z.y);
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,3,17,8,0,0,TAU);ctx.fill();
+  ctx.strokeStyle='#4a4a46';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,13,0,TAU);ctx.stroke();ctx.fillStyle='#2a2826';ctx.beginPath();ctx.arc(0,0,5,0,TAU);ctx.fill();
+  ctx.fillStyle=armed?'#bfc6cc':'#6e6a64';for(let k=0;k<8;k++){const a=k/8*TAU;ctx.beginPath();ctx.moveTo(Math.cos(a)*11,Math.sin(a)*11);ctx.lineTo(Math.cos(a+0.18)*17,Math.sin(a+0.18)*17);ctx.lineTo(Math.cos(a+0.36)*11,Math.sin(a+0.36)*11);ctx.fill();}
+  if(armed){ctx.globalAlpha=0.5+0.4*Math.sin(G.time*6+z.x);ctx.fillStyle='#ff5a3a';ctx.beginPath();ctx.arc(0,0,2.4,0,TAU);ctx.fill();ctx.globalAlpha=1;}ctx.restore();}}

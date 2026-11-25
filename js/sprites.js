@@ -224,6 +224,10 @@ function heroPaint(x,r,f,cls,body,helm,tier){const W=cls==='warden',RG=cls==='ra
   else if(body==='robe'){torso(W?'#4a4036':'#3e2e44');x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;for(const k of [-0.6,-0.2,0.2,0.6]){x.beginPath();x.moveTo(r*0.3,k*r*0.8);x.quadraticCurveTo(-r*0.1,k*r,-r*0.55,k*r*1.05);x.stroke();}
     x.strokeStyle='#8a7448';x.lineWidth=1.4;for(const sd of [-1,1]){x.beginPath();x.arc(-r*0.06,0,r*0.56,sd*0.85,sd*1.75,sd<0);x.stroke();}strap(-r*0.12,-r*0.85,-r*0.12,r*0.85,'#5a2a22');grit(x,0,0,r*0.8,24);}
   else{torso(W?'#5a4a38':RG?'#3e3a24':'#3a2c3e');strap(-r*0.12,-r*0.85,-r*0.12,r*0.85);grit(x,0,0,r*0.8,24);}
+  // v1.0.127: the Ranger's quiver on his back (fletchings showing) and the point of his hood
+  if(RG){x.save();x.translate(-r*0.42,r*0.38);x.rotate(-0.5);oval(x,0,0,r*0.36,r*0.13,'#5a3e28',1);x.strokeStyle='#2a1c10';x.lineWidth=0.8;x.strokeRect(-r*0.3,-r*0.1,r*0.6,r*0.2);
+    for(let k=0;k<3;k++){x.fillStyle=k===1?'#c84a2a':'#e8e0d0';x.beginPath();x.moveTo(r*0.3,(k-1)*r*0.07);x.lineTo(r*0.46,(k-1)*r*0.07-r*0.04);x.lineTo(r*0.46,(k-1)*r*0.07+r*0.04);x.fill();}x.restore();
+    strap(-r*0.4,r*0.55,r*0.2,-r*0.6,'#3a2a18');path(x,[[-r*0.25,-r*0.18],[-r*0.62,0],[-r*0.25,r*0.18]]);x.fillStyle='#24361c';x.fill();}
   // head
   if(W){if(helm){oval(x,r*0.12,0,r*0.37,r*0.35,T?T[0]:'#6a6660',1.3);x.fillStyle='#070504';x.fillRect(r*0.36,-r*0.2,r*0.08,r*0.4);x.fillRect(r*0.28,-r*0.03,r*0.16,r*0.06);
       x.strokeStyle='rgba(255,248,230,.5)';x.lineWidth=1.4;x.beginPath();x.moveTo(-r*0.2,0);x.lineTo(r*0.42,0);x.stroke();for(const sd of [-1,1])dot(x,r*0.12,sd*r*0.28,0.9,'#c8bca0');}
