@@ -100,7 +100,7 @@ function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===fal
 // What a drop sounds like: nothing for common/magic items and gold.
 function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
 // Each skill's sound (SKILLS order in skills.js); the basic attack (slot 0) of a Warden is the weapon's swing.
-const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor'],ranger:['bolt','bolt','swing',null,'swing']}; // the Ranger's own sounds come in a later step
+const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor'],ranger:['bolt','bolt','swing','warcry','swing']}; // the Ranger's own sounds come in a later step
 const SWING_SFX={swing:'swing',heavy:'heavy',stab:'stab',thrust:'stab',flick:null};
 function skillSfx(cls,i,style){const k=(SKILL_SFX[cls]||[])[i];if(k)playSfx(k);else if(style&&SWING_SFX[style])playSfx(SWING_SFX[style]);}
 // Menu taps: a soft tick on any button, tab, slot or item cell.

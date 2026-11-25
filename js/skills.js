@@ -85,7 +85,9 @@ const SKILLS={
       desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${TRAP_MAX} at once. Costs 25 Focus.`,
       cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
         placeTrap(x,y,2.2+0.25*(r-1),1.2+0.04*(r-1),G.sk);}},
-    {name:'Call of the Wild',icon:'🐺',cd:12,cost:30,soon:true,desc:r=>'A wolf that fights beside you.',cast(){}},
+    {name:'Call of the Wild',icon:'🐺',cd:10,cost:30,
+      desc:r=>`Call a wolf to fight beside you. It bites for ${pct(0.8+0.1*(r-1))} weapon damage (faster with Attack Speed), has ${Math.round((0.4+0.03*(r-1))*100)}% of your Life and heals 2% a second. Calling it again heals it fully. Costs 30 Focus.`,
+      cast(r){callWolf(r);}},
     {name:'Rain of Arrows',icon:'🌧️',cd:8,cost:40,
       desc:r=>`Arrows rain on an area for ${RAIN_T}s: ${RAIN_HITS} volleys, each hitting everything in it for ${pct(0.6+0.07*(r-1))} weapon damage. Costs 40 Focus.`,
       cast(r){const a=aimPoint(440);rainAt(a.x,a.y,0.6+0.07*(r-1),G.sk);}}

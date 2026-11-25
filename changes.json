@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.125",
+  "latest": "1.0.126",
   "notes": [
+    {
+      "v": "1.0.126",
+      "t": [
+        "Ranger: Call of the Wild, a wolf that follows you, bites your enemies (with your weapon damage) and can be healed by calling it again",
+        "Next: the Ranger's own look and sounds"
+      ]
+    },
     {
       "v": "1.0.125",
       "t": [

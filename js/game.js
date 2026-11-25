@@ -166,7 +166,7 @@ function newChar(name,cls){
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
 }
-function startGame(c){
+function startGame(c){G.pets=[]; /* ranger.js: a new hero has no wolf yet */
   migrateZones(c);G.char=c;G.stats=calcStats(c);noteSetPieces(EQ_SLOTS.map(s=>c.equip[s]).concat(c.bag));
   G.p={x:0,y:0,r:15,hp:G.stats.life,res:CLASSES[c.cls].res==='Fury'?20:G.stats.res,face:0,cd:[0,0,0,0,0],cdMax:[1,1,1,1,1],potions:c.potions??3+G.stats.pot,potCd:0,buffT:0,buffAmt:0,spin:0,leap:null,hurt:0,dead:false};
   $('mpb').classList.toggle('fury',CLASSES[c.cls].res==='Fury');
@@ -215,6 +215,7 @@ function update(dt){
   const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;riftTick(dt); // rifts.js: the Rift clock
   bannerTick(p,dt);skzTick(p,dt); // skillalts.js: Battle Banner, Ice Barrier, Storm Orb, Black Hole
   if(p.stormT>0)p.stormT-=dt; // embers.js: Storm
+  petTick(dt); // ranger.js: the wolf
   // timers
   for(let i=0;i<5;i++)if(p.cd[i]>0)p.cd[i]-=dt;
   p.potCd-=dt;p.hurt-=dt;if(p.buffT>0)p.buffT-=dt;modTick(p,dt);playerAilTick(p,dt);perkTick(p,dt);bossPwTick(p,dt); /* skillmods.js, ailments.js, subclasses.js, uniques.js */if(p.barrierT>0){p.barrierT-=dt;if(p.barrierT<=0)p.barrier=0;}if(p.souls>0){p.soulT-=dt;if(p.soulT<=0){p.souls--;p.soulT=1;}}G.bagFullT-=dt;
