@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.119",
+  "latest": "1.0.120",
   "notes": [
+    {
+      "v": "1.0.120",
+      "t": [
+        "Fixed: in the app, the \"Tap to start\" screen no longer flashes up for a moment when the game opens"
+      ]
+    },
     {
       "v": "1.0.119",
       "t": [

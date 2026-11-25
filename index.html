@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Emberdeep</title>
+<!-- v1.0.120: in the Android app (or a home-screen install) the tap-to-start screen is hidden before the first paint, so
+     it no longer flashes up while the game loads (js/ui.js installedApp() is the same test, for the rest of the game) -->
+<script>try{if(/\bEmberdeepApp\b/.test(navigator.userAgent)||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('inapp');}catch(e){}</script>
+<style>html.inapp #startOv{display:none!important;}</style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
