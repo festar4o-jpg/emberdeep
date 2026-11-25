@@ -25,7 +25,7 @@ $('verTxt').textContent='Emberdeep v'+GAME_VERSION;
 // Debug autotest (a bot that plays and reports; see debug/autotest.js): only with ?autotest=1 in the URL. The file is not in
 // sw.js FILES, so the Android app and the public site don't have it and can never run it.
 if(typeof location!=='undefined'&&/[?&]autotest=1(&|$)/.test(location.search||'')){const s=document.createElement('script');s.src='debug/autotest.js';document.head.appendChild(s);}
-if(installedApp())$('startOv').classList.add('hidden'); // the installed app already opens fullscreen in landscape
+// v1.0.121: the tap-to-start screen waits for a tap everywhere, the Android app included (the user wants it there)
 // Service worker for "Add to Home Screen" and offline play (only on https or localhost).
 if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&typeof location!=='undefined'&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))
   addEventListener('load',()=>{

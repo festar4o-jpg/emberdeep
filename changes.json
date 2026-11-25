@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.120",
+  "latest": "1.0.121",
   "notes": [
+    {
+      "v": "1.0.121",
+      "t": [
+        "The \"Tap to start\" screen is back in the app and stays until you tap the screen"
+      ]
+    },
     {
       "v": "1.0.120",
       "t": [
