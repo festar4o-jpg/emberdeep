@@ -5,14 +5,15 @@ const TRAP_ARM=0.5,TRAP_LIFE=15,TRAP_MAX=3,TRAP_R=110,TRAP_TRIG=46,RAIN_R=130,RA
 // v1.0.128 modifiers (skillmods.js): Cluster Traps (3 at once, up to 6), Hair Trigger (armed at once, springs from 50% further), Lacerating Trap (Bleed).
 const trapMax=()=>hasMod('trCluster')?TRAP_MAX*2:TRAP_MAX;
 function placeTrap(x,y,m,stun,sk,fire){ /* fire: Fire Trap's burning-ground damage (v1.0.129) */const own=G.skz.filter(z=>z.k==='trap'&&z.t>0);if(own.length>=trapMax())own[0].t=0; // the oldest one goes
-  const hair=hasMod('trHair');G.skz.push({k:'trap',x,y,t:TRAP_LIFE,arm:hair?0:TRAP_ARM,trig:TRAP_TRIG*(hair?1.5:1),bleed:!fire&&hasMod('trBarb'),fire:fire||0,m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
+  const qf=!!fire&&hasMod('ftQuick'),hair=hasMod('trHair')||qf;if(qf){m*=0.75;fire*=0.75;} /* Quick Fuse */
+  G.skz.push({k:'trap',x,y,t:TRAP_LIFE,wild:!!fire&&hasMod('ftWild'),arm:hair?0:TRAP_ARM,trig:TRAP_TRIG*(hair?1.5:1),bleed:!fire&&hasMod('trBarb'),fire:fire||0,m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
 // Rain of Arrows: RAIN_HITS volleys over RAIN_T s on a circle. v1.0.128: Arrow Storm (twice as long), Pinning Rain (slows), Downpour (smaller, harder).
 function rainAt(x,y,m,sk){const T=RAIN_T*(hasMod('rnStorm')?2:1),dn=hasMod('rnDown'),R=RAIN_R*(dn?0.7:1);
   G.skz.push({k:'rain',x,y,t:T,tick:RAIN_T/RAIN_HITS,R,pin:hasMod('rnPin'),m:m*(dn?1.6:1),sk});G.fx.push({type:'tele',x,y,r:R,t:0,max:T,col:'#c8b088',own:1});}
 const RZ={
   trap(z,p,dt){if(z.arm>0){z.arm-=dt;return;}
     const e=G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<(z.trig||TRAP_TRIG)+e.r);
-    if(e&&z.fire){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{kb:30});G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:FTRAP_R,t:FTRAP_T,tick:0.25,mult:z.fire});fxExplosion(z.x,z.y,TRAP_R,'#ff8a2a');G.shake=Math.max(G.shake,7);playSfx('boom');return;}
+    if(e&&z.fire){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{kb:30});G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:FTRAP_R*(z.wild?1.5:1),t:z.wild?6:FTRAP_T,tick:0.25,mult:z.fire}); /* Wildfire */fxExplosion(z.x,z.y,TRAP_R,'#ff8a2a');G.shake=Math.max(G.shake,7);playSfx('boom');return;}
     if(e){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{stun:z.stun,kb:60,bleed:z.bleed});fxCracks(z.x,z.y,TRAP_R*0.8);burst(z.x,z.y,26,'#d8d0c0',260);G.fx.push({type:'ring',x:z.x,y:z.y,r0:10,r1:TRAP_R,t:0,max:0.35,col:'#e8dcc4'});
       G.shake=Math.max(G.shake,7);playSfx('snap');}},
   rain(z,p,dt){const R=z.R||RAIN_R;z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-R,R)*0.8,z.y+fr(-R,R)*0.8-40,0,260,0.16,'#e8dcc4',2);
@@ -64,27 +65,31 @@ function drawTraps(onScreen){if(!G.skz)return;onScreen=onScreen||(()=>true);for(
 // ---------- v1.0.129: the second skills' moving parts (skillalts.js SKILL_ALTS.ranger) ----------
 const FTRAP_R=100,FTRAP_T=4,VAULT_D=210,CALTROP_R=80,CALTROP_T=4,HAWK_T=20,HAWK_SPD=620,HAWK_EVERY=1.6,MARK_T=4,BOMB_T=1.2,BOMB_R=120;
 // Vault: a flip away from the nearest enemy (or backwards), through the air like Leap Slam (no hits taken), caltrops left behind.
-function vault(r){const p=G.p,t=nearest(p.x,p.y,300),a=t?Math.atan2(p.y-t.y,p.x-t.x):p.face+Math.PI;let tx=p.x+Math.cos(a)*VAULT_D,ty=p.y+Math.sin(a)*VAULT_D;
+// v1.0.130: Long Vault, Parting Shot (vaultLand, game.js), Spiked Field.
+function vault(r){const p=G.p,t=nearest(p.x,p.y,300),a=t?Math.atan2(p.y-t.y,p.x-t.x):p.face+Math.PI,D=VAULT_D*(hasMod('vtFar')?1.5:1),fl=hasMod('vtField');let tx=p.x+Math.cos(a)*D,ty=p.y+Math.sin(a)*D;
   for(let k=0;k<20&&blockedAt(tx,ty,p.r);k++){tx-=(tx-p.x)*0.15;ty-=(ty-p.y)*0.15;}
-  G.skz.push({k:'caltrop',x:p.x,y:p.y,t:CALTROP_T,tick:0,m:0.35+0.04*(r-1),sk:G.sk});
-  p.leap={sx:p.x,sy:p.y,tx,ty,t:0,dur:0.34,vault:true,sk:G.sk};p.face=a+Math.PI;burst(p.x,p.y,10,'#8a8070',140);}
+  G.skz.push({k:'caltrop',x:p.x,y:p.y,t:CALTROP_T*(fl?2:1),R:CALTROP_R*(fl?1.5:1),tick:0,m:(0.35+0.04*(r-1))*(fl?1.5:1),sk:G.sk});
+  p.leap={sx:p.x,sy:p.y,tx,ty,t:0,dur:0.34,vault:true,shot:hasMod('vtShot')?0.5*(1+0.12*(r-1)):0,sk:G.sk};p.face=a+Math.PI;burst(p.x,p.y,10,'#8a8070',140);}
 Object.assign(RZ,{
-  caltrop(z,p,dt){z.tick-=dt;for(const e of G.enemies)if(!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<CALTROP_R+e.r)chillHit(e,0.5,0.3,true);
-    if(z.tick<=0){z.tick=0.5;aoe(z.x,z.y,CALTROP_R,z.m,{quiet:true});}},
+  caltrop(z,p,dt){const R=z.R||CALTROP_R;z.tick-=dt;for(const e of G.enemies)if(!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<R+e.r)chillHit(e,0.5,0.3,true);
+    if(z.tick<=0){z.tick=0.5;aoe(z.x,z.y,R,z.m,{quiet:true});}},
   bomb(z,p,dt){const e=z.e;if(e&&!e.dead){z.x=e.x+z.ox;z.y=e.y+z.oy;}
     if(fr(0,1)<0.7)part(z.x,z.y-4,fr(-20,20),-60,0.3,'#ffb03a',2);
-    if(z.t<=0){aoe(z.x,z.y,BOMB_R,z.m,{kb:50});fxExplosion(z.x,z.y,BOMB_R,'#ff8a2a');G.shake=Math.max(G.shake,9);G.hitStop=0.04;playSfx('boom');}}});
+    if(z.t<=0){const R=z.R||BOMB_R;aoe(z.x,z.y,R,z.m,{kb:50});fxExplosion(z.x,z.y,R,'#ff8a2a');
+      if(z.cluster)for(let k=0;k<3;k++){const b=fr(0,TAU)+k*TAU/3;G.skz.push({k:'bomb',e:null,x:z.x+Math.cos(b)*80,y:z.y+Math.sin(b)*80,t:0.5,T:0.5,R:70,m:z.m*0.4,sk:z.sk});} /* Cluster Bomb */G.shake=Math.max(G.shake,9);G.hitStop=0.04;playSfx('boom');}}});
 // Explosive Arrow: the arrow sticks where it hit the enemy
-function stickBomb(e,m,sk){const a=fr(0,TAU);G.skz.push({k:'bomb',e,ox:Math.cos(a)*e.r*0.5,oy:Math.sin(a)*e.r*0.5,x:e.x,y:e.y,t:BOMB_T,m,sk});}
+// v1.0.130: Short Fuse, Cluster Bomb, Payload
+function stickBomb(e,m,sk){const a=fr(0,TAU),T=hasMod('exQuick')?0.4:BOMB_T;G.skz.push({k:'bomb',e,ox:Math.cos(a)*e.r*0.5,oy:Math.sin(a)*e.r*0.5,x:e.x,y:e.y,t:T,T,R:BOMB_R*(hasMod('exPayload')?1.5:1),cluster:hasMod('exCluster'),m,sk});}
 // Hawk: lasts HAWK_T s; circles you, dives at an enemy near you, hits and Marks it, flies back up. Can't be hurt.
 function callHawk(r){const p=G.p;if(!G.pets)G.pets=[];for(const q of G.pets)if(q.kind==='wolf')q.hp=0;G.pets=G.pets.filter(q=>q.hp>0);
   let h=G.pets.find(q=>q.kind==='hawk');if(!h){h={kind:'hawk',x:p.x,y:p.y-40,hp:1,maxHp:1,r:8,ang:0,dive:null,cd:0.4,walk:0,face:0};G.pets.push(h);}
-  Object.assign(h,{t:HAWK_T,m:0.7+0.07*(r-1),mark:0.15+0.01*(r-1)});G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:60,t:0,max:0.4,col:'#d8c8a0'});}
+  const tal=hasMod('hkTalon'),prey=hasMod('hkPrey'); /* v1.0.130: Razor Talons, Swift Wings, Hunter's Mark */
+  Object.assign(h,{t:HAWK_T,m:(0.7+0.07*(r-1))*(tal?1.4:1),bleed:tal,every:HAWK_EVERY*(hasMod('hkSwift')?0.5:1),markT:MARK_T*(prey?2:1),mark:(0.15+0.01*(r-1))*(prey?1.5:1)});G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:60,t:0,max:0.4,col:'#d8c8a0'});}
 function hawkTick(h,dt){const p=G.p;h.t-=dt;h.walk+=dt;if(h.t<=0){h.hp=0;burst(h.x,h.y,10,'#c8b088',120);return;}
   h.cd-=dt;let gx,gy;
   if(h.dive&&(h.dive.dead||h.dive.hidden))h.dive=null;
-  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m,{weapon:true,kb:10});G.sk=sk;
-      e.markUntil=G.time+MARK_T;e.markAmt=Math.max(e.markUntil>G.time&&e.markAmt||0,h.mark);burst(e.x,e.y,8,'#e8d8a8',140);h.dive=null;h.cd=HAWK_EVERY/(1+(G.stats.aspd||0)/100);}}
+  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m,{weapon:true,kb:10,bleed:h.bleed});G.sk=sk;
+      e.markAmt=Math.max(e.markUntil>G.time&&e.markAmt||0,h.mark);e.markUntil=G.time+(h.markT||MARK_T);burst(e.x,e.y,8,'#e8d8a8',140);h.dive=null;h.cd=(h.every||HAWK_EVERY)/(1+(G.stats.aspd||0)/100);}}
   else{h.ang+=dt*2.4;gx=p.x+Math.cos(h.ang)*55;gy=p.y+Math.sin(h.ang)*30-30;
     if(h.cd<=0&&!G.inTown){const t=nearest(p.x,p.y,320);if(t){h.dive=t;playSfx('screech');}}}
   const dx=gx-h.x,dy=gy-h.y,d=Math.hypot(dx,dy);if(d>620){h.x=p.x;h.y=p.y-30;return;}
@@ -101,6 +106,9 @@ function drawMarks(onScreen){for(const e of G.enemies){if(e.dead||e.hidden||!(e.
   ctx.strokeStyle='#ffd36b';ctx.lineWidth=1.5;ctx.globalAlpha=0.8;ctx.beginPath();ctx.arc(e.x,y,5,0,TAU);ctx.moveTo(e.x-8,y);ctx.lineTo(e.x+8,y);ctx.moveTo(e.x,y-8);ctx.lineTo(e.x,y+8);ctx.stroke();ctx.globalAlpha=1;}}
 // Caltrops and stuck Explosive Arrows on the floor (with the traps)
 function drawCaltrops(onScreen){for(const z of G.skz||[]){if(!onScreen(z.x,z.y,90))continue;
-  if(z.k==='caltrop'){ctx.fillStyle='#8a8478';for(let k=0;k<10;k++){const a=k*2.4,d=(k*37%100)/100*CALTROP_R*0.85;ctx.fillRect(z.x+Math.cos(a)*d-1.5,z.y+Math.sin(a)*d-1.5,3,3);}
-    ctx.globalAlpha=0.15;ctx.strokeStyle='#c8c0b0';ctx.beginPath();ctx.arc(z.x,z.y,CALTROP_R,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
-  else if(z.k==='bomb'){const k=1-z.t/BOMB_T;ctx.fillStyle='#3a2a1a';ctx.fillRect(z.x-1,z.y-10,2,10);ctx.fillStyle=k>0.6&&Math.sin(G.time*30)>0?'#fff0a0':'#ff8a2a';ctx.beginPath();ctx.arc(z.x,z.y-10,3+k*2,0,TAU);ctx.fill();}}}
+  if(z.k==='caltrop'){ctx.fillStyle='#8a8478';for(let k=0;k<10;k++){const a=k*2.4,d=(k*37%100)/100*(z.R||CALTROP_R)*0.85;ctx.fillRect(z.x+Math.cos(a)*d-1.5,z.y+Math.sin(a)*d-1.5,3,3);}
+    ctx.globalAlpha=0.15;ctx.strokeStyle='#c8c0b0';ctx.beginPath();ctx.arc(z.x,z.y,z.R||CALTROP_R,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
+  else if(z.k==='bomb'){const k=1-z.t/(z.T||BOMB_T);ctx.fillStyle='#3a2a1a';ctx.fillRect(z.x-1,z.y-10,2,10);ctx.fillStyle=k>0.6&&Math.sin(G.time*30)>0?'#fff0a0':'#ff8a2a';ctx.beginPath();ctx.arc(z.x,z.y-10,3+k*2,0,TAU);ctx.fill();}}}
+// Vault landed (game.js): Parting Shot
+function vaultLand(p,L){if(!L.shot)return;const t=nearest(p.x,p.y,500);if(t)p.face=Math.atan2(t.y-p.y,t.x-p.x);const a0=p.face,sk=G.sk;G.sk=L.sk??null;
+  for(let k=-2;k<=2;k++){const b=a0+k*0.13;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:L.shot,weapon:true,arrow:true});}p.face=a0;G.sk=sk;playSfx('twang');}

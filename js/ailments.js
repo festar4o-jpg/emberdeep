@@ -25,7 +25,7 @@ function shockMul(e){return e.shockT>0?1+SHOCK_PER*(e.shockN||0):1;}
 // called by hitEnemy after a hit lands (d: the damage dealt)
 function applyAilments(e,d,opts){if(e.dead||opts.dot||opts.haz||opts.splashed)return;
   const s=G.stats,el=hitElem(),c=G.char,fb=c&&c.cls==='arcanist'&&firstSk(1);
-  let ig=(el==='fire'?(c.cls==='arcanist'&&firstSk(4)?AIL_METEOR:AIL_BASE.fire):0)+(s.igniteCh||0);if(fb&&hasMod('ignite'))ig=100;
+  let ig=(el==='fire'?(c.cls==='arcanist'&&firstSk(4)?AIL_METEOR:AIL_BASE.fire):0)+(s.igniteCh||0);if(fb&&hasMod('ignite'))ig=100;if(c&&c.cls==='ranger'&&G.sk===2&&altOn(c,2)&&hasMod('ftSear'))ig=100; /* skillalts.js: Searing Trap */
   if(ig>0&&Math.random()*100<ig)igniteHit(e,d);
   const stat=c&&c.cls==='arcanist'&&firstSk(3)&&hasMod('static'),sh=(el==='light'?AIL_BASE.light:0)+(s.shockCh||0);
   if(stat)shockHit(e,2);else if(sh>0&&Math.random()*100<sh)shockHit(e,1);

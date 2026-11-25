@@ -100,6 +100,7 @@ const SKILLS={
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
 function skillCd(i){const sk=skillAt(G.char,i),w=G.char.cls==='warden';
+  if(altOn(G.char,i)&&G.char.cls==='ranger'&&(i===2&&hasMod('ftQuick')||i===4&&hasMod('exPayload')))return (i===2?sk.cd*0.5:sk.cd+3)*(1-G.stats.cdr/100); // skillalts.js: Quick Fuse, Payload
   if(altOn(G.char,i))return i===0?sk.cd/(G.stats.wspd*(1+(G.char.cls!=='arcanist'?G.stats.aspd:(G.stats.cspd||0))/100)):sk.cd*(1-G.stats.cdr/100); // skillalts.js: second skills (their own rules come with them)
   if(w&&i===1&&hasPw('bloodleap'))return 0.35;if(w&&i===4&&hasPw('faultline'))return sk.cd*0.5*(1-G.stats.cdr/100);
   const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush

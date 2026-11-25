@@ -232,7 +232,7 @@ function update(dt){
     if(D.t>=D.dur){p.dodge=null;if(hasPw('cometDash')&&!G.inTown)cometImpact();}}
   else if(p.charge)chargeTick(p,dt); // skillalts.js: Charge
   else if(p.leap){const L=p.leap;L.t+=dt;const t=Math.min(1,L.t/L.dur);p.x=L.sx+(L.tx-L.sx)*t;p.y=L.sy+(L.ty-L.sy)*t;
-    if(t>=1&&L.vault)p.leap=null; /* ranger.js: Vault lands softly */
+    if(t>=1&&L.vault){p.leap=null;vaultLand(p,L);} /* ranger.js: Vault lands softly (Parting Shot) */
     else if(t>=1){p.leap=null;G.sk=L.sk??null;aoe(p.x,p.y,95,L.mult,{stun:1});if(hasPw('leapFire'))G.hazards.push({sk:G.sk,x:p.x,y:p.y,r:85,t:3,tick:0,mult:0.35});G.sk=null;G.shake=10;G.hitStop=0.06;fxCracks(p.x,p.y,100);burst(p.x,p.y,28,'#c8a070',220);G.fx.push({type:'ring',x:p.x,y:p.y,r0:10,r1:105,t:0,max:0.35,col:'#ffcc88'});if(hasPw('quake'))earthshatterAt(p.x,p.y);leapMods(p,L);}}
   else if(ml>0.08){const spd=165*(1+s.move/100)*(p.spin>0?1.3:1)*(G.terrain[tileIdx(p.x,p.y)]===T_POISON?0.55:1)*(p.slowT>0?1-p.slowAmt:1);moveEnt(p,mx*spd*dt,my*spd*dt);if(p.spin<=0)p.face=Math.atan2(my,mx);}
   if(!G.inTown&&!p.dead&&!p.leap){const t=G.terrain[tileIdx(p.x,p.y)];

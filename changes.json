@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.129",
+  "latest": "1.0.130",
   "notes": [
+    {
+      "v": "1.0.130",
+      "t": [
+        "Ranger: 3 modifiers for each of his second skills (15 in all)",
+        "Twin Shot, Serrated Shot, Mounting Power · Long Vault, Parting Shot, Spiked Field · Wildfire, Searing Trap, Quick Fuse",
+        "Razor Talons, Swift Wings, Hunter's Mark · Short Fuse, Cluster Bomb, Payload"
+      ]
+    },
     {
       "v": "1.0.129",
       "t": [

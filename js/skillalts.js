@@ -67,7 +67,10 @@ const SKILL_ALTS={
   ranger:[ // v1.0.129 (moving parts in ranger.js)
     {id:'pierce',name:'Piercing Shot',icon:'➹',cd:0.9,cost:0,elem:'phys',sfx:'twang',
       desc:r=>`A heavy, fast arrow that passes through every enemy in a line for ${pct(1.6+0.14*(r-1))} weapon damage. Each hit restores 2 Focus. Slower than Arrow Shot.`,
-      cast(r){const a=aimPoint(700);shoot(a,1000,5,'#f0e6d0',{mult:1.6+0.14*(r-1),weapon:true,pierce:99,onhit:()=>gainRes(2),arrow:true});G.proj[G.proj.length-1].heavy=true;startAtk('bow','mh',0);}},
+      cast(r){const p=G.p,a=aimPoint(700),twin=hasMod('psTwin'),m=(1.6+0.14*(r-1))*(twin?0.65:1),bl=hasMod('psBleed'),mount=hasMod('psMount'); /* Twin Shot, Serrated Shot, Mounting Power */
+        for(const k of twin?[-1,1]:[0]){const b=Math.atan2(a.y-p.y,a.x-p.x),ox=-Math.sin(b)*10*k,oy=Math.cos(b)*10*k;let q;
+          shoot({x:a.x+ox,y:a.y+oy},1000,5,'#f0e6d0',{mult:m,weapon:true,pierce:99,bleed:bl,onhit:()=>{gainRes(2);if(mount&&q)q.mult=Math.min(m*1.75,q.mult*1.15);},arrow:true});q=G.proj[G.proj.length-1];q.heavy=true;}
+        startAtk('bow','mh',0);}},
     {id:'vault',name:'Vault',icon:'🤸',cd:5,cost:15,sfx:'dodge',
       desc:r=>`Flip backwards out of danger (nothing can hit you in the air), leaving caltrops that slow enemies by 50% and hit them for ${pct(0.35+0.04*(r-1))} damage twice a second for ${CALTROP_T}s. Costs 15 Focus.`,
       cast(r){vault(r);}},
@@ -80,7 +83,7 @@ const SKILL_ALTS={
       cast(r){callHawk(r);}},
     {id:'explosive',name:'Explosive Arrow',icon:'💣',cd:8,cost:40,elem:'fire',sfx:'twang',
       desc:r=>`An arrow that sticks in the first enemy it hits and explodes ${BOMB_T}s later for ${pct(3.2+0.38*(r-1))} weapon damage around it (it can Ignite). Costs 40 Focus.`,
-      cast(r){const a=aimPoint(600),sk=G.sk,m=3.2+0.38*(r-1);shoot(a,700,5,'#ff9a3a',{mult:0.3,weapon:true,arrow:true,onhit:e=>{if(e)stickBomb(e,m,sk);}});G.proj[G.proj.length-1].fire=true;startAtk('bow','mh',0);}}]};
+      cast(r){const a=aimPoint(600),sk=G.sk,m=(3.2+0.38*(r-1))*(hasMod('exPayload')?1.25:1);shoot(a,700,5,'#ff9a3a',{mult:0.3,weapon:true,arrow:true,onhit:e=>{if(e)stickBomb(e,m,sk);}});G.proj[G.proj.length-1].fire=true;startAtk('bow','mh',0);}}]};
 // Modifiers of the second skills (v1.0.114): 3 each, unlocked at ranks MOD_UNLOCK like the first skills' (skillmods.js).
 // v1.0.114 balance (per button, against the first skill): Ice Shards 45% a shard, Seismic Wave 180% a quake, Firewall
 // 60% a tick, Black Hole collapse 300%.
@@ -117,7 +120,22 @@ const ALT_MODS={
     [{k:'holeBig',name:'Event Horizon',t:'Pulls from 40% farther and lasts 1s longer'},
      {k:'holeQuick',name:'Singularity',t:'Lasts only 1s, but collapses for 60% more'},
      {k:'holeFire',name:'Nova Star',t:'The collapse leaves burning ground for 3s'}]],
-  ranger:[[],[],[],[],[]]}; // v1.0.124: the Ranger's come with his second skills
+  ranger:[ // v1.0.130
+    [{k:'psTwin',name:'Twin Shot',t:'Two heavy arrows side by side, 65% damage each'},
+     {k:'psBleed',name:'Serrated Shot',t:'Always makes enemies Bleed'},
+     {k:'psMount',name:'Mounting Power',t:'Each enemy it passes through makes it 15% stronger for the next, up to +75%'}],
+    [{k:'vtFar',name:'Long Vault',t:'Flip 50% farther'},
+     {k:'vtShot',name:'Parting Shot',t:'When you land, loose a fan of 5 arrows at the nearest enemy, 50% damage each'},
+     {k:'vtField',name:'Spiked Field',t:'Caltrops last twice as long, cover 50% more and hit 50% harder'}],
+    [{k:'ftWild',name:'Wildfire',t:'The burning ground covers 50% more and lasts 6s'},
+     {k:'ftSear',name:'Searing Trap',t:'Fire Trap and its burning ground always Ignite'},
+     {k:'ftQuick',name:'Quick Fuse',t:'Arms at once and the cooldown is halved, but 25% less damage'}],
+    [{k:'hkTalon',name:'Razor Talons',t:'Dives hit 40% harder and make enemies Bleed'},
+     {k:'hkSwift',name:'Swift Wings',t:'Dives twice as often'},
+     {k:'hkPrey',name:"Hunter's Mark",t:'The Mark is 50% stronger and lasts twice as long'}],
+    [{k:'exQuick',name:'Short Fuse',t:'Explodes after 0.4s instead of 1.2s'},
+     {k:'exCluster',name:'Cluster Bomb',t:'The blast scatters 3 small bombs that explode for 40% damage each'},
+     {k:'exPayload',name:'Payload',t:'50% wider blast and 25% more damage, but the cooldown is 3s longer'}]]};
 const altOf=(cls,i)=>(SKILL_ALTS[cls]||[])[i]||null;
 // A hit from button i's FIRST skill (for uniques and rules made for it; G.sk is the button the hit comes from).
 const firstSk=i=>G.sk===i&&!altOn(G.char,i);
