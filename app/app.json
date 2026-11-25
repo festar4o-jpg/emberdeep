@@ -3,6 +3,8 @@
  "game": "1.0.117",
  "apk": "Emberdeep-app4.apk",
  "notes": [
-  "the app tells the game its version (user agent EmberdeepApp/4) and opens the new app's download in the browser ('openUrl' message, downloads), game v1.0.117"
+  "Vibration: feel crits, heavy hits, level-ups, boss kills and good drops (Settings \u203a Vibration)",
+  "Future app updates download with one tap from inside the game",
+  "The app shows its real version number"
  ]
 }
