@@ -74,7 +74,7 @@ function playerFrozen(){const p=G.p;return !!(p&&p.ail&&p.ail.frozenT>0);}
 // after an elemental hit of d damage landed (E: resistance key, sh: elemental share 0..1)
 function playerAilHit(E,sh,d){const p=G.p;if(p.dead||!PAIL_KIND[E]||!(d>0))return;const A=pAil(p),res=clamp(resOf(G.stats,E),-60,75),kind=PAIL_KIND[E];
   const dur=1-Math.max(0,res)/150,ch=PAIL_CH[E]*Math.min(1,sh)*(1-res/100);
-  if(kind==='chill'&&d>=G.stats.life*PFREEZE_HIT&&A.freezeImm<=0){A.frozenT=Math.max(0.1,PFREEZE_MAX*(1-Math.max(0,res)/100));A.freezeImm=A.frozenT+PFREEZE_IMM;
+  if(kind==='chill'&&d>=G.stats.life*PFREEZE_HIT&&A.freezeImm<=0&&!hasKs('unwavering')){ /* passives.js: Unwavering */A.frozenT=Math.max(0.1,PFREEZE_MAX*(1-Math.max(0,res)/100));A.freezeImm=A.frozenT+PFREEZE_IMM;
     floatText(p.x,p.y-p.r-30,'Frozen!',AIL_COL.chill,true);buzz('heavy');hintAil('frozen');}
   if(Math.random()*100>=ch)return;
   hintAil(kind); // hints.js: the first time each one lands

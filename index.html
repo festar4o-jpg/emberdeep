@@ -31,6 +31,7 @@
     <div class="btnrow">
       <div class="ib pe" id="bagBtn">🎒<b class="dot hidden" id="bagDot"></b></div>
       <div class="ib pe" id="skBtn">✨<b class="dot hidden" id="skDot"></b></div>
+      <div class="ib pe" id="treeBtn">🌳<b class="dot hidden" id="treeDot"></b></div>
       <div class="ib pe" id="menuBtn">☰</div>
     </div>
     <canvas id="minimap" width="220" height="220"></canvas>
@@ -191,6 +192,10 @@
   <div class="btn wide" id="skClose">Close</div>
 </div></div>
 
+<div id="treeOv" class="overlay hidden"><canvas id="treeCv"></canvas>
+  <div id="treeTop"><b>🌳 Passive tree</b><span id="treePts" class="fdim"></span><span style="flex:1"></span><div class="btn" id="treeFitBtn">Whole tree</div><div class="btn" id="treeClose">Close</div></div>
+  <div id="treeInfo" class="hidden"></div>
+</div>
 <div id="questOv" class="overlay hidden"><div class="panel"><h2>📜 Quests</h2><div id="questList"></div><div class="row"><div class="btn" id="questClose">Close</div></div></div></div>
 <div id="wayOv" class="overlay hidden"><div class="panel">
   <h2>Waystone</h2>
@@ -259,7 +264,8 @@
     • Each portal takes you to town first. Walk to the merchant and Trade, then take the portal onward. Every act has its own town.<br>
     • 🌀 The Waystone in town takes you to any town or depth you have reached, with fresh monsters. On boss depths pick Everything, Boss only or No boss: farm a boss for its trophy unique and set pieces. 🏠 Return to Town (this menu) brings you back from anywhere.<br>
     • Walk over loot to pick it up. Open 🎒 to equip gear — a green ▲ means it's an upgrade.<br>
-    • Each level gives a skill point (spend it in ✨), +5% damage and more Life. Max level is 50; after that XP fills Paragon levels (✦, blue XP bar): +1% damage and +5 Life each, no cap.<br>
+    • Each level gives a skill point (spend it in ✨), +5% damage and more Life. Max level is 50; after that XP fills Paragon levels (✦, blue XP bar), no cap.<br>
+    • Passive points: 1 per level, 2 for the first kill of each act boss and 1 per Paragon level. Spend them in the passive tree (🌳): drag to move, pinch to zoom, tap a node to see it, then Take it. A node can be taken when it touches your start or a node you have. Choice nodes (diamonds) let you pick one of three bonuses. A node can be taken back for gold (more at higher levels) once nothing beyond it depends on it; take a choice node back and again to change its bonus. Keystones (the four big nodes at the edge) change the rules with a downside: Blood Magic (skills cost Life), Unwavering (no Freeze or slow, less damage taken, but no dodge), Glass Cannon (30% more damage, 30% less Life), Elemental Overload (double Ignite, Shock and Poison chances, no critical hits).<br>
     • Skill modifiers (✨ Skills tab): every skill has 3, unlocked at skill rank 3, 6 and 10. One can be on per skill; tap to swap any time, for free.<br>
     • Paths (✨ Path tab): at level 20 choose one of your class's two paths (Warden: Bulwark or Reaver; Arcanist: Stormcaller or Pyreborn). It is <b>for good</b>. Each path has 4 perks, at levels 20, 28, 36 and 44, and becomes your title.<br>
     • Settings › Performance: frame rate (30 saves battery), Sharpness, Particles, Lighting and Glows, each on its own, so every phone can find its balance. Battery saver uses the lightest of all four (and turns on by itself under 20% battery). Show FPS puts a counter at the top.<br>
@@ -304,6 +310,7 @@
 <script src="js/skillmods.js"></script>
 <script src="js/ailments.js"></script>
 <script src="js/subclasses.js"></script>
+<script src="js/passives.js"></script>
 <script src="js/monsters.js"></script>
 <script src="js/bossfight.js"></script>
 <script src="js/game.js"></script>
@@ -329,6 +336,7 @@
 <script src="js/backup.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/hints.js"></script>
+<script src="js/treeui.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

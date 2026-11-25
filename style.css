@@ -354,3 +354,13 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 #smithInfo .tip{margin-bottom:6px;}
 
 .maphelp p{margin:6px 0;line-height:1.45;font-size:15px}
+/* passive tree (treeui.js) */
+#treeOv{padding:0;display:block;background:#0b0806;}
+#treeCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+#treeTop{position:absolute;left:0;right:0;top:0;display:flex;gap:10px;align-items:center;padding:calc(6px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 6px calc(10px + env(safe-area-inset-left));background:linear-gradient(#000c,#0000);pointer-events:none;}
+#treeTop .btn{pointer-events:auto;padding:7px 12px;font-size:14px;}
+#treeInfo{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:min(440px,calc(100vw - 32px));max-height:45vh;overflow:auto;background:#1a120ce8;border:1px solid var(--edge);border-radius:8px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;gap:5px;}
+#treeInfo .trn{color:var(--gold);font-size:15px;}
+#treeInfo .trok{color:#7fe07f;}
+#treeInfo .btn{padding:8px 12px;font-size:14px;}
+#treeInfo .trop{text-align:left;}#treeInfo .trop.on{border-color:var(--gold);box-shadow:0 0 6px var(--gold);}#treeInfo .trop.off{opacity:.55;pointer-events:none;}

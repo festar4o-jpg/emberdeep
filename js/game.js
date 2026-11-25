@@ -1,7 +1,7 @@
 'use strict';
 // Combat, effects, starting characters/depths/town, and the per-frame update.
 // ---------- combat ----------
-function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;}if(G.p.souls&&hasPw('soulHarvest'))d*=1+0.02*G.p.souls; /* +% damage with this skill (G.sk: the skill this hit comes from) */const crit=Math.random()*100<s.crit||G.sk===2&&hasPw('whirlCrit');if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
+function rollDmg(mult,hand){const s=G.stats;const h=hand==='oh'&&s.oh?s.oh:hand==='mh'&&s.mh?s.mh:null;let d=(h?rand(h.dmin,h.dmax):rand(s.dmin,s.dmax))*s.levelMul*(1+s.dmg/100)*(1+s.spell/100)*mult;if(G.p.buffT>0)d*=1+G.p.buffAmt;if(hasPw('bloodrage')&&(G.p.hp<s.life*0.5||G.p.rageT>0))d*=1.25;if(G.p.wrathT>0)d*=1.3;if(G.p.pyreT>0&&G.p.pyreN)d*=1+0.03*G.p.pyreN;if(G.sk!=null){const v=s['skd'+G.sk];if(v)d*=1+v/100;}if(G.p.souls&&hasPw('soulHarvest'))d*=1+0.02*G.p.souls; /* +% damage with this skill (G.sk: the skill this hit comes from) */if(s.more)d*=s.more; /* passives.js: Glass Cannon */const crit=!s.noCrit&&(Math.random()*100<s.crit||G.sk===2&&hasPw('whirlCrit')); /* Elemental Overload: never */if(crit)d*=1+s.critd/100;return {d:Math.max(1,Math.round(d)),crit};}
 function hitEnemy(e,mult,opts={}){
   if(e.dead||e.hidden||e.spawnT>0||e.introT>0)return;
   if(e.transT>0){if(!opts.quiet&&G.time-(e.immT||-9)>0.4){e.immT=G.time;floatText(e.x,e.y-e.r-6,'Immune',ACTS[e.kind||0].col,false);}return;} /* a boss between phases */
@@ -61,6 +61,7 @@ function killEnemy(e){
   const dk=e.type==='boss'?'boss':e.elite?'elite':'normal';dropStones(e,dk);dropCharms(e,dk);{const kd=e.type==='boss'?'boss':e.zb?'zboss':e.su?'su':dk;dropCurrency(e,kd);sigilDrops(e,kd);} // gems, runes, charms, currency, Sigils (sigils.js)
   const T=ETYPES[e.type];const c=G.char; // Item Rarity (G.stats.rarity) changes what drops, not how often: see rollDrop
   if(Math.random()<GOLD_CH||e.elite)dropGold(e.x,e.y,Math.round(randi(2,6)*PD()*(e.elite?3:1)));
+  if(e.type==='boss'&&!e.ab)pasBossKill(e); // passives.js: first kill of each act boss
   if(e.type==='boss'&&e.ab)archDown(e); // pinnacle.js: a Citadel guardian or the Hollow Sun
   else if(e.type==='boss'){const L=bossDef(e).loot,n=L.n+Math.max(PD()>25?1:0,lootHere().boss);
     for(let k=0;k<n;k++){const min=k<L.unique?3:k<L.unique+L.rare?2:1;dropItem(e.x+rand(-50,50),e.y+rand(-50,50),rollDrop(c,PD()+L.ilvl,3,min,{act:dropAct(PD()),top:true}));}
@@ -91,7 +92,7 @@ function moveInput(){let mx=0,my=0;if(joy.active){mx=joy.dx;my=joy.dy;}
   const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}return [mx,my];}
 // Dodge: a quick dash (about 140px) in the move direction (or facing), untouchable while it lasts.
 const DODGE_CD=1.4,DODGE_DUR=0.26,DODGE_SPD=540;
-function tryDodge(){const p=G.p;if(G.paused||!p||p.dead||playerFrozen()||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
+function tryDodge(){const p=G.p;if(hasKs('unwavering'))return false; /* passives.js */if(G.paused||!p||p.dead||playerFrozen()||p.leap||p.dodge||p.spin>0||p.dodgeCd>0||(G.char&&portraitBlocked()))return false;
   const [mx,my]=moveInput(),a=Math.hypot(mx,my)>0.2?Math.atan2(my,mx):p.face;p.dodgeCd=DODGE_CD;if(hasPw('dodgeFury')){p.dfN=FURY_HITS;p.dfT=FURY_T;} /* uniques.js: Tyrant's Stride */playSfx(G.char&&G.char.cls==='arcanist'?'blink':'dodge');
   if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
     const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
@@ -124,7 +125,7 @@ function dmgPlayer(raw,src,el){
 function checkDeath(p){if(p.hp<=0&&!p.dead){p.hp=0;p.dead=true;playSfx('death');setTimeout(()=>{if(G.p!==p||!p.dead)return;G.paused=true;$('deathOv').classList.remove('hidden');},600);}}
 // Lava ignores armor and block.
 function burnPlayer(v,col){const p=G.p;if(p.dead)return;const d=Math.max(1,Math.round(v));p.hp-=d;p.hurt=Math.max(p.hurt,0.12);floatText(p.x+rand(-6,6),p.y-p.r-8,d,col||'#ff9a3a',false);checkDeath(p);}
-function slowPlayer(amt,t){const p=G.p;p.slowAmt=Math.max(p.slowT>0?p.slowAmt:0,amt);p.slowT=Math.max(p.slowT||0,t);}
+function slowPlayer(amt,t){const p=G.p;if(hasKs('unwavering'))return; /* passives.js */p.slowAmt=Math.max(p.slowT>0?p.slowAmt:0,amt);p.slowT=Math.max(p.slowT||0,t);}
 // Enemy ground hazards (poison clouds, fire patches) damage the player over time.
 // A hazard's damage taken through its element's resistance.
 const HAZ_RES={fire:'fres',frost:'cres',poison:'pres'},resMul=k=>k?1-resOf(G.stats,k)/100:1;
@@ -139,16 +140,16 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst
 function gainXp(v){
   const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
   while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
-    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point'); /* subclasses.js */
+    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point, +1 passive point'); /* subclasses.js */
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
 // After level 50 every bit of XP fills Paragon levels instead (leftover XP at 50 carries over).
 function gainParagon(v){const c=G.char;c.para=c.para||0;c.pxp=(c.pxp||0)+v+(c.xp||0);c.xp=0;let up=false;
   while(c.pxp>=paraNeed(c.para)){c.pxp-=paraNeed(c.para);c.para++;up=true;}
-  if(up){refreshStats();toast('Paragon '+c.para+'!',`+${PARA_DMG}% damage, +${PARA_LIFE} Life (total +${c.para*PARA_DMG}% / +${c.para*PARA_LIFE})`);
+  if(up){refreshStats();toast('Paragon '+c.para+'!',`+1 passive point · ${pasFree(c)} to spend`);
     G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#7fe4f4'});burst(G.p.x,G.p.y,30,'#7fe4f4',200);saveChar();}}
 const lvlLabel=c=>c.para?`${c.lvl} ✦${c.para}`:String(c.lvl);
-function refreshStats(){G.stats=calcStats(G.char);if(G.p){G.p.hp=Math.min(G.p.hp,G.stats.life);G.p.res=Math.min(G.p.res,G.stats.res);}}
+function refreshStats(){G.stats=calcStats(G.char);if(typeof treeDot==='function')treeDot(); /* treeui.js */if(G.p){G.p.hp=Math.min(G.p.hp,G.stats.life);G.p.res=Math.min(G.p.res,G.stats.res);}}
 
 // ---------- fx helpers ----------
 function burst(x,y,n,col,sp){const pm=PERF.partMul;if(pm<1)n=Math.ceil(n*pm);for(let k=0;k<n;k++){if(G.parts.length>350*pm)break; /* perf.js: Particles setting */const a=rand(0,TAU),v=rand(sp*0.3,sp);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(0.3,0.7),max:0.7,col,s:rand(2,4)});}}
@@ -158,7 +159,7 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 
 // ---------- start / depth ----------
 function newChar(name,cls){
-  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],sub:null,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
+  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
   const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
   return c;
