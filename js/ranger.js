@@ -2,17 +2,21 @@
 // ticked by skillalts.js skzTick through RZ[kind]. The skills themselves are in skills.js (SKILLS.ranger).
 const TRAP_ARM=0.5,TRAP_LIFE=15,TRAP_MAX=3,TRAP_R=110,TRAP_TRIG=46,RAIN_R=130,RAIN_T=2,RAIN_HITS=6;
 // Spike Trap: thrown to a spot; armed after TRAP_ARM s, it springs when an enemy steps close: a burst that Stuns.
-function placeTrap(x,y,m,stun,sk){const own=G.skz.filter(z=>z.k==='trap');if(own.length>=TRAP_MAX)own[0].t=0; // the oldest one goes
-  G.skz.push({k:'trap',x,y,t:TRAP_LIFE,arm:TRAP_ARM,m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
-// Rain of Arrows: RAIN_HITS volleys over RAIN_T s on a circle.
-function rainAt(x,y,m,sk){G.skz.push({k:'rain',x,y,t:RAIN_T,tick:RAIN_T/RAIN_HITS,m,sk});G.fx.push({type:'tele',x,y,r:RAIN_R,t:0,max:RAIN_T,col:'#c8b088',own:1});}
+// v1.0.128 modifiers (skillmods.js): Cluster Traps (3 at once, up to 6), Hair Trigger (armed at once, springs from 50% further), Lacerating Trap (Bleed).
+const trapMax=()=>hasMod('trCluster')?TRAP_MAX*2:TRAP_MAX;
+function placeTrap(x,y,m,stun,sk){const own=G.skz.filter(z=>z.k==='trap'&&z.t>0);if(own.length>=trapMax())own[0].t=0; // the oldest one goes
+  const hair=hasMod('trHair');G.skz.push({k:'trap',x,y,t:TRAP_LIFE,arm:hair?0:TRAP_ARM,trig:TRAP_TRIG*(hair?1.5:1),bleed:hasMod('trBarb'),m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
+// Rain of Arrows: RAIN_HITS volleys over RAIN_T s on a circle. v1.0.128: Arrow Storm (twice as long), Pinning Rain (slows), Downpour (smaller, harder).
+function rainAt(x,y,m,sk){const T=RAIN_T*(hasMod('rnStorm')?2:1),dn=hasMod('rnDown'),R=RAIN_R*(dn?0.7:1);
+  G.skz.push({k:'rain',x,y,t:T,tick:RAIN_T/RAIN_HITS,R,pin:hasMod('rnPin'),m:m*(dn?1.6:1),sk});G.fx.push({type:'tele',x,y,r:R,t:0,max:T,col:'#c8b088',own:1});}
 const RZ={
   trap(z,p,dt){if(z.arm>0){z.arm-=dt;return;}
-    const e=G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<TRAP_TRIG+e.r);
-    if(e){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{stun:z.stun,kb:60});fxCracks(z.x,z.y,TRAP_R*0.8);burst(z.x,z.y,26,'#d8d0c0',260);G.fx.push({type:'ring',x:z.x,y:z.y,r0:10,r1:TRAP_R,t:0,max:0.35,col:'#e8dcc4'});
+    const e=G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<(z.trig||TRAP_TRIG)+e.r);
+    if(e){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{stun:z.stun,kb:60,bleed:z.bleed});fxCracks(z.x,z.y,TRAP_R*0.8);burst(z.x,z.y,26,'#d8d0c0',260);G.fx.push({type:'ring',x:z.x,y:z.y,r0:10,r1:TRAP_R,t:0,max:0.35,col:'#e8dcc4'});
       G.shake=Math.max(G.shake,7);playSfx('snap');}},
-  rain(z,p,dt){z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-RAIN_R,RAIN_R)*0.8,z.y+fr(-RAIN_R,RAIN_R)*0.8-40,0,260,0.16,'#e8dcc4',2);
-    if(z.tick<=0&&z.t>-0.01){z.tick+=RAIN_T/RAIN_HITS;aoe(z.x,z.y,RAIN_R,z.m,{weapon:true,quiet:true});burst(z.x,z.y,6,'#c8b088',120);}}};
+  rain(z,p,dt){const R=z.R||RAIN_R;z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-R,R)*0.8,z.y+fr(-R,R)*0.8-40,0,260,0.16,'#e8dcc4',2);
+    if(z.pin)for(const e of G.enemies)if(!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<R+e.r)chillHit(e,0.4,0.3,true); // Pinning Rain
+    if(z.tick<=0&&z.t>-0.01){z.tick+=RAIN_T/RAIN_HITS;aoe(z.x,z.y,R,z.m,{weapon:true,quiet:true});burst(z.x,z.y,6,'#c8b088',120);}}};
 // ---------- Call of the Wild (v1.0.126): the wolf ----------
 // G.pets: the hero's companions (kept across areas, not saved: call it again after a restart). A wolf follows you,
 // runs at the nearest enemy near you and bites it (your weapon damage, so it grows with your gear; faster with your
@@ -20,17 +24,20 @@ const RZ={
 // while it lives heals it fully. Ticked in game.js update (petTick), drawn in render.js (drawPet).
 const WOLF_SPD=215,WOLF_R=12,WOLF_BITE=1,WOLF_LEASH=260,WOLF_FAR=620;
 function wolfLife(r){return Math.round(G.stats.life*(0.4+0.03*(r-1)));}
-function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];let w=G.pets.find(q=>q.kind==='wolf');const life=wolfLife(r);
-  if(w){w.maxHp=life;w.hp=life;w.m=0.8+0.1*(r-1);floatText(w.x,w.y-20,'Healed','#7fe07f',false);}
-  else{let x=p.x-Math.cos(p.face)*30,y=p.y-Math.sin(p.face)*30;if(blockedAt(x,y,WOLF_R)){x=p.x;y=p.y;}
-    w={kind:'wolf',x,y,r:WOLF_R,hp:life,maxHp:life,m:0.8+0.1*(r-1),face:p.face,bite:0,walk:0,hurt:0};G.pets.push(w);}
-  G.fx.push({type:'ring',x:w.x,y:w.y,r0:6,r1:60,t:0,max:0.4,col:'#c8c0b0'});burst(w.x,w.y,16,'#bfb8a8',180);}
+// v1.0.128 modifiers (skillmods.js): Pack (two wolves, 60% Life, 70% damage), Alpha (one big wolf, twice the Life, +40% damage), Bond (ranger.js bites, modTakenMul).
+function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];const pack=hasMod('wfPack'),alpha=hasMod('wfAlpha'),n=pack?2:1;
+  const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)),m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
+  let ws=G.pets.filter(q=>q.kind==='wolf');for(const w of ws.slice(n))w.hp=0;ws=ws.slice(0,n);G.pets=G.pets.filter(q=>q.hp>0);
+  for(const w of ws){w.maxHp=life;w.hp=life;w.m=m;w.big=alpha;floatText(w.x,w.y-20,'Healed','#7fe07f',false);}
+  while(ws.length<n){const k=ws.length,b=p.face+Math.PI+(n>1?(k?0.6:-0.6):0);let x=p.x+Math.cos(b)*30,y=p.y+Math.sin(b)*30;if(blockedAt(x,y,WOLF_R)){x=p.x;y=p.y;}
+    const w={kind:'wolf',x,y,r:WOLF_R*(alpha?1.3:1),hp:life,maxHp:life,m,big:alpha,face:p.face,bite:0,walk:0,hurt:0};G.pets.push(w);ws.push(w);}
+  for(const w of ws){G.fx.push({type:'ring',x:w.x,y:w.y,r0:6,r1:60,t:0,max:0.4,col:'#c8c0b0'});burst(w.x,w.y,16,'#bfb8a8',180);}}
 function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
-  for(const w of G.pets){if(w.hp<=0)continue;w.hurt=Math.max(0,w.hurt-dt);w.bite-=dt;w.hp=Math.min(w.maxHp,w.hp+w.maxHp*0.02*dt);
+  let wi=0;for(const w of G.pets){if(w.hp<=0)continue;const side=wi++?1:-1;w.hurt=Math.max(0,w.hurt-dt);w.bite-=dt;w.hp=Math.min(w.maxHp,w.hp+w.maxHp*0.02*dt);
     const dp=Math.hypot(p.x-w.x,p.y-w.y);if(dp>WOLF_FAR||G.inTown&&dp>200){w.x=p.x;w.y=p.y;} // left behind (a new area, a portal): back at your side
-    const t=G.inTown?null:nearest(p.x,p.y,WOLF_LEASH);let gx=p.x-Math.cos(p.face)*34,gy=p.y-Math.sin(p.face)*34;
+    const t=G.inTown?null:nearest(p.x,p.y,WOLF_LEASH);let gx=p.x-Math.cos(p.face+side*0.5)*34,gy=p.y-Math.sin(p.face+side*0.5)*34;
     if(t){const reach=t.r+w.r+6,d=Math.hypot(t.x-w.x,t.y-w.y);gx=t.x;gy=t.y;w.face=Math.atan2(t.y-w.y,t.x-w.x);
-      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m,{weapon:true,kb:20});G.sk=sk;gainRes(1);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
+      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m,{weapon:true,kb:20});G.sk=sk;gainRes(1);if(hasMod('wfBond'))healPlayer(G.stats.life*0.005,true);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
     const dx=gx-w.x,dy=gy-w.y,dd=Math.hypot(dx,dy);if(dd>8){const st=Math.min(dd,WOLF_SPD*(t?1.15:dp>120?1.3:1)*dt);moveEnt(w,dx/dd*st,dy/dd*st);w.walk+=st;if(!t)w.face=Math.atan2(dy,dx);}
     // monsters next to it hit it now and then (every one of their attack times)
     for(const e of G.enemies){if(e.dead||e.hidden||!e.aggro||!(e.dmg>0))continue;if(Math.hypot(e.x-w.x,e.y-w.y)>e.r+w.r+8){continue;}
@@ -38,7 +45,7 @@ function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
     if(w.hp<=0){burst(w.x,w.y,20,'#8a8070',200);floatText(w.x,w.y-20,'Your wolf falls','#c8b088',false);}}
   G.pets=G.pets.filter(w=>w.hp>0);}
 // The wolf, side-on from above: body, head with ears and snout, a tail, legs that move as it runs; flashes when hit.
-function drawPet(w){const x=ctx;x.save();x.translate(w.x,w.y);x.rotate(w.face);const leg=Math.sin(w.walk*0.18)*4,body=w.hurt>0?'#e8d0c8':'#7a7468',dark='#4a463e';
+function drawPet(w){const x=ctx;x.save();x.translate(w.x,w.y);x.rotate(w.face);if(w.big)x.scale(1.3,1.3); /* Alpha */const leg=Math.sin(w.walk*0.18)*4,body=w.hurt>0?'#e8d0c8':'#7a7468',dark='#4a463e';
   x.fillStyle='rgba(0,0,0,.25)';x.beginPath();x.ellipse(0,4,15,7,0,0,TAU);x.fill();
   x.strokeStyle=dark;x.lineWidth=3;x.lineCap='round';for(const [lx,s] of [[7,1],[-7,-1]])for(const sd of [-1,1]){x.beginPath();x.moveTo(lx,sd*5);x.lineTo(lx+leg*s*sd,sd*10);x.stroke();}
   x.strokeStyle=body;x.lineWidth=4;x.beginPath();x.moveTo(-12,0);x.quadraticCurveTo(-20,-3+leg*0.5,-24,2);x.stroke(); // tail

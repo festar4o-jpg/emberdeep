@@ -39,7 +39,23 @@ const SKILL_MODS={
      {k:'moltencore',name:'Molten Core',t:'Meteor\'s burning ground lasts twice as long (6s) and covers 50% more'},
      {k:'swiftfall',name:'Swift Fall',t:'Meteor lands almost instantly, but deals 20% less damage'}]
   ],
-  ranger:[[],[],[],[],[]] // v1.0.124: the Ranger's modifiers come in a later step
+  ranger:[ // v1.0.128
+    [{k:'asSplit',name:'Split Arrow',t:'Arrow Shot looses 2 more arrows beside the first, 50% damage each'},
+     {k:'asBarbed',name:'Barbed Arrows',t:'Arrow Shot always makes enemies Bleed'},
+     {k:'asSteady',name:'Steady Aim',t:'Arrow Shot pierces 2 more enemies and restores 6 Focus a hit instead of 3'}],
+    [{k:'msVolley',name:'Volley',t:'Multishot looses 9 arrows in a wider fan, 20% less damage each'},
+     {k:'msFocus',name:'Focused Fire',t:'Multishot looses 3 arrows close together, 60% more damage each: good against one big enemy'},
+     {k:'msReturn',name:"Hunter's Return",t:'Each Multishot arrow that hits restores 4 Focus instead of 1'}],
+    [{k:'trCluster',name:'Cluster Traps',t:'Spike Trap throws 3 traps at once, 50% damage each; up to 6 traps'},
+     {k:'trBarb',name:'Lacerating Trap',t:'Spike Trap deals 20% more damage and makes everything it hits Bleed'},
+     {k:'trHair',name:'Hair Trigger',t:'Spike Trap arms at once, springs from 50% further, and its cooldown is 1.5s shorter'}],
+    [{k:'wfPack',name:'Pack',t:'Call two wolves, each with 60% of the Life and 70% of the damage'},
+     {k:'wfAlpha',name:'Alpha',t:'Your wolf is bigger: twice the Life and 40% more damage'},
+     {k:'wfBond',name:'Bond',t:'While a wolf lives you take 10% less damage, and each of its bites heals you for 0.5% of your Life'}],
+    [{k:'rnStorm',name:'Arrow Storm',t:'Rain of Arrows lasts twice as long (12 volleys), but costs 60 Focus'},
+     {k:'rnPin',name:'Pinning Rain',t:'Enemies under Rain of Arrows are slowed by 40%'},
+     {k:'rnDown',name:'Downpour',t:'Rain of Arrows falls on a smaller area (70%) with 60% more damage'}]
+  ]
 };
 // mod keys this class has, for save cleanup
 function modKeys(cls,i){return (SKILL_MODS[cls]&&SKILL_MODS[cls][i]||[]).map(m=>m.k);}
@@ -70,7 +86,7 @@ function modRowHtml(c,i){if(!(c.skills[i]>0))return '';const ms=modsAt(c,i),act=
 // ---------- effects ----------
 // Hooks: skills.js (Cleave, Leap range, War Cry, Earthshatter, skillCd), game.js (Executioner in hitEnemy,
 // modTakenMul/Blade Ward in dmgPlayer, modTick, leapMods on landing, Bloodspin + spinMods while spinning, fleeStep).
-function modTakenMul(){const p=G.p;return (p.ironT>0?0.6:1)*(p.iceArmT>0?0.7:1)*(p.chargeGuardT>0?0.6:1)*(p.bannerOn&&hasMod('banFury')?0.8:1);} // Iron Landing, Ice Armour; skillalts.js: Bull's Hide, Rally Point
+function modTakenMul(){const p=G.p;return (p.ironT>0?0.6:1)*(p.iceArmT>0?0.7:1)*(p.chargeGuardT>0?0.6:1)*(p.bannerOn&&hasMod('banFury')?0.8:1)*(hasMod('wfBond')&&G.pets&&G.pets.some(w=>w.hp>0)?0.9:1);} // ranger.js: Bond // Iron Landing, Ice Armour; skillalts.js: Bull's Hide, Rally Point
 function modTick(p,dt){
   if(p.momT>0){p.momT-=dt;if(p.momT<=0)p.momN=0;}  // Momentum stacks run out
   if(p.ironT>0)p.ironT-=dt;if(p.iceArmT>0)p.iceArmT-=dt;
@@ -112,4 +128,4 @@ function boltCharge(){if(!hasMod('overcharge'))return false;const p=G.p;p.ocN=((
 // Fireball: Big Bang / Rapid Fire scale speed, size, blast and damage
 function fireballMod(){return hasMod('bigbang')?{spd:0.7,size:1.4,blast:1.6,mult:1.25}:hasMod('rapid')?{spd:1.4,size:0.85,blast:1,mult:0.8}:{spd:1,size:1,blast:1,mult:1};}
 // a skill's Mana/Fury cost after modifiers (Rapid Fire halves Fireball's)
-function modCost(i,cost){return G.char&&G.char.cls==='arcanist'&&i===1&&hasMod('rapid')?cost/2:cost;}
+function modCost(i,cost){const c=G.char;if(!c||altOn(c,i))return cost;if(c.cls==='arcanist'&&i===1&&hasMod('rapid'))return cost/2;if(c.cls==='ranger'&&i===4&&hasMod('rnStorm'))return 60;return cost;} // Rapid Fire, Arrow Storm

@@ -76,15 +76,20 @@ const SKILLS={
   ranger:[
     {name:'Arrow Shot',icon:'🏹',cd:0.5,cost:0,
       desc:r=>`Loose an arrow for ${pct(1+0.12*(r-1))} weapon damage. Each hit restores 3 Focus.`,
-      cast(r){const a=aimPoint(600);shoot(a,760,4,'#e8dcc4',{mult:1+0.12*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(3),arrow:true});startAtk('bow','mh',0);}},
+      cast(r){const p=G.p,a=aimPoint(600),m=1+0.12*(r-1),steady=hasMod('asSteady'),bl=hasMod('asBarbed'),pc=(G.stats.pierce||0)+(steady?2:0); // skillmods.js: Steady Aim, Barbed Arrows, Split Arrow
+        shoot(a,760,4,'#e8dcc4',{mult:m,weapon:true,pierce:pc,onhit:()=>gainRes(steady?6:3),arrow:true,bleed:bl});
+        if(hasMod('asSplit')){const a0=p.face;for(const k of [-1,1]){const b=a0+k*0.2;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},760,4,'#e8dcc4',{mult:m*0.5,weapon:true,pierce:pc,onhit:()=>gainRes(1),arrow:true,bleed:bl});}p.face=a0;}
+        startAtk('bow','mh',0);}},
     // v1.0.125
     {name:'Multishot',icon:'🎯',cd:1.2,cost:15,
       desc:r=>`Loose a fan of 5 arrows, each for ${pct(0.65+0.08*(r-1))} weapon damage. Each hit restores 1 Focus. Costs 15 Focus.`,
-      cast(r){const p=G.p,a=aimPoint(560),a0=p.face;for(let k=-2;k<=2;k++){const b=a0+k*0.13;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:0.65+0.08*(r-1),weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(1),arrow:true});}p.face=a0;}},
+      cast(r){const p=G.p,a=aimPoint(560),a0=p.face,vol=hasMod('msVolley'),foc=hasMod('msFocus'),N=vol?4:foc?1:2,gap=vol?0.11:foc?0.04:0.13,m=(0.65+0.08*(r-1))*(vol?0.8:foc?1.6:1),fb=hasMod('msReturn')?4:1; // skillmods.js: Volley, Focused Fire, Hunter's Return
+        for(let k=-N;k<=N;k++){const b=a0+k*gap;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:m,weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(fb),arrow:true});}p.face=a0;}},
     {name:'Spike Trap',icon:'🪤',cd:4,cost:25,
-      desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${TRAP_MAX} at once. Costs 25 Focus.`,
+      desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${trapMax()} at once. Costs 25 Focus.`,
       cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
-        placeTrap(x,y,2.2+0.25*(r-1),1.2+0.04*(r-1),G.sk);}},
+        const m=(2.2+0.25*(r-1))*(hasMod('trBarb')?1.2:1),st=1.2+0.04*(r-1); // skillmods.js: Lacerating Trap, Cluster Traps
+        if(hasMod('trCluster')){for(let k=0;k<3;k++){const b=p.face+k*TAU/3;let tx=x+Math.cos(b)*45,ty=y+Math.sin(b)*45;if(blockedAt(tx,ty,10)){tx=x;ty=y;}placeTrap(tx,ty,m*0.5,st,G.sk);}}else placeTrap(x,y,m,st,G.sk);}},
     {name:'Call of the Wild',icon:'🐺',cd:10,cost:30,
       desc:r=>`Call a wolf to fight beside you. It bites for ${pct(0.8+0.1*(r-1))} weapon damage (faster with Attack Speed), has ${Math.round((0.4+0.03*(r-1))*100)}% of your Life and heals 2% a second. Calling it again heals it fully. Costs 30 Focus.`,
       cast(r){callWolf(r);}},
@@ -99,6 +104,7 @@ function skillCd(i){const sk=skillAt(G.char,i),w=G.char.cls==='warden';
   if(w&&i===1&&hasPw('bloodleap'))return 0.35;if(w&&i===4&&hasPw('faultline'))return sk.cd*0.5*(1-G.stats.cdr/100);
   const p=G.p,mod=w&&i===0&&p?(1+(p.momT>0?0.06*(p.momN||0):0))*(p.buffT>0&&hasMod('battlefury')?1.25:1)*rushMul():1; // skillmods.js: Momentum, Battle Fury; subclasses.js: Kill Rush
   if(G.char.cls==='arcanist'&&i===2)return sk.cd*(hasMod('coldsnap')?0.5:1)*(hasPerk('stormReach')?0.75:1)*(1-G.stats.cdr/100); // skillmods.js: Cold Snap; subclasses.js: Storm Reach
+  if(G.char.cls==='ranger'&&i===2&&hasMod('trHair'))return Math.max(0.5,(sk.cd-1.5)*(1-G.stats.cdr/100)); // skillmods.js: Hair Trigger
   if(w&&i===1&&hasMod('longleap'))return Math.max(0.5,(sk.cd-1.5)*(1-G.stats.cdr/100));
   if(G.char.cls==='arcanist'&&i===1)return sk.cd*(1-G.stats.cdr/100)/(1+(G.stats.cspd||0)/100); // v1.0.101: Cast Speed also speeds up Fireball
   return i===0?sk.cd/(G.stats.wspd*(1+(G.char.cls==='arcanist'?(G.stats.cspd||0):G.stats.aspd)/100)*mod):sk.cd*(1-G.stats.cdr/100);} // Warden and Ranger: Attack Speed, Arcanist: Cast Speed

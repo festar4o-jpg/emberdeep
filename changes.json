@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.127",
+  "latest": "1.0.128",
   "notes": [
+    {
+      "v": "1.0.128",
+      "t": [
+        "Ranger: 3 modifiers for each of his 5 skills (15 in all), unlocked at skill rank 3, 6 and 10",
+        "Split Arrow, Barbed Arrows, Steady Aim · Volley, Focused Fire, Hunter's Return · Cluster Traps, Lacerating Trap, Hair Trigger",
+        "Pack (two wolves), Alpha (one big wolf), Bond · Arrow Storm, Pinning Rain, Downpour"
+      ]
+    },
     {
       "v": "1.0.127",
       "t": [
