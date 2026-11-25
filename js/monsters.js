@@ -203,9 +203,10 @@ function rollPack(depth,elite){const A=ACTS[actIdx(depth)],st=stageOf(depth),Z=G
 // act bosses: BOSSES[k].elem. Hazards and elite affixes pass their own element to dmgPlayer.
 const ELEM_OF={dustmage:['lres',1],sporetoad:['pres',1],vinelasher:['pres',1],scarab:['pres',0.4],frostwraith:['cres',1],icegolem:['cres',0.5],shardling:['cres',0.6],
   imp:['fres',1],magmabrute:['fres',0.6],summoner:['fres',1]};
+const MON_LIFE=1.15; // v1.0.103: +15% Life for every monster, elite and boss (fights last longer)
 function makeEnemy(type,x,y,depth,elite,pack,affs){
   const cyc=cycleOf(depth);depth=powDepth(depth); // maps.js: Nightmare and Hell scale like the deeper depths
-  const T=ETYPES[type],en=Math.max(0,depth-25),hpM=(1+0.4*(depth-1)+0.02*(depth-1)*(depth-1))*(1+0.03*en),dM=(1+0.25*(depth-1))*(1+0.02*en); // endless depths add a little extra per depth
+  const T=ETYPES[type],en=Math.max(0,depth-25),hpM=MON_LIFE*(1+0.4*(depth-1)+0.02*(depth-1)*(depth-1))*(1+0.03*en),dM=(1+0.25*(depth-1))*(1+0.02*en); // endless depths add a little extra per depth
   const act1=depth<=5?1.3:1,A=ACTS[actIdx(depth)],af=elite&&affs?affs.slice():[],fast=af.includes('fast');
   const e={type,col:T.col,x,y,r:T.r+(elite?3:0),hp:T.hp*hpM*(elite?2.4:1),dmg:T.dmg*dM*act1*(elite?1.35:1),spd:T.spd*(fast?1.35:1)*(elite?1.05:1),cdMul:fast?0.7:1,dr:T.dr||0,affs:af,
     hx:x,hy:y,cd:rand(0.5,1.5),wind:0,stun:0,frozen:0,flash:0,aggro:false,dead:false,elite,pack,face:0,seed:rand(0,TAU),dir:Math.random()<0.5?1:-1,
