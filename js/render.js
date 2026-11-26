@@ -25,7 +25,7 @@ function render(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#060403';ctx.fillRect(0,0,cv.width,cv.height);
   if(!G.mapCv||!G.p)return;
   const p=G.p;const sx=G.shake?fr(-G.shake,G.shake):0,sy=G.shake?fr(-G.shake,G.shake):0; // fx.js rng: shaking never shifts gameplay rolls
-  TILT=camTilt();
+  TILT=camTilt();STAND_BUDGET=16;
   ctx.setTransform(DPR*Z,0,0,DPR*Z*TILT,DPR*(CW/2-G.cam.x*Z+sx),DPR*(CH/2-G.cam.y*Z*TILT+sy));
   const vw=CW/Z,vh=CH/Z/TILT,vx=G.cam.x-vw/2-20,vy=G.cam.y-vh/2-20;
   const x0=Math.max(0,vx),y0=Math.max(0,vy),x1=Math.min(G.mapCv.width,vx+vw+40),y1=Math.min(G.mapCv.height,vy+vh+40);
@@ -145,7 +145,8 @@ function drawWallRow(r){const g=G.grid,j=r.wrow,T=TILE,cv=G.mapCv,S=faceShade(),
     if(f){ctx.fillStyle='rgba(255,236,210,.10)';ctx.fillRect(x,j*T-2,w,2);} // a faint lit edge where the top meets the face
     ctx.globalAlpha=1;i+=n;}}
 // A standing thing (maps.js standProp), upright at its foot; see-through while it would hide the hero.
-function drawStand(s){upr(s.fx,s.fy);const p=G.p;
+let STAND_BUDGET=0; // how many standing things may still be painted this frame (maps.js paintStand)
+function drawStand(s){if(!s.cv){if(STAND_BUDGET<=0)return;STAND_BUDGET--;paintStand(s,G.stand.grade);}upr(s.fx,s.fy);const p=G.p;
   if(p&&s.fy>p.y&&p.x+14>s.x&&p.x-14<s.x+s.w){const top=s.fy*TILT+(s.y-s.fy),bot=s.fy*TILT+(s.y+s.h-s.fy),ht=p.y*TILT-44,hb=p.y*TILT;if(top<hb&&bot>ht)ctx.globalAlpha=WALL_SEE;}
   ctx.drawImage(s.cv,s.x,s.y);ctx.restore();}
 // A gem or rune on the ground: a small glinting gem (bigger with quality), a skull, or a rune stone, plus its name.

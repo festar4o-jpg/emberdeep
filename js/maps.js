@@ -411,24 +411,24 @@ function gradeMap(x,k){const [d,tone]=GRADE[k]||THEMES[k]&&THEMES[k].grade||GRAD
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
 // Painting uses its own random numbers (seeded by one draw), so art changes never shift gameplay randomness.
 const artRng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-// v1.0.135: standing things (props, braziers, town houses, trees, posts) are painted into their own small canvases
-// instead of the floor, so the angled camera (render.js) can stand them upright and draw them back to front with the
-// figures. box = [left, top, right, bottom] in world units around the art; the canvas is cropped to what was painted.
+// v1.0.135: standing things (props, braziers, town houses, trees, posts) get their own small canvases instead of the
+// floor, so the angled camera (render.js) can stand them upright and draw them back to front with the figures.
+// box = [left, top, right, bottom] in world units around the art. v1.0.137: each is painted only when it first comes
+// on screen (a few per frame, render.js drawStand), with its own art seed, so opening a town (about 300 of them) no
+// longer freezes the game.
 let STAND=null; // the list they go into while a map is painted (null: paint straight into the floor)
 function standProp(x,fx,fy,box,fn){if(!STAND){fn(x);return;}
-  const l=Math.floor(box[0]),t=Math.floor(box[1]),w=Math.ceil(box[2])-l,h=Math.ceil(box[3])-t,c=mkCanvas(w,h),cx=c.getContext('2d');
-  cx.lineJoin=x.lineJoin;cx.lineCap=x.lineCap;cx.translate(-l,-t);fn(cx);STAND.push(cropStand({cv:c,x:l,y:t,w,h,fx,fy}));}
-// Trim the empty margins (once per map); kept as is where pixels can't be read.
-function cropStand(s){const x=s.cv.getContext('2d');if(!x.getImageData)return s;let d;try{d=x.getImageData(0,0,s.w,s.h).data;}catch(e){return s;}if(!d||typeof d.length!=='number'||d.length<s.w*s.h*4)return s;
-  let a=s.w,b=s.h,c=-1,e=-1;for(let j=0;j<s.h;j++)for(let i=0;i<s.w;i++)if(d[(j*s.w+i)*4+3]>4){if(i<a)a=i;if(i>c)c=i;if(j<b)b=j;if(j>e)e=j;}
-  if(c<0)return Object.assign(s,{w:0,h:0});const w=c-a+1,h=e-b+1;if(w===s.w&&h===s.h)return s;
-  const n=mkCanvas(w,h);n.getContext('2d').drawImage(s.cv,a,b,w,h,0,0,w,h);return Object.assign(s,{cv:n,x:s.x+a,y:s.y+b,w,h});}
-// The same colour grade as the floor (gradeMap), kept inside each canvas's own shape.
-function gradeStand(k){const [d,tone]=GRADE[k]||THEMES[k]&&THEMES[k].grade||GRADE.town;
-  for(const s of G.stand){if(!s.w)continue;const x=s.cv.getContext('2d'),m=mkCanvas(s.w,s.h);m.getContext('2d').drawImage(s.cv,0,0);x.save();
-    x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,s.w,s.h);
-    x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,s.w,s.h);
-    x.globalCompositeOperation='destination-in';x.drawImage(m,0,0);x.restore();}}
+  const l=Math.floor(box[0]),t=Math.floor(box[1]);STAND.push({cv:null,fn,seed:Math.random()*4294967296|0,x:l,y:t,w:Math.ceil(box[2])-l,h:Math.ceil(box[3])-t,fx,fy});}
+// Paint one now, with the same colour grade as the floor (gradeMap), kept inside its own shape (one shared mask canvas).
+let STAND_MASK=null;
+function paintStand(s,grade){const c=mkCanvas(s.w,s.h),x=c.getContext('2d'),R0=Math.random;x.translate(-s.x,-s.y);
+  Math.random=artRng(s.seed);try{s.fn(x);}finally{Math.random=R0;}s.fn=null;s.cv=c;
+  const [d,tone]=GRADE[grade]||THEMES[grade]&&THEMES[grade].grade||GRADE.town;
+  if(!STAND_MASK)STAND_MASK=mkCanvas(s.w,s.h);else if(STAND_MASK.width<s.w||STAND_MASK.height<s.h){STAND_MASK.width=Math.max(STAND_MASK.width,s.w);STAND_MASK.height=Math.max(STAND_MASK.height,s.h);}
+  const M=STAND_MASK.getContext('2d');M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,s.w,s.h);M.drawImage(c,0,0);
+  x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,s.w,s.h);
+  x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,s.w,s.h);
+  x.globalCompositeOperation='destination-in';x.drawImage(STAND_MASK,0,0,s.w,s.h,0,0,s.w,s.h);x.globalCompositeOperation='source-over';}
 function renderMap(seed){const R0=Math.random;G.artSeed=seed??(R0()*4294967296|0);Math.random=artRng(G.artSeed); /* the seed is kept: portal.js repaints a kept zone the same */try{paintMap();}finally{Math.random=R0;STAND=null;}}
 function paintMap(){
   G.lights=[];G.splats=[];sprClear(); // new map, new creatures: drop the old sprites
@@ -449,7 +449,7 @@ function paintMap(){
   if(!G.inTown){THEMES._floorDetail(x,gen,at);THEMES._wallDepth(x,gen,at);THEMES._props(x,gen,at,G.rooms);} // stage 5: floor detail, wall depth, props
   wearMap(x,at);gradeMap(x,G.inTown?'town':gen);
   if(!G.inTown)placeTorches(x,gen,at,adjFloor);
-  STAND=null;gradeStand(G.inTown?'town':gen);
+  STAND=null;G.stand.grade=G.inTown?'town':gen;
   G.mapCv=cv;
 }
 function computeFlow(){

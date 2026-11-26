@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.136",
+  "latest": "1.0.137",
   "notes": [
+    {
+      "v": "1.0.137",
+      "t": [
+        "Fixed: the game no longer freezes for a moment when you teleport to town"
+      ]
+    },
     {
       "v": "1.0.136",
       "t": [
