@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.135",
+  "latest": "1.0.136",
   "notes": [
+    {
+      "v": "1.0.136",
+      "t": [
+        "After the game updates itself, a box now shows once with what's new since you last played"
+      ]
+    },
     {
       "v": "1.0.135",
       "t": [
