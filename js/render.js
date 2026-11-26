@@ -280,6 +280,7 @@ function drawSetAuraMotes(p,z){const t=G.time,cs=auraCols();ctx.save();ctx.globa
     ctx.fillStyle=`rgba(${auraLight(c)},${0.8*al})`;ctx.beginPath();ctx.arc(x,y,1.1,0,TAU);ctx.fill();}
   ctx.restore();}
 function drawPlayer(){
+  if(TILT!==1){drawHero25();if(setAuraOn())drawSetAuraMotes(G.p,0);return;} // hero.js: the standing hero for the angled camera
   const p=G.p,C=CLASSES[G.char.cls];let z=0;if(p.leap){z=Math.sin(Math.min(1,p.leap.t/p.leap.dur)*Math.PI)*40;}
   const aura=setAuraOn();
   softShadow(p.x,p.y+p.r*0.55,p.r*1.5*(1-z/120),p.r*0.75*(1-z/120),1-z/80);
@@ -302,29 +303,37 @@ function drawPlayer(){
   litBlit(HS,bx,by,ang,p.dead?0.4:p.dodge?0.55:null,hb*(p.dead?0.92:1));
   ctx.translate(bx,by);ctx.rotate(ang); // local frame: +x = facing, +y = main-hand side
   if(p.dead)ctx.globalAlpha=0.4;else if(p.dodge)ctx.globalAlpha=0.55;
+  heroHands(0,C2,W,mw,off,A,u,S,spin,{});
+  ctx.restore();ctx.globalAlpha=1;
+  if(aura)drawSetAuraMotes(p,z);
+}
+// The hero's hands and what they hold, in the hero's local floor frame (+x = facing, +y = main-hand side).
+// part: 1 the main-hand side only, -1 the off-hand side only, 0 both; HH gets each hand's spot (hero.js draws arms to them).
+function heroHands(part,C2,W,mw,off,A,u,S,spin,HH){
   const hand=(x,y)=>{ctx.fillStyle=C2.cls==='warden'?'#5e5a54':C2.cls==='ranger'?'#6a5034':'#a88a70';ctx.strokeStyle='#140d08';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,3.4,0,TAU);ctx.fill();ctx.stroke();};
-  const at=(x,y,ang,fn)=>{ctx.save();ctx.translate(x,y);ctx.rotate(ang);fn();ctx.restore();};
-  if(W&&W.hands===2){ // two-hander: both hands on the grip
+  const at=(x,y,ang,fn)=>{ctx.save();ctx.translate(x,y);ctx.rotate(ang);if(HERO_EL.E||HERO_EL.Ey)heroRaise(ang);fn();ctx.restore();};
+  if(W&&W.hands===2){if(part<0)return; // two-hander: both hands on the grip (the main-hand side)
     const staff=W.anim==='thrust'; /* staffs and spears: held forward, low grip */let gx=staff?5:6,gy=staff?11:9,ang=staff?0.2:0.7;
     if(spin)ang=1.3;
     else if(A){if(A.style==='heavy'){ang=heavyAng(u);gx+=S*4;}else if(A.style==='thrust')gx+=S*10;else if(A.style==='swing')ang=1.4-(1-(1-u)*(1-u))*2.3;}
+    const c=Math.cos(ang),s=Math.sin(ang),h1=staff?0:-1,h2=staff?-9:-8;HH.mh=[gx+c*h1,gy+s*h1];HH.oh=[gx+c*h2,gy+s*h2];
     at(gx,gy,ang,()=>{const WS=weaponSprite(mw.wt,!!A&&staff);ctx.drawImage(WS,-64,-64,128,128);hand(staff?0:-1,0);hand(staff?-9:-8,0);});
   }else{
     const pose=(side,h)=>spin?[6,12*side,side*1.3]:A&&A.hand===h?handPose(A.style,u,side):[5,12*side,side*0.5];
-    const [x,y,g]=pose(1,'mh');at(x,y,g,()=>{if(W){const WS=weaponSprite(mw.wt,!!A&&A.hand==='mh');ctx.drawImage(WS,-64,-64,128,128);}hand(0,0);});
-    if(W&&W.bow&&A)at(x-4-S*4,y-2,0,()=>hand(0,0)); // v1.0.127: the Ranger's other hand draws the string
-    if(off&&off.slot==='weapon'){const [x2,y2,g2]=pose(-1,'oh');at(x2,y2,g2,()=>{ctx.scale(1,-1);const WS=weaponSprite(off.wt,false);ctx.drawImage(WS,-64,-64,128,128);hand(0,0);});}
+    const [x,y,g]=pose(1,'mh');HH.mh=[x,y];if(part>=0){at(x,y,g,()=>{if(W){const WS=weaponSprite(mw.wt,!!A&&A.hand==='mh');ctx.drawImage(WS,-64,-64,128,128);}hand(0,0);});
+    if(W&&W.bow&&A){HH.oh=[x-4-S*4,y-2];at(x-4-S*4,y-2,0,()=>hand(0,0));}} // v1.0.127: the Ranger's other hand draws the string
+    if(part>0)return;
+    if(!HH.oh)HH.oh=[5,-12];
+    if(off&&off.slot==='weapon'){const [x2,y2,g2]=pose(-1,'oh');HH.oh=[x2,y2];at(x2,y2,g2,()=>{ctx.scale(1,-1);const WS=weaponSprite(off.wt,false);ctx.drawImage(WS,-64,-64,128,128);hand(0,0);});}
     else if(off&&off.slot==='shield'){const lift=A&&A.hand==='mh'?-S*2:0;ctx.fillStyle='#4e3420';ctx.strokeStyle='#7a6a4a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(9,-13+lift,9.5,0,TAU);ctx.fill();ctx.stroke();
       ctx.strokeStyle='#5a3418';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(9,-22.5+lift);ctx.lineTo(9,-3.5+lift);ctx.stroke();ctx.fillStyle='#c9a24a';ctx.beginPath();ctx.arc(9,-13+lift,3,0,TAU);ctx.fill();}
-    else if(off&&off.slot==='focus'){hand(6,-12);
+    else if(off&&off.slot==='focus'){HH.oh=[6,-12];hand(6,-12);
       if(off.kind==='tome'){ctx.fillStyle='#7a2a2a';ctx.strokeStyle='#3a1212';ctx.lineWidth=1.5;ctx.fillRect(3,-23,12,10);ctx.strokeRect(3,-23,12,10);ctx.fillStyle='#e8dcc4';ctx.fillRect(13,-22,2,8);
         ctx.globalAlpha=0.6+Math.sin(G.time*4)*0.3+(A?0.3:0);ctx.fillStyle='#ffd36b';ctx.beginPath();ctx.arc(8.5,-18,2.2,0,TAU);ctx.fill();ctx.globalAlpha=1;}
       else{const bob=Math.sin(G.time*3)*1.5,ox=14,oy=-15+bob,R=A?12:8;const gr=ctx.createRadialGradient(ox,oy,1,ox,oy,R);gr.addColorStop(0,'#fff');gr.addColorStop(0.35,'#c48bff');gr.addColorStop(1,'#c48bff00');
         ctx.fillStyle=gr;ctx.beginPath();ctx.arc(ox,oy,R,0,TAU);ctx.fill();ctx.fillStyle='#6a3fb5';ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(ox,oy,3.5,0,TAU);ctx.fill();ctx.globalAlpha=1;}}
     else hand(5,-12);
   }
-  ctx.restore();ctx.globalAlpha=1;
-  if(aura)drawSetAuraMotes(p,z);
 }
 function drawMerchant(){
   const {x,y}=G.merchant;

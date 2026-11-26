@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.137",
+  "latest": "1.0.138",
   "notes": [
+    {
+      "v": "1.0.138",
+      "t": [
+        "New hero look for the angled camera: a standing figure with legs, body, arms and face, turning 8 ways, walking, breathing and flinching when hit",
+        "Weapons are held up at the ready and swing down through a blow; heavy weapons lift overhead first, bows are held upright",
+        "Each class has its own build: the broad Warden, the robed Arcanist, the hooded Ranger (armour showing comes next)"
+      ]
+    },
     {
       "v": "1.0.137",
       "t": [
