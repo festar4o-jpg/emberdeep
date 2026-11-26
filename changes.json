@@ -1,6 +1,20 @@
 {
-  "latest": "1.0.151",
+  "latest": "1.0.153",
   "notes": [
+    {
+      "v": "1.0.153",
+      "t": [
+        "The Ranger's wolf is painted in the game's new style: it runs, bites and flinches; a Pack brings a black wolf alongside, and the Alpha is a big white wolf",
+        "Wolf art: \"Wolf monsters animated\" by Danimal, Micket and Poss (credits under How to play)"
+      ]
+    },
+    {
+      "v": "1.0.152",
+      "t": [
+        "Towns: the Merchant and the Blacksmith are painted in the game's new style and turn to watch you",
+        "The town folk are painted too: men and women in peasant clothes, leather or robes in each town's colours, walking and stopping to talk"
+      ]
+    },
     {
       "v": "1.0.151",
       "t": [

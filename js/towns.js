@@ -138,6 +138,7 @@ function drawWaystone(){const {x,y}=G.waystone,t=G.time;
   ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Waystone',x,y-60);ctx.fillStyle='#7fe4f4';ctx.fillText('Waystone',x,y-60);}
 // A townsperson: round body, head and an act-specific hat; bobs while walking; a speech bubble when talking.
 function drawFolk(f){const T=G.town.T,bob=f.wait>0||f.sayT>0?0:Math.abs(Math.sin(f.step))*2;
+  if(TILT!==1&&drawFolkArt(f)){}else{ // heroart.js: painted folk with the angled camera
   ctx.save();ctx.translate(f.x,f.y-bob);
   softShadow(0,f.r*0.7+bob,f.r*1.4,f.r*0.6,0.9);
   ctx.fillStyle=f.col;ctx.strokeStyle='#0a0705';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,f.r,0,TAU);ctx.fill();ctx.stroke();
@@ -148,8 +149,9 @@ function drawFolk(f){const T=G.town.T,bob=f.wait>0||f.sayT>0?0:Math.abs(Math.sin
   else if(h==='straw'){ctx.fillStyle='#c8a850';ctx.beginPath();ctx.ellipse(hx,hy-3,11,4,0,0,TAU);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(hx,hy-5,4,Math.PI,0);ctx.fill();}
   else if(h==='fur'){ctx.fillStyle='#8a6a4a';ctx.beginPath();ctx.ellipse(hx,hy-4,7.5,4.5,0,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#e8e0d0';ctx.fillRect(hx-7,hy-2,14,2.5);}
   else{ctx.fillStyle='#4a4f57';ctx.beginPath();ctx.arc(hx,hy-1,6.5,Math.PI,0);ctx.fill();ctx.stroke();ctx.fillStyle='#ffb040';ctx.fillRect(hx-4,hy-1,8,2);}
-  ctx.restore();
-  if(f.sayT>0){ctx.font='11px Georgia';const w=Math.min(220,ctx.measureText(f.say).width)+14,x=f.x-w/2,y=f.y-f.r-36;ctx.globalAlpha=Math.min(1,f.sayT*2);
+  ctx.restore();}
+  const top=TILT!==1&&f._look?f.y-62:f.y-f.r-36; // above a painted folk's head
+  if(f.sayT>0){ctx.font='11px Georgia';const w=Math.min(220,ctx.measureText(f.say).width)+14,x=f.x-w/2,y=top;ctx.globalAlpha=Math.min(1,f.sayT*2);
     ctx.fillStyle='rgba(16,11,8,.88)';ctx.strokeStyle='#8a7a62';ctx.lineWidth=1;ctx.beginPath();ctx.rect(x,y,w,20);ctx.fill();ctx.stroke();
     ctx.beginPath();ctx.moveTo(f.x-4,y+20);ctx.lineTo(f.x,y+26);ctx.lineTo(f.x+4,y+20);ctx.fill();
     ctx.fillStyle='#e8dcc4';ctx.textAlign='center';ctx.fillText(f.say,f.x,y+14,220);ctx.globalAlpha=1;}

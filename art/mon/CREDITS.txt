@@ -23,6 +23,16 @@ Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CRE
   magmabrute (Act 5)        Flare's hobgoblin (Empyrean campaign), recoloured molten
   summoner (Ember Summoner) Flare's skeleton mage boss (Empyrean campaign), recoloured crimson
   boss4  (the Cinder King)  Flare's skeleton knight boss (Empyrean campaign), recoloured burning
+  npc_trader (the Merchant)   Flare's wandering trader (images/npcs)
+  npc_smith  (the Blacksmith) Flare's guild man (images/npcs)
+The wandering town folk are built from the hero's layers (art/hero/CREDITS.txt).
+
+The Ranger's wolves come from "Wolf monsters animated" by Danimal (animated in Flare's style), from the wolf model
+by Micket (CC0) with fur textures by Poss: https://opengameart.org/content/wolf-monsters-animated
+License: CC-BY-SA 3.0 / 4.0. Changes for Emberdeep: frames cut, shrunk, packed and saved as WebP (same license).
+  pet_wolf  (the wolf)            Wolf
+  pet_black (Pack: second wolf)   Wolf_black
+  pet_alpha (Alpha: the big wolf) Wolf_alpha
 
 License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
 

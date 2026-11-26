@@ -339,8 +339,10 @@ function drawMerchant(){
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-60,y+12,120,8);
   ctx.fillStyle='#3a2612';ctx.fillRect(x-55,y-60,5,64);ctx.fillRect(x+50,y-60,5,64);
   for(let k=0;k<8;k++){ctx.fillStyle=k%2?'#e8dcc4':'#a3262f';ctx.fillRect(x-60+k*15,y-72,15,14);}
+  const pa=Math.atan2(G.p.y-y,G.p.x-x),near=Math.hypot(G.p.x-x,G.p.y-y)<220; // monart.js: the painted merchant behind his counter, watching you come
+  if(!drawNpcArt('npc_trader',x,y-6,near?pa:Math.PI/2)){
   ctx.fillStyle='#2f6b4a';ctx.strokeStyle='#140d08';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y-18,15,0,TAU);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(x,y-15,7,0,TAU);ctx.fill();
+    ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(x,y-15,7,0,TAU);ctx.fill();}
   ctx.fillStyle='#5a3b1c';ctx.strokeStyle='#2a1a0a';ctx.lineWidth=2;ctx.fillRect(x-56,y-4,112,18);ctx.strokeRect(x-56,y-4,112,18);
   for(const [c,o] of [['#d33',-38],['#d33',-28],['#3a7bd5',-18],['#f2d04a',22],['#6f8fff',36]]){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x+o,y-6,4,0,TAU);ctx.fill();}
   ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Merchant',x,y-78);ctx.fillStyle='#f2d04a';ctx.fillText('Merchant',x,y-78);
@@ -350,11 +352,12 @@ function drawSmith(){
   const {x,y}=G.smith,fl=0.6+0.4*Math.sin(G.time*7)*Math.sin(G.time*3.1);
   const g=ctx.createRadialGradient(x+34,y-6,2,x+34,y-6,46);g.addColorStop(0,`rgba(255,140,40,${0.55*fl})`);g.addColorStop(1,'rgba(255,90,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x+34,y-6,46,0,TAU);ctx.fill();
   ctx.fillStyle='#3a3530';ctx.strokeStyle='#140d08';ctx.lineWidth=2;ctx.fillRect(x+24,y-20,22,26);ctx.strokeRect(x+24,y-20,22,26);ctx.fillStyle=`rgba(255,${120+60*fl|0},40,1)`;ctx.fillRect(x+29,y-10,12,8);
+  const painted=drawNpcArt('npc_smith',x-8,y-12,Math.atan2(G.p.y-y,G.p.x-x)); // monart.js: the painted smith behind his anvil
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-24,y+10,40,7);
   ctx.fillStyle='#4a4f57';ctx.strokeStyle='#1a1c20';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-22,y-4);ctx.lineTo(x+12,y-4);ctx.lineTo(x+6,y+2);ctx.lineTo(x-16,y+2);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(x-10,y+2,10,10);
-  ctx.fillStyle='#7a4a2a';ctx.strokeStyle='#140d08';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x-6,y-26,13,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(x-6,y-24,6.5,0,TAU);ctx.fill();
-  const sw=Math.max(0,Math.sin(G.time*4))*0.9;ctx.save();ctx.translate(x+4,y-28);ctx.rotate(-0.6+sw);ctx.strokeStyle='#6b4423';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(14,0);ctx.stroke();ctx.fillStyle='#8f979e';ctx.fillRect(12,-4,7,8);ctx.restore();
-  ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Blacksmith',x,y-46);ctx.fillStyle='#e8a060';ctx.fillText('Blacksmith',x,y-46);
+  if(!painted){ctx.fillStyle='#7a4a2a';ctx.strokeStyle='#140d08';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x-6,y-26,13,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(x-6,y-24,6.5,0,TAU);ctx.fill();}
+  if(!painted){const sw=Math.max(0,Math.sin(G.time*4))*0.9;ctx.save();ctx.translate(x+4,y-28);ctx.rotate(-0.6+sw);ctx.strokeStyle='#6b4423';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(14,0);ctx.stroke();ctx.fillStyle='#8f979e';ctx.fillRect(12,-4,7,8);ctx.restore();}
+  ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';const ly=painted?y-80:y-46;ctx.strokeText('Blacksmith',x,ly);ctx.fillStyle='#e8a060';ctx.fillText('Blacksmith',x,ly);
 }
 // Stash chest: wooden box with iron bands and a gold lock.
 function drawStash(){

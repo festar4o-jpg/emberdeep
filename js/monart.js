@@ -59,3 +59,24 @@ function monArtCorpse(e){const key=maReady(e);if(!key)return null;const M=MA.idx
 function drawArtCorpse(f){const M=MA.idx&&MA.idx.mons[f.art];if(!M||!M.a.die)return;const a=M.a.die,fi=Math.min(a.n-1,Math.floor(f.t*1000/a.ms*a.n)),fr=a.f[f.d][fi];if(!fr)return;
   const img=maSheet(f.art,fr[6]);if(!img)return;upr(f.x,f.y);ctx.globalAlpha=Math.min(1,(f.max-f.t)/1.2)*(M.alpha||1);
   ctx.drawImage(img,fr[0],fr[1],fr[2],fr[3],f.x-fr[4]*f.k,f.y-fr[5]*f.k,fr[2]*f.k,fr[3]*f.k);ctx.globalAlpha=1;ctx.restore();}
+// v1.0.152: a painted town NPC (npc_trader: the Merchant, npc_smith: the Blacksmith) standing at its feet (x, y,
+// inside the upright frame), breathing, turned toward ang; false while its pictures load (drawn as before).
+function drawNpcArt(key,x,y,ang){if(TILT===1||!maOn())return false;maLoadIndex();const M=MA.idx&&MA.idx.mons[key];if(!M)return false;
+  for(let s=0;s<M.sheets;s++)if(!maSheet(key,s))return false;
+  const a=M.a.stance,n=a.n,k=n>1?Math.floor(G.time*1000/a.ms*n)%(2*n-2):0,fr=a.f[maDir(ang)][k<n?k:2*n-2-k];if(!fr)return false;
+  const s=M.draw;ctx.drawImage(maSheet(key,fr[6]),fr[0],fr[1],fr[2],fr[3],x-fr[4]*s,y-fr[5]*s,fr[2]*s,fr[3]*s);return true;}
+// v1.0.153: the Ranger's painted wolf ("Wolf monsters animated" by Danimal, Micket and Poss, CC-BY-SA; art/mon/CREDITS.txt):
+// the grey wolf, the black one as a Pack's second wolf, the big Alpha. It stands, runs, bites (ranger.js resets
+// w.bite to WOLF_BITE as each bite lands) and flinches when hurt. False while its pictures load (drawn as before).
+function drawPetArt(w){if(!maOn())return false;maLoadIndex();if(!MA.idx)return false;
+  const wolves=(G.pets||[]).filter(q=>q.kind==='wolf'),key=w.big?'pet_alpha':wolves.indexOf(w)===1?'pet_black':'pet_wolf',M=MA.idx.mons[key];if(!M)return false;
+  for(let s=0;s<M.sheets;s++)if(!maSheet(key,s))return false;const A=M.a,t=G.time;
+  const mv=Math.hypot(w.x-(w._mx??w.x),w.y-(w._my??w.y));w._mx=w.x;w._my=w.y;if(mv>0.05){w._mrun=((w._mrun||0)+mv/(M.top*M.draw*2.2))%1;w._mhs=0.15;}else w._mhs=Math.max(0,(w._mhs||0)-1/60);
+  if((w.bite||0)>(w._mb||0)+0.01)w._mbt=t;w._mb=w.bite||0; // a new bite
+  let an='stance',fi;const bu=(t-(w._mbt??-9))/0.4;
+  if(bu>=0&&bu<1){an='swing';fi=Math.min(A.swing.n-1,Math.floor(bu*A.swing.n));}
+  else if(w.hurt>0&&A.hit){an='hit';fi=w.hurt>0.07?0:Math.min(1,A.hit.n-1);}
+  else if(w._mhs>0){an='run';fi=Math.floor(w._mrun*A.run.n)%A.run.n;}
+  else{const a=A.stance,n=a.n,k=Math.floor((t+w.x*0.01)*1000/a.ms*n)%(2*n-2);fi=k<n?k:2*n-2-k;}
+  const fr=A[an].f[maDir(w.face)][fi];if(!fr)return false;const s=M.draw;
+  ctx.drawImage(maSheet(key,fr[6]),fr[0],fr[1],fr[2],fr[3],w.x-fr[4]*s,w.y-fr[5]*s,fr[2]*s,fr[3]*s);return true;}

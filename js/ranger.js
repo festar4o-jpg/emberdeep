@@ -48,7 +48,7 @@ function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
     if(w.hp<=0){burst(w.x,w.y,20,'#8a8070',200);floatText(w.x,w.y-20,'Your wolf falls','#c8b088',false);}}
   G.pets=G.pets.filter(w=>w.hp>0);}
 // The wolf, side-on from above: body, head with ears and snout, a tail, legs that move as it runs; flashes when hit.
-function drawPet(w){if(w.kind==='hawk')return drawHawk(w);const x=ctx;x.save();x.translate(w.x,w.y);x.rotate(w.face);if(w.big)x.scale(1.3,1.3); /* Alpha */const leg=Math.sin(w.walk*0.18)*4,body=w.hurt>0?'#e8d0c8':'#7a7468',dark='#4a463e';
+function drawPet(w){if(w.kind==='hawk')return drawHawk(w);if(TILT!==1&&drawPetArt(w))return; /* monart.js: the painted wolf */const x=ctx;x.save();x.translate(w.x,w.y);x.rotate(w.face);if(w.big)x.scale(1.3,1.3); /* Alpha */const leg=Math.sin(w.walk*0.18)*4,body=w.hurt>0?'#e8d0c8':'#7a7468',dark='#4a463e';
   x.fillStyle='rgba(0,0,0,.25)';x.beginPath();x.ellipse(0,4,15,7,0,0,TAU);x.fill();
   x.strokeStyle=dark;x.lineWidth=3;x.lineCap='round';for(const [lx,s] of [[7,1],[-7,-1]])for(const sd of [-1,1]){x.beginPath();x.moveTo(lx,sd*5);x.lineTo(lx+leg*s*sd,sd*10);x.stroke();}
   x.strokeStyle=body;x.lineWidth=4;x.beginPath();x.moveTo(-12,0);x.quadraticCurveTo(-20,-3+leg*0.5,-24,2);x.stroke(); // tail

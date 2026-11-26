@@ -115,7 +115,7 @@ function artVariant(img,id,fr,kind,col){const key=id+'|'+fr[0]+'|'+fr[1]+'|'+kin
   else{x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);}
   HA_VAR.set(key,c);return c;}
 // One layer's frame at (x, y, w, h), coloured and glowing by the item that made it.
-function haPiece(n,fr,x,y,w,h,it,alpha){const tint=it&&HA_TINT[it.tier];
+function haPiece(n,fr,x,y,w,h,it,alpha){const tint=it&&(it.tint||HA_TINT[it.tier]); // it.tint: a set colour (town folk)
   if(tint){const c=haVariant(n,fr,'tint',tint);ctx.drawImage(c,0,0,c.width,c.height,x,y,w,h);}else ctx.drawImage(HA.img[n],fr[0],fr[1],fr[2],fr[3],x,y,w,h);
   const g=it&&HA_GLOW[it.rarity];if(!g)return;
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(0.16+0.12*Math.sin(G.time*3.2+(it.id||0)))*(alpha||1);
@@ -156,3 +156,17 @@ function drawDoll(now){const cv=DOLL.cv||(DOLL.cv=$('dollCv'));if(!cv||!G.char)r
     const ok=drawHeroArt(p,C2,W,u>0?{t:u,dur:1,style:W?W.anim:'swing'}:null,u,false,ang,0,0,1);
     if(!ok){x.setTransform(R,0,0,R,0,0);x.fillStyle='#a89a80';x.font='13px sans-serif';x.textAlign='center';x.fillText('Loading your hero…',w/2,h/2);}}
   finally{[ctx,G.time,TILT]=keep;}}
+// v1.0.152: town folk, built from the hero's layers so they walk and turn like the hero: a man or a woman in peasant
+// clothes, leather or a robe (picked from f.line, so each keeps the same look), the clothes in the town's colours
+// (f.col). Standing still or talking: the breathing stance; walking: the run cycle, paced by their steps.
+const FOLK_WEAR=[['cloth_shirt','cloth_pants','cloth_sandals'],['leather_chest','leather_pants','leather_boots'],['mage_vest','mage_skirt','mage_boots']];
+function folkLook(f){const n=f.line||0,fem=n%2===1,P=fem?'f_':'m_',W=FOLK_WEAR[(n>>1)%3],hood=(n>>2)%3===2;
+  const L={chest:P+W[0],legs:P+W[1],feet:P+W[2],hands:P+'default_hands',head:P+(hood?'leather_hood':fem?'head_long':['head_short','head_bald'][(n>>3)%2])};
+  const cl={tint:f.col};return {L,it:{chest:cl,legs:cl}};}
+// Draws a folk at its feet (f.x, f.y, inside the upright frame); false while its pictures load (drawn as before).
+function drawFolkArt(f){if(!haOn())return false;haLoadIndex();if(!HA.idx)return false;const look=f._look||(f._look=folkLook(f));
+  let ok=true;for(const n of Object.values(look.L))if(!haImg(n))ok=false;if(!ok)return false;
+  const d=((Math.round(f.face/(Math.PI/4))+4)%8+8)%8,still=f.wait>0||f.sayT>0,R=HA.idx.anims.run;
+  const an=still?'stance':'run',fi=still?haFrame('stance',G.time+(f.line||0)*0.37):Math.floor((f.step||0)/Math.PI*R.n/2)%R.n,D=HA_DRAW,fy=f.y-HA_LIFT*D;
+  for(const slot of HA_ORDER[d]){const n=look.L[slot];if(!n)continue;const fr=HA.idx.layers[n].a[an][d][fi];if(fr)haPiece(n,fr,f.x-fr[4]*D,fy-fr[5]*D,fr[2]*D,fr[3]*D,look.it[slot],1);}
+  return true;}
