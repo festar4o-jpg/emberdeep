@@ -93,7 +93,7 @@ function townTick(dt){const W=G.town;if(!W)return;const R=PLAZA,p=G.p;
   }
   if(W.talkT>0)W.talkT-=dt;
   // ambience around the camera
-  const vw=CW/Z,vh=CH/Z,A=W.T.amb,amb=W.amb,cap=A==='snow'?140:A==='flies'?36:A==='mist'?22:70;
+  const vw=CW/Z,vh=CH/Z/TILT,A=W.T.amb,amb=W.amb,cap=A==='snow'?140:A==='flies'?36:A==='mist'?22:70;
   W.ambT+=dt*(A==='snow'?55:A==='flies'?14:A==='mist'?5:A==='dust'?22:28);
   while(W.ambT>=1){W.ambT--;if(amb.length>=cap)break;const x=G.cam.x+rand(-vw/2-40,vw/2+40),y=G.cam.y+rand(-vh/2-40,vh/2+40);
     if(A==='snow')amb.push({x,y:G.cam.y-vh/2-rand(0,60),vx:rand(-14,6),vy:rand(30,60),life:rand(6,10),max:8,s:rand(1.5,3.2),ph:rand(0,TAU)});
@@ -108,20 +108,25 @@ function townTick(dt){const W=G.town;if(!W)return;const R=PLAZA,p=G.p;
 }
 const townFade=q=>Math.min(1,q.life/1.2,(q.max-q.life+1.2)/1.2);
 // Living parts of the town, drawn over the map and under everyone: flames, water, centerpiece glow.
-function drawTownLive(onScreen){const W=G.town;if(!W)return;const T=W.T,t=G.time,R=PLAZA;
+// list: render.js's back-to-front pass (the centrepiece ambience, the Waystone and the lamp flames stand in it)
+function drawTownLive(onScreen,list){const W=G.town;if(!W)return;const T=W.T,t=G.time,R=PLAZA;
   const cx=R.cx*TILE,cy=R.cy*TILE;
-  if(onScreen(cx,cy,160)){const a=T.amb;
+  if(onScreen(cx,cy,160))list.push({draw:()=>centerAmb(W,cx,cy),x:cx,y:cy+30.1}); // over the centrepiece (its standing art's foot is cy+30)
+  if(G.waystone&&onScreen(G.waystone.x,G.waystone.y,80))list.push({npc:drawWaystone,x:G.waystone.x,y:G.waystone.y});
+  for(const L of W.lights){if(L.win||L.big||L.shroom||L.way||!onScreen(L.x,L.y,40))continue;list.push({draw:()=>flame(L.x,L.y,9,t+L.x,T.flame),x:L.x,y:flameFoot(L)});}
+}
+// The town's centrepiece ambience: mist rings, glints, fireflies, the fire or rising embers.
+function centerAmb(W,cx,cy){const T=W.T,t=G.time,a=T.amb;
     if(a==='mist'){ctx.strokeStyle='rgba(170,200,230,.35)';ctx.lineWidth=1.5;for(let n=0;n<2;n++){const r=((t*14+n*14)%28);ctx.globalAlpha=1-r/28;ctx.beginPath();ctx.ellipse(cx,cy+2,r,r*0.55,0,0,TAU);ctx.stroke();}ctx.globalAlpha=1;}
     else if(a==='dust'){ctx.fillStyle='rgba(200,240,255,.35)';for(let n=0;n<5;n++){const u=t*0.7+n*1.3;ctx.globalAlpha=0.3+0.3*Math.sin(u*2);ctx.fillRect(cx-30+((n*23+t*9)%60),cy-14+n*7,10,2);}ctx.globalAlpha=1;}
     else if(a==='flies'){const g=ctx.createRadialGradient(cx,cy-30,2,cx,cy-30,26);g.addColorStop(0,`rgba(200,255,150,${0.75+0.2*Math.sin(t*3)})`);g.addColorStop(1,'rgba(120,255,120,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy-30,26,0,TAU);ctx.fill();}
     else if(a==='snow')flame(cx,cy-6,30,t,'255,170,80');
     else{ctx.fillStyle='#ffb040';for(let n=0;n<6;n++){const u=(t*0.8+n/6)%1;ctx.globalAlpha=(1-u)*0.8;ctx.beginPath();ctx.arc(cx+Math.sin(n*2.1+t)*16,cy-u*40,2+2*(1-u),0,TAU);ctx.fill();}ctx.globalAlpha=1;}}
-  if(G.waystone&&onScreen(G.waystone.x,G.waystone.y,80))drawWaystone();
-  for(const L of W.lights){if(L.win||L.big||L.shroom||L.way||!onScreen(L.x,L.y,40))continue;flame(L.x,L.y,9,t+L.x,T.flame);}
-}
-function flame(x,y,s,t,rgb){const f=0.8+0.2*Math.sin(t*11)*Math.sin(t*7.3);
+// A lamp or post flame is drawn just after the standing art it sits on (the nearest one whose foot is below it).
+function flameFoot(L){if(L.foot!=null)return L.foot;let f=L.y;for(const s of G.stand||[])if(s.w&&Math.abs(s.fx-L.x)<30&&s.fy>=L.y&&s.fy-L.y<80&&(f===L.y||s.fy<f))f=s.fy;return L.foot=f+0.1;}
+function flame(x,y,s,t,rgb){const f=0.8+0.2*Math.sin(t*11)*Math.sin(t*7.3);upr(x,y); // render.js: upright
   for(const [k,c] of [[1,`rgba(${rgb},.85)`],[0.55,'rgba(255,240,190,.95)']]){const h=s*1.5*k*f,w=s*0.55*k;ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-w,y);
-    ctx.quadraticCurveTo(x-w*0.9,y-h*0.5,x+Math.sin(t*6)*w*0.3,y-h);ctx.quadraticCurveTo(x+w*0.9,y-h*0.5,x+w,y);ctx.closePath();ctx.fill();}}
+    ctx.quadraticCurveTo(x-w*0.9,y-h*0.5,x+Math.sin(t*6)*w*0.3,y-h);ctx.quadraticCurveTo(x+w*0.9,y-h*0.5,x+w,y);ctx.closePath();ctx.fill();}ctx.restore();}
 // The Waystone: a rune-carved stone with a turning ring of light (same in every town).
 function drawWaystone(){const {x,y}=G.waystone,t=G.time;
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(x,y+12,26,8,0,0,TAU);ctx.fill();
@@ -210,10 +215,13 @@ function drawTownAmb(){const W=G.town;if(!W)return;const A=W.T.amb;
       // outskirt scenery, back to front
       const sc=[];for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const k=j*MW+i;if(G.grid[k]!==1)continue;const di=Math.max(R.x-i,i-(R.x+R.w-1),0),dj=Math.max(R.y-j,j-(R.y+R.h-1),0);
         if(Math.max(di,dj)<2||(dj>0&&dj<6&&di===0&&i>=R.x-1&&i<=R.x+R.w))continue;if(Math.max(di,dj)>14)continue;if(Math.random()<0.16)sc.push([i,j]);}
-      for(const [i,j] of sc)D.scenery(x,i*TILE+rand(0,TILE),j*TILE+rand(0,TILE),Math.random());
+      for(const [i,j] of sc){const sx=i*TILE+rand(0,TILE),sy=j*TILE+rand(0,TILE),v=Math.random();standProp(x,sx,sy+8,[sx-70,sy-130,sx+70,sy+40],x=>D.scenery(x,sx,sy,v));} // maps.js: stands upright
       const ps=W.props.slice().sort((a,b)=>a.j+a.h-(b.j+b.h));
-      for(const p of ps){if(p.k==='house')house(x,p,D.house);else if(p.k==='center')D.center(x,(p.i+1)*TILE,(p.j+1)*TILE);else D.prop[p.k](x,p.i*TILE+20,p.j*TILE+20,p.v);}
-      for(const s of [-1,1])D.gatepost(x,(R.x-5)*TILE,(R.cy+(s<0?-1.2:2.2))*TILE);}};}
+      for(const p of ps){const px=p.i*TILE,py=p.j*TILE;
+        if(p.k==='house')standProp(x,px+p.w*TILE/2,py+p.h*TILE,[px-20,py-80,px+p.w*TILE+20,py+p.h*TILE+20],x=>house(x,p,D.house));
+        else if(p.k==='center'){const cx=(p.i+1)*TILE,cy=(p.j+1)*TILE;standProp(x,cx,cy+30,[cx-90,cy-150,cx+90,cy+90],x=>D.center(x,cx,cy));}
+        else standProp(x,px+20,py+34,[px-40,py-90,px+80,py+60],x=>D.prop[p.k](x,px+20,py+20,p.v));}
+      for(const s of [-1,1]){const gx=(R.x-5)*TILE,gy=(R.cy+(s<0?-1.2:2.2))*TILE;standProp(x,gx,gy+10,[gx-40,gy-110,gx+40,gy+40],x=>D.gatepost(x,gx,gy));}}};}
   // ---- shared props ----
   const P={
     grave(x,cx,cy,v){shadow(x,cx,cy+12,14,5);if(v<0.5){x.fillStyle='#5a5e66';x.strokeStyle='#22252a';x.lineWidth=2;x.beginPath();x.moveTo(cx-10,cy+12);x.lineTo(cx-10,cy-6);x.arc(cx,cy-6,10,Math.PI,0);x.lineTo(cx+10,cy+12);x.closePath();x.fill();x.stroke();x.fillStyle='rgba(0,0,0,.35)';x.fillRect(cx-5,cy-4,10,2);x.fillRect(cx-5,cy+1,10,2);}

@@ -338,7 +338,7 @@ const THEMES={};
       for(let k=0;k<n;k++){let w=Math.random()*tot,P=S[0];for(const s of S){w-=s[1];if(w<0){P=s;break;}}
         let i,j,ok=false;for(let t=0;t<8&&!ok;t++){i=r.x+randi(0,r.w-1);j=r.y+randi(0,r.h-1);if(P[2]){for(let jj=j;jj>=r.y-1;jj--)if(at(i,jj-1)===1){j=jj;break;}}ok=at(i,j)===0&&!taken.has(j*MW+i)&&(!P[2]||at(i,j-1)===1);}
         if(!ok)continue;taken.add(j*MW+i);const cx=i*TILE+20+rand(-5,5),cy=j*TILE+(P[2]?26:20)+rand(-5,5);
-        if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c);}}};
+        standProp(x,cx,cy+2,[cx-60,cy-110,cx+60,cy+34],x=>{if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c);});}}};
   // Floor detail across many tiles: roots in the marsh, wind ripples in the sand, long cracks in stone.
   THEMES._floorDetail=(x,gen,at)=>{gen=THEMES[gen]&&THEMES[gen].detail||gen;const N=gen==='marsh'?60:gen==='desert'?50:35;
     for(let k=0;k<N;k++){const i=randi(1,MW-2),j=randi(1,MH-2);if(at(i,j)!==0)continue;let px=i*TILE+rand(0,TILE),py=j*TILE+rand(0,TILE),a=rand(0,TAU);
@@ -373,10 +373,11 @@ function placeTorches(x,gen,at,adjFloor){const TH=THEMES[gen]||{},rgb=TH.torch||
   for(const r of G.rooms||[]){if(r.w<8||r.h<7||Math.random()<0.45)continue;
     for(const [ci,cj] of [[r.x+1,r.y+1],[r.x+r.w-2,r.y+r.h-2],[r.x+r.w-2,r.y+1],[r.x+1,r.y+r.h-2]].sort(()=>Math.random()-0.5).slice(0,Math.random()<0.5?1:2)){
       if(at(ci,cj)!==0)continue;const bx=ci*TILE+20,by=cj*TILE+24;
+      standProp(x,bx,by+10-0.1,[bx-20,by-20,bx+20,by+20],x=>{ // its flame (light.js drawTorch) comes right after it
       x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.ellipse(bx,by+10,14,5,0,0,TAU);x.fill();
       x.strokeStyle='#17120e';x.lineWidth=2.2;x.beginPath();for(const a of [-0.9,0,0.9]){x.moveTo(bx+Math.sin(a)*5,by-2);x.lineTo(bx+Math.sin(a)*12,by+10);}x.stroke();
       x.fillStyle='#231c16';x.beginPath();x.ellipse(bx,by-3,11,5,0,0,TAU);x.fill();x.fillStyle='#3a2e24';x.beginPath();x.ellipse(bx,by-5,11,4,0,0,TAU);x.fill();
-      x.fillStyle='#120804';x.beginPath();x.ellipse(bx,by-5,8.5,2.8,0,0,TAU);x.fill();x.fillStyle='rgba(255,140,50,.8)';for(let k=0;k<5;k++)x.fillRect(bx+rand(-6,5),by-6+rand(-1,1),1.6,1.4);
+      x.fillStyle='#120804';x.beginPath();x.ellipse(bx,by-5,8.5,2.8,0,0,TAU);x.fill();x.fillStyle='rgba(255,140,50,.8)';for(let k=0;k<5;k++)x.fillRect(bx+rand(-6,5),by-6+rand(-1,1),1.6,1.4);});
       G.lights.push({x:bx,y:by-9,r:300,i:0.92,rgb,g:0.4,fl:true,torch:true,big:true});}}}
 // ---------- grit and grade (once per map) ----------
 // Tileable value noise (several octaves), built once: light greys that a 'multiply' pass turns into grime.
@@ -410,10 +411,28 @@ function gradeMap(x,k){const [d,tone]=GRADE[k]||THEMES[k]&&THEMES[k].grade||GRAD
   x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,W,H);x.restore();}
 // Painting uses its own random numbers (seeded by one draw), so art changes never shift gameplay randomness.
 const artRng=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-function renderMap(seed){const R0=Math.random;G.artSeed=seed??(R0()*4294967296|0);Math.random=artRng(G.artSeed); /* the seed is kept: portal.js repaints a kept zone the same */try{paintMap();}finally{Math.random=R0;}}
+// v1.0.135: standing things (props, braziers, town houses, trees, posts) are painted into their own small canvases
+// instead of the floor, so the angled camera (render.js) can stand them upright and draw them back to front with the
+// figures. box = [left, top, right, bottom] in world units around the art; the canvas is cropped to what was painted.
+let STAND=null; // the list they go into while a map is painted (null: paint straight into the floor)
+function standProp(x,fx,fy,box,fn){if(!STAND){fn(x);return;}
+  const l=Math.floor(box[0]),t=Math.floor(box[1]),w=Math.ceil(box[2])-l,h=Math.ceil(box[3])-t,c=mkCanvas(w,h),cx=c.getContext('2d');
+  cx.lineJoin=x.lineJoin;cx.lineCap=x.lineCap;cx.translate(-l,-t);fn(cx);STAND.push(cropStand({cv:c,x:l,y:t,w,h,fx,fy}));}
+// Trim the empty margins (once per map); kept as is where pixels can't be read.
+function cropStand(s){const x=s.cv.getContext('2d');if(!x.getImageData)return s;let d;try{d=x.getImageData(0,0,s.w,s.h).data;}catch(e){return s;}if(!d||typeof d.length!=='number'||d.length<s.w*s.h*4)return s;
+  let a=s.w,b=s.h,c=-1,e=-1;for(let j=0;j<s.h;j++)for(let i=0;i<s.w;i++)if(d[(j*s.w+i)*4+3]>4){if(i<a)a=i;if(i>c)c=i;if(j<b)b=j;if(j>e)e=j;}
+  if(c<0)return Object.assign(s,{w:0,h:0});const w=c-a+1,h=e-b+1;if(w===s.w&&h===s.h)return s;
+  const n=mkCanvas(w,h);n.getContext('2d').drawImage(s.cv,a,b,w,h,0,0,w,h);return Object.assign(s,{cv:n,x:s.x+a,y:s.y+b,w,h});}
+// The same colour grade as the floor (gradeMap), kept inside each canvas's own shape.
+function gradeStand(k){const [d,tone]=GRADE[k]||THEMES[k]&&THEMES[k].grade||GRADE.town;
+  for(const s of G.stand){if(!s.w)continue;const x=s.cv.getContext('2d'),m=mkCanvas(s.w,s.h);m.getContext('2d').drawImage(s.cv,0,0);x.save();
+    x.globalCompositeOperation='saturation';x.globalAlpha=d;x.fillStyle='#808080';x.fillRect(0,0,s.w,s.h);
+    x.globalCompositeOperation='multiply';x.globalAlpha=1;x.fillStyle=tone;x.fillRect(0,0,s.w,s.h);
+    x.globalCompositeOperation='destination-in';x.drawImage(m,0,0);x.restore();}}
+function renderMap(seed){const R0=Math.random;G.artSeed=seed??(R0()*4294967296|0);Math.random=artRng(G.artSeed); /* the seed is kept: portal.js repaints a kept zone the same */try{paintMap();}finally{Math.random=R0;STAND=null;}}
 function paintMap(){
   G.lights=[];G.splats=[];sprClear(); // new map, new creatures: drop the old sprites
-  const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');
+  const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const x=cv.getContext('2d');G.stand=STAND=[];
   const gen=G.inTown?'town'+actIdx(G.depth):(G.zoneTheme||ACTS[actIdx(G.depth)].gen),TH=THEMES[gen]||THEMES[ACTS[actIdx(G.depth)].gen],g=G.grid,T=G.terrain; /* zones.js: each zone has its own theme */
   const at=(i,j)=>i<0||j<0||i>=MW||j>=MH?1:g[j*MW+i];
   const adjFloor=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(at(i+a,j+b)===0)return true;return false;};
@@ -430,6 +449,7 @@ function paintMap(){
   if(!G.inTown){THEMES._floorDetail(x,gen,at);THEMES._wallDepth(x,gen,at);THEMES._props(x,gen,at,G.rooms);} // stage 5: floor detail, wall depth, props
   wearMap(x,at);gradeMap(x,G.inTown?'town':gen);
   if(!G.inTown)placeTorches(x,gen,at,adjFloor);
+  STAND=null;gradeStand(G.inTown?'town':gen);
   G.mapCv=cv;
 }
 function computeFlow(){

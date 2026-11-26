@@ -103,8 +103,8 @@ function drawHawk(h){const x=ctx,f=Math.sin(h.walk*18)*0.5;x.save();x.fillStyle=
   x.fillStyle='#c8b494';x.beginPath();x.ellipse(0,0,8,3.5,0,0,TAU);x.fill();x.fillStyle='#8a7050';x.beginPath();x.moveTo(-7,0);x.lineTo(-13,-3);x.lineTo(-13,3);x.fill();
   x.fillStyle='#ffd36b';x.beginPath();x.moveTo(8,-1.5);x.lineTo(11.5,0);x.lineTo(8,1.5);x.fill();x.restore();}
 // Marked enemies: a small gold target above them (render.js, with ailment pips)
-function drawMarks(onScreen){for(const e of G.enemies){if(e.dead||e.hidden||!(e.markUntil>G.time)||!onScreen(e.x,e.y,40))continue;const y=e.y-e.r-16;
-  ctx.strokeStyle='#ffd36b';ctx.lineWidth=1.5;ctx.globalAlpha=0.8;ctx.beginPath();ctx.arc(e.x,y,5,0,TAU);ctx.moveTo(e.x-8,y);ctx.lineTo(e.x+8,y);ctx.moveTo(e.x,y-8);ctx.lineTo(e.x,y+8);ctx.stroke();ctx.globalAlpha=1;}}
+function drawMarks(onScreen){for(const e of G.enemies){if(e.dead||e.hidden||!(e.markUntil>G.time)||!onScreen(e.x,e.y,40))continue;const y=e.y-e.r-16;upr(e.x,e.y);
+  ctx.strokeStyle='#ffd36b';ctx.lineWidth=1.5;ctx.globalAlpha=0.8;ctx.beginPath();ctx.arc(e.x,y,5,0,TAU);ctx.moveTo(e.x-8,y);ctx.lineTo(e.x+8,y);ctx.moveTo(e.x,y-8);ctx.lineTo(e.x,y+8);ctx.stroke();ctx.globalAlpha=1;ctx.restore();}}
 // Caltrops and stuck Explosive Arrows on the floor (with the traps)
 function drawCaltrops(onScreen){for(const z of G.skz||[]){if(!onScreen(z.x,z.y,90))continue;
   if(z.k==='caltrop'){ctx.fillStyle='#8a8478';for(let k=0;k<10;k++){const a=k*2.4,d=(k*37%100)/100*(z.R||CALTROP_R)*0.85;ctx.fillRect(z.x+Math.cos(a)*d-1.5,z.y+Math.sin(a)*d-1.5,3,3);}

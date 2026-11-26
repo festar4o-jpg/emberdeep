@@ -25,7 +25,7 @@ function packFeats(fs){return fs.map(f=>{const o={};for(const k in f)if(typeof f
 function unpackFeats(fs){for(const f of fs){if(ZFEATS.includes(f.kind)){f.use=FEAT_USE[f.kind];f.zdraw=FEAT_DRAW[f.kind];if(!f.use)delete f.use;}else if(f.kind==='ambush')f.zdraw=()=>{};}return fs;}
 // ---------- snapshots ----------
 function snapZone(){return {zid:G.zone,t:Date.now(),grid:G.grid,terrain:G.terrain,road:G.road,rooms:G.rooms,portal:G.portal,side:G.sidePortal,enemies:G.enemies,
-  feats:G.feats,loot:G.loot.filter(l=>!l.taken),explored:G.explored,mapCv:G.mapCv,lights:G.lights,theme:G.zoneTheme,splats:G.splats||[],artSeed:G.artSeed,
+  feats:G.feats,loot:G.loot.filter(l=>!l.taken),explored:G.explored,mapCv:G.mapCv,stand:G.stand,lights:G.lights,theme:G.zoneTheme,splats:G.splats||[],artSeed:G.artSeed,
   px:G.p.x,py:G.p.y,start:G.zStart,levelMode:G.levelMode,depth:G.depth};}
 function packSnap(S){return {zid:S.zid,t:S.t,grid:rle(S.grid),terrain:rle(S.terrain),road:rle(S.road),rooms:S.rooms,portal:S.portal,side:S.side,
   enemies:packEnemies(S.enemies,S.feats),feats:packFeats(S.feats),loot:S.loot,explored:rle(S.explored),theme:S.theme,splats:(S.splats||[]).slice(-40),artSeed:S.artSeed,
@@ -60,7 +60,7 @@ function restoreInstance(zid,mode){const I=INST.z[zid];if(!I||!hasInstance(zid))
   if(ZONES[zid].layout!=='boss')G.portal.active=G.portal.active||gateOpen(zid);
   G.zboss=G.enemies.find(e=>e.zb&&!e.dead)||null;G.boss=G.enemies.find(e=>e.type==='boss'&&!e.dead)||null;
   for(const e of G.enemies)if(!e.dead){e.aggro=false;e.wind=0;e.busy=0;e.act=null;e.tele=null;e.dash=0;}
-  if(C.mapCv){G.mapCv=C.mapCv;G.lights=C.lights;G.artSeed=C.artSeed;}else renderMap(C.artSeed); // after an app restart: repaint the same art
+  if(C.mapCv){G.mapCv=C.mapCv;G.stand=C.stand||[];G.lights=C.lights;G.artSeed=C.artSeed;}else renderMap(C.artSeed); // after an app restart: repaint the same art
   G.splats=C.splats||[];
   const c=G.char,wp=G.feats.find(f=>f.kind==='wp');
   const at=mode==='tp'&&c.tp&&c.tp.zid===zid?{x:c.tp.x,y:c.tp.y}:mode==='back'&&C.side?{x:C.side.x,y:C.side.y+60}:mode==='fresh'&&wp?{x:wp.x+50,y:wp.y+20}:{x:C.px,y:C.py};

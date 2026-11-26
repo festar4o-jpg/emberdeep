@@ -152,12 +152,16 @@ function encounterTick(dt){if(typeof inMap==='function'&&inMap())mapTick(); /* s
 tap('useBtn',useFeature);
 
 // ---------- drawing ----------
-function drawFeatures(onScreen){
+function drawFeatures(onScreen,list){ // list: queue the features for render.js's back-to-front pass instead
   for(const w of G.walls){const x=w.i*TILE,y=w.j*TILE,k=Math.min(1,w.t*2); // crumbles in its last half second
     ctx.globalAlpha=k;ctx.fillStyle='#4a3a2a';ctx.fillRect(x+2,y+2,TILE-4,TILE-4);ctx.fillStyle='#6a5640';ctx.fillRect(x+2,y+2,TILE-4,8);
     ctx.strokeStyle='#1a120a';ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);ctx.globalAlpha=1;}
   ctx.textAlign='center';
-  for(const f of G.feats){if(!onScreen(f.x,f.y,60))continue;if(f.zdraw){f.zdraw(f);continue;}
+  for(const f of G.feats){if(!onScreen(f.x,f.y,60))continue;if(list)list.push({feat:f,y:f.y+8});else drawFeat(f);}
+}
+// One shrine or chest (or a zone feature's own drawing), upright on the angled floor (render.js upr).
+function drawFeat(f){ctx.textAlign='center';upr(f.x,f.y);try{
+    if(f.zdraw){f.zdraw(f);return;}
     if(f.kind==='shrine'){const S=SHRINES[f.type],on=!f.used,x=f.x,y=f.y;
       if(on){const g=ctx.createRadialGradient(x,y-18,2,x,y-18,40);g.addColorStop(0,S.col+'aa');g.addColorStop(1,S.col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y-18,40,0,TAU);ctx.fill();}
       ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(x,y+8,18,7,0,0,TAU);ctx.fill();
@@ -172,8 +176,7 @@ function drawFeatures(onScreen){
       ctx.fillStyle=open?'#2a180e':'#4a2c1a';if(open){ctx.fillRect(x-20,y-24,40,8);ctx.strokeRect(x-20,y-24,40,8);}else{ctx.beginPath();ctx.moveTo(x-20,y-8);ctx.quadraticCurveTo(x,y-26,x+20,y-8);ctx.closePath();ctx.fill();ctx.stroke();}
       ctx.fillStyle='#6a5a7a';ctx.fillRect(x-20,y-2,40,3);ctx.fillStyle=open?'#f2d04a':'#c060ff';ctx.fillRect(x-4,y-6,8,8);
       const lbl=open?'':act?`Wave ${f.wave}/3`:'Cursed Chest';
-      if(lbl){ctx.font='11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(lbl,x,y-32);ctx.fillStyle=act?'#ff70c0':'#c080ff';ctx.fillText(lbl,x,y-32);}}}
-}
+      if(lbl){ctx.font='11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(lbl,x,y-32);ctx.fillStyle=act?'#ff70c0':'#c080ff';ctx.fillText(lbl,x,y-32);}}}finally{ctx.restore();}}
 function minimapFeatures(s){minimapZone(s);
   for(const f of G.feats){if(f.zdraw||!G.explored[tileIdx(f.x,f.y)])continue;
     if(f.kind==='shrine'){if(f.used)continue;mctx.fillStyle=SHRINES[f.type].col;mctx.beginPath();mctx.arc(f.x/TILE*s,f.y/TILE*s,4,0,TAU);mctx.fill();}

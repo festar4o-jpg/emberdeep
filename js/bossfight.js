@@ -95,7 +95,7 @@ function drawBossState(e){const t=G.time;
   if(e.enraged){ctx.globalCompositeOperation='lighter';const R=e.r*BOSS_SCALE*1.5;ctx.globalAlpha=0.35+0.15*Math.sin(t*8);ctx.drawImage(falloff('255,40,20'),e.x-R,e.y-R,R*2,R*2);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}}
 // A shrinking arena: everything outside the ring smoulders red-brown, the edge burns.
 function drawArena(){const b=G.enemies.find(e=>e.type==='boss'&&!e.dead&&e.arena);if(!b)return;const A=b.arena,fire=b.kind===4;
-  ctx.save();ctx.beginPath();ctx.rect(G.cam.x-CW/Z,G.cam.y-CH/Z,CW*2/Z,CH*2/Z);ctx.arc(A.x,A.y,A.r,0,TAU,true);ctx.fillStyle=fire?'rgba(140,30,6,.32)':'rgba(120,90,50,.34)';ctx.fill('evenodd');
+  ctx.save();ctx.beginPath();ctx.rect(G.cam.x-CW/Z,G.cam.y-CH/Z/TILT,CW*2/Z,CH*2/Z/TILT);ctx.arc(A.x,A.y,A.r,0,TAU,true);ctx.fillStyle=fire?'rgba(140,30,6,.32)':'rgba(120,90,50,.34)';ctx.fill('evenodd');
   ctx.globalCompositeOperation='lighter';ctx.strokeStyle=fire?'rgba(255,110,30,.8)':'rgba(230,180,110,.7)';ctx.lineWidth=6;ctx.setLineDash([14,8]);ctx.lineDashOffset=G.time*40;ctx.beginPath();ctx.arc(A.x,A.y,A.r,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
 // Cinder King's Cataclysm: the whole arena is marked except one safe wedge.
 function drawCata(f,t){const R=900,pulse=0.75+0.25*Math.sin(G.time*14);ctx.save();ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);ctx.moveTo(f.x,f.y);ctx.arc(f.x,f.y,R,f.a+f.half,f.a-f.half,true);ctx.closePath();

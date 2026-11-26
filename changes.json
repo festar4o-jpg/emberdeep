@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.134",
+  "latest": "1.0.135",
   "notes": [
+    {
+      "v": "1.0.135",
+      "t": [
+        "New angled camera: you now see the world from an angle instead of straight down, with heroes, monsters and loot standing on the floor",
+        "Walls have height and hide what is behind them; walls, houses and props near your hero turn see-through",
+        "Props, braziers and town buildings stand upright; switch back any time in Settings › Camera (Angled or Top-down)"
+      ]
+    },
     {
       "v": "1.0.134",
       "t": [

@@ -9,12 +9,12 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
 // Projectiles: a short fading tail and a hot core.
 function drawProjectiles(){if(!G.proj.length)return;drawArrows();ctx.globalCompositeOperation='lighter';
-  for(const q of G.proj){if(q.arrow)continue;projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2;
-    for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,q.y-q.vy*0.014*k-r,r*2,r*2);}
-    ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,q.y-R,R*2,R*2);}
+  for(const q of G.proj){if(q.arrow)continue;projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2,vy=q.vy*TILT;upr(q.x,q.y); // render.js: a round glow, not squashed by the angled floor
+    for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,q.y-vy*0.014*k-r,r*2,r*2);}
+    ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,q.y-R,R*2,R*2);ctx.restore();}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // v1.0.127: the Ranger's arrows: a wooden shaft along the flight, an iron head and pale fletching, a faint streak.
-function drawArrows(){for(const q of G.proj){if(!q.arrow)continue;const a=Math.atan2(q.vy,q.vx);ctx.save();ctx.translate(q.x,q.y);ctx.rotate(a);
+function drawArrows(){for(const q of G.proj){if(!q.arrow)continue;const a=Math.atan2(q.vy*TILT,q.vx);ctx.save();ctx.translate(q.x,q.y);if(TILT!==1)ctx.scale(1,1/TILT);ctx.rotate(a); // the angle as seen on screen, the shape unsquashed
   ctx.globalAlpha=0.25;ctx.strokeStyle='#e8dcc4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(-14,0);ctx.stroke();ctx.globalAlpha=1;
   ctx.strokeStyle='#8a6a42';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(5,0);ctx.stroke();
   ctx.fillStyle='#cfd6dc';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(3,-2.6);ctx.lineTo(3,2.6);ctx.closePath();ctx.fill();
@@ -66,7 +66,7 @@ let FOGC=null,FOGX=null;
 const AIR={crypt:['190,205,170',0.28,-4,6,1.4],desert:['220,190,140',0.3,14,4,1.5],marsh:['170,200,225',0.35,-3,-6,1.6],citadel:['235,245,255',0.55,-6,22,1.8],ember:['255,130,40',0.8,4,-26,1.6]};
 let airT=0;const airP=[],airRnd=artRng(9137); // its own random numbers: drawing never shifts gameplay rolls
 function drawAir(){if(G.inTown||!G.p)return;const A=AIR[ACTS[actIdx(G.depth)].gen];if(!A)return;const dt=Math.min(0.05,Math.max(0,G.time-airT));airT=G.time;
-  const w=CW/Z,h=CH/Z,x0=G.cam.x-w/2,y0=G.cam.y-h/2,N=36;
+  const w=CW/Z,h=CH/Z/TILT,x0=G.cam.x-w/2,y0=G.cam.y-h/2,N=36;
   while(airP.length<N)airP.push({x:airRnd()*w,y:airRnd()*h,s:0.5+airRnd(),p:airRnd()*TAU});
   const S=sparkSprite(A[0]);ctx.globalCompositeOperation='lighter';
   for(const m of airP){m.x=(m.x+(A[2]+Math.sin(G.time*0.7+m.p)*5)*m.s*dt+w)%w;m.y=(m.y+A[3]*m.s*dt+h)%h;
@@ -98,10 +98,11 @@ function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=itCol
     G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}
 // PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
 // Labels that would overlap one already drawn this frame stack upward instead (LABELS is reset by render()).
-const LABELS=[];
+const LABELS=[];let LBL_OFF=0;
 function lootLabel(x,y,txt,col,edge,tag,tagCol,small){ctx.font=small?'10px sans-serif':'11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
   const w=ctx.measureText(txt).width,tw=tag?ctx.measureText(' '+tag).width:0,W=w+tw+10,H=small?14:16,x0=x-W/2;
-  for(let k=0;k<8&&LABELS.some(r=>x0<r[0]+r[2]&&x0+W>r[0]&&y-H/2<r[1]+r[3]&&y+H/2>r[1]);k++)y-=H+1;LABELS.push([x0,y-H/2,W,H]);const y0=y-H/2;
+  const o=LBL_OFF; // render.js: loot stands upright at its own spot, so rects are compared in one shared frame (shifted by o)
+  for(let k=0;k<8&&LABELS.some(r=>x0<r[0]+r[2]&&x0+W>r[0]&&y+o-H/2<r[1]+r[3]&&y+o+H/2>r[1]);k++)y-=H+1;LABELS.push([x0,y+o-H/2,W,H]);const y0=y-H/2;
   ctx.fillStyle='rgba(6,4,3,.84)';ctx.fillRect(x0,y0,W,H);ctx.strokeStyle=edge;ctx.lineWidth=1;ctx.strokeRect(x0+0.5,y0+0.5,W-1,H-1);
   ctx.fillStyle=col;ctx.fillText(txt,x0+5,y+0.5);if(tag){ctx.fillStyle=tagCol;ctx.fillText(' '+tag,x0+5+w,y+0.5);}ctx.textAlign='center';ctx.textBaseline='alphabetic';}
 // ---------- combat feel ----------

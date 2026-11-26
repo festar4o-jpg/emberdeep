@@ -6,6 +6,13 @@ let DPR=1,CW=0,CH=0,Z=1;
 function resize(){DPR=sharpDpr(window.devicePixelRatio||1); /* perf.js: Sharpness setting */CW=innerWidth;CH=innerHeight;cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);Z=clamp(Math.min(CW,CH)/430,0.75,1.5);if(!joy.active)placeJoy(null);}
 addEventListener('resize',resize);
 function resizeTo(w,h){CW=w;CH=h;} // tests: pretend a screen size
+// v1.0.135: the angled camera (2.5D, step 1). The floor is squashed in height by TILT, so the world is seen from an angle
+// and every circle on the ground (warnings, auras, blood) becomes a flat oval; figures, loot and text stand upright on it
+// (upr). Gameplay stays flat x/y: only the drawing changes. Settings › Camera: Angled or Top-down (TILT 1).
+const TILT_ANGLED=0.72;let TILT=1;
+const camTilt=()=>SETTINGS.cam==='top'?1:TILT_ANGLED;
+// Stand something upright at its foot point (x,y): undo the floor's squash around it. Pair with ctx.restore().
+function upr(x,y){ctx.save();if(TILT!==1){ctx.translate(x,y);ctx.scale(1,1/TILT);ctx.translate(-x,-y);}}
 // Joystick base: at the thumb while active; otherwise a faint hint where it usually sits (mirrored in left-handed mode).
 function placeJoy(on){const j=$('joy'),k=$('knob');if(on){j.style.left=joy.ox+'px';j.style.top=joy.oy+'px';j.style.opacity=1;return;}
   const x=clamp(CW*0.2,150,230);j.style.left=(SETTINGS.lefty?CW-x:x)+'px';j.style.top=(CH-105)+'px';j.style.opacity=0.35;k.style.transform='translate(0,0)';}
@@ -18,8 +25,9 @@ function render(){
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#060403';ctx.fillRect(0,0,cv.width,cv.height);
   if(!G.mapCv||!G.p)return;
   const p=G.p;const sx=G.shake?fr(-G.shake,G.shake):0,sy=G.shake?fr(-G.shake,G.shake):0; // fx.js rng: shaking never shifts gameplay rolls
-  ctx.setTransform(DPR*Z,0,0,DPR*Z,DPR*(CW/2-G.cam.x*Z+sx),DPR*(CH/2-G.cam.y*Z+sy));
-  const vw=CW/Z,vh=CH/Z,vx=G.cam.x-vw/2-20,vy=G.cam.y-vh/2-20;
+  TILT=camTilt();
+  ctx.setTransform(DPR*Z,0,0,DPR*Z*TILT,DPR*(CW/2-G.cam.x*Z+sx),DPR*(CH/2-G.cam.y*Z*TILT+sy));
+  const vw=CW/Z,vh=CH/Z/TILT,vx=G.cam.x-vw/2-20,vy=G.cam.y-vh/2-20;
   const x0=Math.max(0,vx),y0=Math.max(0,vy),x1=Math.min(G.mapCv.width,vx+vw+40),y1=Math.min(G.mapCv.height,vy+vh+40);
   if(x1>x0&&y1>y0)ctx.drawImage(G.mapCv,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0);
   const onScreen=(x,y,m)=>x>vx-m&&x<vx+vw+40+m&&y>vy-m&&y<vy+vh+40+m;
@@ -29,17 +37,18 @@ function render(){
       if(t===T_POISON){ctx.fillStyle='#b8ff5a';ctx.globalAlpha=0.05+0.05*Math.sin(G.time*2+i*1.7+j*2.3);ctx.fillRect(i*TILE,j*TILE,TILE,TILE);}
       else if(t===T_LAVA||(ember&&G.grid[k]===2)){ctx.fillStyle='#ffc040';ctx.globalAlpha=0.07+0.07*Math.sin(G.time*3+i*0.9+j*1.3);ctx.fillRect(i*TILE,j*TILE,TILE,TILE);}}
     ctx.globalAlpha=1;}
-  drawTorches(onScreen);
+  const walls3d=TILT!==1&&!G.inTown; // raised walls: torches are drawn with their wall row
+  if(!walls3d)drawTorches(onScreen);
   // portal
   const P=G.portal;if(onScreen(P.x,P.y,80)){ctx.save();ctx.translate(P.x,P.y);
     const g=ctx.createRadialGradient(0,0,4,0,0,44);g.addColorStop(0,P.active?'#e9d0ff':'#777');g.addColorStop(0.5,P.active?'#8a3dff99':'#44444499');g.addColorStop(1,'#0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,44,0,TAU);ctx.fill();
     ctx.strokeStyle=P.active?'#c79bff':'#666';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,30-k*7,G.time*(2+k)+k,G.time*(2+k)+k+3.5);ctx.stroke();}ctx.restore();}
   drawSidePortal(onScreen); /* zones.js */drawPortals(onScreen); /* portal.js */
-  if(!G.inTown)drawFeatures(onScreen);else{drawTownLive(onScreen);drawElder();}
-  if(G.inTown&&G.merchant&&onScreen(G.merchant.x,G.merchant.y,120))drawMerchant();
-  if(G.inTown&&G.stash&&onScreen(G.stash.x,G.stash.y,80))drawStash();
-  if(G.inTown&&G.smith&&onScreen(G.smith.x,G.smith.y,100))drawSmith();
-  if(G.inTown&&G.bench&&onScreen(G.bench.x,G.bench.y,90))drawBench(); // currency.js
+  // back-to-front list (sorted by the y of each foot): standing art, town people and stalls, features, loot, figures, wall rows
+  const ents=[];
+  if(!G.inTown)drawFeatures(onScreen,ents);else{drawTownLive(onScreen,ents);if(G.elder)ents.push({npc:drawElder,x:G.elder.x,y:G.elder.y});}
+  if(G.inTown){for(const [o,fn,m] of [[G.merchant,drawMerchant,120],[G.stash,drawStash,80],[G.smith,drawSmith,100],[G.bench,drawBench /* currency.js */,90]])if(o&&onScreen(o.x,o.y,m))ents.push({npc:fn,x:o.x,y:o.y});}
+  for(const s of G.stand||[])if(s.w&&s.x<x1+40&&s.x+s.w>x0-40&&onScreen(s.fx,s.fy,s.h+60))ents.push({stand:s,y:s.fy});
   // hazards & telegraphs
   for(const h of G.hazards){if(!onScreen(h.x,h.y,h.r))continue;ctx.drawImage(hazGlow(h.rot),h.x-h.r,h.y-h.r,h.r*2,h.r*2);} // one glow sprite per kind, drawn to size (no new gradient each frame)
   for(const f of G.fx)if((f.type==='tele'||f.type==='tline')&&!f.own)drawWarning(f,f.t/f.max); // fx.js: enemy attacks, red/orange
@@ -54,32 +63,17 @@ function render(){
   for(const e of G.enemies)if(!e.dead&&e.wind>0&&e.tele){ctx.strokeStyle=e.tele.col;ctx.globalAlpha=0.75;ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.tele.r,0,TAU);ctx.stroke();ctx.globalAlpha=0.15;ctx.fillStyle=e.tele.col;ctx.fill();ctx.globalAlpha=1;}
   // loot
   ctx.textAlign='center';LABELS.length=0;
-  for(const l of G.loot){if(!onScreen(l.x,l.y,40)||(l.item&&lootHidden(l.item)))continue;const bob=Math.sin(G.time*4+l.x)*2;
-    if(l.gem){drawStoneLoot(l,bob);continue;}
-    if(l.cur){drawCurLoot(l,bob);continue;} // currency.js
-    if(l.sig){drawSigilLoot(l,bob);continue;} // sigils.js
-    if(l.eng){drawEngLoot(l,bob);continue;}
-    if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}
-      lootLabel(l.x,l.y-14,`${l.gold} Gold`,CURRENCY_COL,'rgba(200,180,138,.55)',null,null,true);continue;}
-    const col=itCol(l.item);
-    if(l.item.rarity>=2)drawBeam(l,col,l.item.rarity!==2); // fx.js: rare = short beam, unique/set/Runebind = tall
-    const iy=l.y+bob; // rarity-coloured disc with the item's own inventory icon on top
-    softShadow(l.x,l.y+12,15-bob,6,0.8);
-    ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(l.x,iy,15,0,TAU);ctx.fill();
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
-    const im=iconImg(iconKey(l.item));
-    if(im.complete&&im.naturalWidth)ctx.drawImage(im,l.x-12,iy-12,24,24);
-    else{ctx.save();ctx.translate(l.x,iy);ctx.rotate(Math.PI/4);ctx.fillStyle=col;ctx.fillRect(-6,-6,12,12);ctx.restore();} // until the icon has loaded
-    const cmp=lootCmp(l),tag=lootTag(l.item,cmp); // fx.js: dark box, edged in the rarity colour
-    lootLabel(l.x,l.y-24,l.item.name,col,l.item.rarity?col:'#5a5650',tag&&tag.t,tag&&tag.col,!l.item.rarity);}
-  // entities sorted by y
-  const ents=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));G.crowd=ents.length;/* big crowds skip the per-monster top light (sprites.js litBlit) */ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
+  // loot, figures and (angled camera) wall rows, drawn back to front by the y of their foot
+  const foes=G.enemies.filter(e=>!e.dead&&onScreen(e.x,e.y,60));G.crowd=foes.length;ents.push(...foes);/* big crowds skip the per-monster top light (sprites.js litBlit) */ents.push(p);if(G.inTown&&G.town)for(const f of G.town.folk)if(onScreen(f.x,f.y,60))ents.push(f);ents.sort((a,b)=>a.y-b.y);
   if(setAuraOn())drawSetAuraGround(p); // on the floor, under every entity
   drawCorpses(); // sprites.js: falling bodies
   drawTraps(onScreen);drawCaltrops(onScreen); // ranger.js: traps, caltrops, Explosive Arrows
   if(G.pets)for(const w of G.pets)if(onScreen(w.x,w.y,40))ents.push(w); // ranger.js: the wolf
+  for(const l of G.loot)if(onScreen(l.x,l.y,40)&&!(l.item&&lootHidden(l.item)))ents.push({loot:l,y:l.y});
+  if(walls3d){wallRows(ents,x0,y0,x1,y1);drawTorches(onScreen,ents);}
   ents.sort((a,b)=>a.y-b.y);
-  for(const e of ents){if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else if(e.kind==='wolf'||e.kind==='hawk')drawPet(e);else drawEnemy(e);}
+  for(const e of ents){if(e.loot){drawLootAt(e.loot);continue;}if(e.wrow!=null){drawWallRow(e);continue;}if(e.torch){drawTorch(e.torch);continue;}if(e.stand){drawStand(e.stand);continue;}if(e.feat){drawFeat(e.feat);continue;}if(e.npc){upr(e.x,e.y);e.npc();ctx.restore();continue;}if(e.draw){e.draw();continue;}
+    upr(e.x,e.y);if(e===p)drawPlayer();else if(e.folk)drawFolk(e);else if(e.kind==='wolf'||e.kind==='hawk')drawPet(e);else drawEnemy(e);ctx.restore();}
   drawMarks(onScreen); // ranger.js: Hawk's Mark
   // projectiles
   drawProjectiles(); // fx.js
@@ -96,7 +90,7 @@ function render(){
     else if(f.type==='bolt')drawBolt(f,t);}
   drawParticles(); // fx.js
   if(G.inTown)drawTownAmb();else drawAir();
-  for(const t of G.texts){ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold 18px':'bold 13px')+' sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);}ctx.globalAlpha=1;
+  for(const t of G.texts){upr(t.x,t.y);ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold 18px':'bold 13px')+' sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);ctx.restore();}ctx.globalAlpha=1;
   // darkness
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const Lt=G.inTown?townOf(G.depth).light:ACTS[actIdx(G.depth)].light;
@@ -107,6 +101,53 @@ function render(){
   if(p.hurt>0){ctx.fillStyle=`rgba(160,0,0,${p.hurt})`;ctx.fillRect(0,0,CW,CH);}
   drawLootTip();
 }
+// One piece of loot, upright at its spot (render.js upr); finally restores the canvas on every return.
+function drawLootAt(l){const bob=Math.sin(G.time*4+l.x)*2;upr(l.x,l.y);LBL_OFF=l.y*(TILT-1);try{
+    if(l.gem){drawStoneLoot(l,bob);return;}
+    if(l.cur){drawCurLoot(l,bob);return;} // currency.js
+    if(l.sig){drawSigilLoot(l,bob);return;} // sigils.js
+    if(l.eng){drawEngLoot(l,bob);return;}
+    if(l.gold){softShadow(l.x,l.y+5,7,3,0.8);ctx.fillStyle='#c9a440';ctx.strokeStyle='#5a4010';ctx.lineWidth=1.5;for(const [dx,dy] of [[-3,1],[3,2],[0,-1]]){ctx.beginPath();ctx.arc(l.x+dx,l.y+bob+dy,4,0,TAU);ctx.fill();ctx.stroke();}
+      lootLabel(l.x,l.y-14,`${l.gold} Gold`,CURRENCY_COL,'rgba(200,180,138,.55)',null,null,true);return;}
+    const col=itCol(l.item);
+    if(l.item.rarity>=2)drawBeam(l,col,l.item.rarity!==2); // fx.js: rare = short beam, unique/set/Runebind = tall
+    const iy=l.y+bob; // rarity-coloured disc with the item's own inventory icon on top
+    softShadow(l.x,l.y+12,15-bob,6,0.8);
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.arc(l.x,iy,15,0,TAU);ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;
+    const im=iconImg(iconKey(l.item));
+    if(im.complete&&im.naturalWidth)ctx.drawImage(im,l.x-12,iy-12,24,24);
+    else{ctx.save();ctx.translate(l.x,iy);ctx.rotate(Math.PI/4);ctx.fillStyle=col;ctx.fillRect(-6,-6,12,12);ctx.restore();} // until the icon has loaded
+    const cmp=lootCmp(l),tag=lootTag(l.item,cmp); // fx.js: dark box, edged in the rarity colour
+    lootLabel(l.x,l.y-24,l.item.name,col,l.item.rarity?col:'#5a5650',tag&&tag.t,tag&&tag.col,!l.item.rarity);}finally{ctx.restore();LBL_OFF=0;}}
+// ---------- raised walls (angled camera) ----------
+// Each wall tile stands one tile tall: its painted top is lifted one row up (covering the floor behind it) and, where
+// floor lies in front, the tile's own spot becomes its front face, shaded darker toward the floor. A row is drawn in the
+// back-to-front order at the y of its foot, so walls hide what stands behind them. Walls that would hide the hero turn
+// see-through. One tile tall keeps the wall torches (painted on the face) in the right place.
+const WALL_SEE=0.35; // how much of a wall shows while the hero is behind it
+let FACE_G=null;
+function faceShade(){if(FACE_G)return FACE_G;const c=mkCanvas(4,64),x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,64);
+  g.addColorStop(0,'rgba(0,0,0,.18)');g.addColorStop(0.7,'rgba(0,0,0,.42)');g.addColorStop(1,'rgba(0,0,0,.6)');x.fillStyle=g;x.fillRect(0,0,4,64);return FACE_G=c;}
+// Queue one entry per visible row that has wall in it (caps reach one row up, so one extra row below the screen).
+function wallRows(ents,x0,y0,x1,y1){const g=G.grid,i0=Math.max(0,Math.floor(x0/TILE)),i1=Math.min(MW-1,Math.floor(x1/TILE)),j0=Math.max(0,Math.floor(y0/TILE)),j1=Math.min(MH-1,Math.floor(y1/TILE)+1);
+  for(let j=j0;j<=j1;j++){let any=false;for(let i=i0;i<=i1;i++)if(g[j*MW+i]===1){any=true;break;}if(any)ents.push({wrow:j,i0,i1,y:(j+1)*TILE-0.5});}}
+// Is this wall tile (part of a row that draws after the hero) over the hero on screen?
+function wallHidesHero(i,j){const p=G.p;if(!p||(j+1)*TILE<=p.y)return false;return (j-1)*TILE<p.y+16&&Math.abs(i*TILE+TILE/2-p.x)<TILE*1.3;}
+function drawWallRow(r){const g=G.grid,j=r.wrow,T=TILE,cv=G.mapCv,S=faceShade(),last=j>=MH-1;let i=r.i0;
+  const open=k=>last||g[(j+1)*MW+k]!==1; // something other than wall in front: this tile shows a front face
+  while(i<=r.i1){if(g[j*MW+i]!==1){i++;continue;}
+    const see=wallHidesHero(i,j),f=open(i);let n=1;while(i+n<=r.i1&&g[j*MW+i+n]===1&&wallHidesHero(i+n,j)===see&&open(i+n)===f)n++; // a run of alike wall tiles
+    const x=i*T,w=n*T;if(see)ctx.globalAlpha=WALL_SEE;
+    if(f){ctx.drawImage(cv,x,j*T,w,T,x,j*T,w,T);ctx.drawImage(S,0,0,4,64,x,j*T,w,T);} // the front face (repainted over anything behind it)
+    // the top, lifted one row up; above a face only the tile's upper part is used (the lower part is painted as a face, with the torch sconces)
+    if(j>0)ctx.drawImage(cv,x,j*T,w,f?T*0.55:T,x,(j-1)*T,w,T);
+    if(f){ctx.fillStyle='rgba(255,236,210,.10)';ctx.fillRect(x,j*T-2,w,2);} // a faint lit edge where the top meets the face
+    ctx.globalAlpha=1;i+=n;}}
+// A standing thing (maps.js standProp), upright at its foot; see-through while it would hide the hero.
+function drawStand(s){upr(s.fx,s.fy);const p=G.p;
+  if(p&&s.fy>p.y&&p.x+14>s.x&&p.x-14<s.x+s.w){const top=s.fy*TILT+(s.y-s.fy),bot=s.fy*TILT+(s.y+s.h-s.fy),ht=p.y*TILT-44,hb=p.y*TILT;if(top<hb&&bot>ht)ctx.globalAlpha=WALL_SEE;}
+  ctx.drawImage(s.cv,s.x,s.y);ctx.restore();}
 // A gem or rune on the ground: a small glinting gem (bigger with quality), a skull, or a rune stone, plus its name.
 function drawStoneLoot(l,bob){const s=l.gem,x=l.x,y=l.y+bob,col=stoneCol(s);
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.arc(x,y+2,9,0,TAU);ctx.fill();
@@ -152,7 +193,7 @@ function drawLootTip(){
   }
   let w=0;for(const [t,,f] of lines){ctx.font=f+' sans-serif';w=Math.max(w,ctx.measureText(t).width);}
   const lh=16,pad=7,bw=w+pad*2,bh=lines.length*lh+pad*2-2;
-  const sx=(best.x-G.cam.x)*Z+CW/2,sy=(best.y-G.cam.y)*Z+CH/2-34*Z;
+  const sx=(best.x-G.cam.x)*Z+CW/2,sy=(best.y-G.cam.y)*Z*TILT+CH/2-34*Z;
   const x=clamp(sx-bw/2,6,CW-bw-6),y=clamp(sy-bh,6,CH-bh-6);
   ctx.fillStyle='rgba(16,11,8,.92)';ctx.strokeStyle=itCol(it);ctx.lineWidth=1.5;
   ctx.beginPath();ctx.rect(x,y,bw,bh);ctx.fill();ctx.stroke();
