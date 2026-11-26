@@ -299,7 +299,7 @@ function update(dt){
     if(q.home)homeIn(q,dt);
     q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
     if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
-    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult*arrowMul(q,e),{weapon:q.weapon,bleed:q.bleed}); /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
+    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult*arrowMul(q,e)*pointBlankMul(q),{weapon:q.weapon,bleed:q.bleed}); /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
         if(q.pierce>0){q.pierce--;q.life=life;hit=false;(q.hits||(q.hits=new Set())).add(e);continue;}}break;}}
       if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);G.sk=null;}
     else if(!p.dead&&Math.hypot(p.x-q.x,p.y-q.y)<p.r+q.r){q.life=0;if(dmgPlayer(q.dmg,q.src)&&q.slow)slowPlayer(q.slow,1.6);if(q.r>=7)burst(q.x,q.y,8,q.col,120);}

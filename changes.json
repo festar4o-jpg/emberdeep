@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.131",
+  "latest": "1.0.132",
   "notes": [
+    {
+      "v": "1.0.132",
+      "t": [
+        "Passive tree: the Ranger has his own start at the bottom (➶), with two new branches beside it: Deadeye (crits) and Hunting Pack (wolf and hawk damage)",
+        "New keystone below Elemental Ward: Point Blank, more damage up close and less far away (any class can take it)"
+      ]
+    },
     {
       "v": "1.0.131",
       "t": [

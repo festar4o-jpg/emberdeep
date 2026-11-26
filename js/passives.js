@@ -1,4 +1,5 @@
-// Passive tree (v1.0.104-105, PoE2 style). One shared tree: the Warden starts on the left, the Arcanist on the right.
+// Passive tree (v1.0.104-105, PoE2 style). One shared tree: the Warden starts on the left, the Arcanist on the right,
+// the Ranger (v1.0.132) at the bottom, with his two branches beside him and the Point Blank keystone below.
 // Each hero keeps what they took in c.pas = {n: [node ids], ch: {node id: picked option}} (save v13).
 // Points: 1 per level after 1, PAS_BOSS_PTS for each act boss's first kill (c.pasBoss, a bit per act, any difficulty)
 // and 1 per Paragon level (which no longer gives +1% damage and +5 Life). Taking a node costs 1 point; a node can be
@@ -31,6 +32,8 @@ const PAS_NOTABLE={
     {id:'weaver',name:'Spellweaver',sm:['speed','cdr'],st:[['cspd',4],['cdr',2]]}],
   shared:[{id:'wind',name:'Wind Walker',sm:['move','evade'],st:[['move',4],['evade',3]]},
     {id:'ward',name:'Elemental Ward',sm:['res','regen'],st:[['ares',8]]}],
+  ranger:[{id:'deadeye',name:'Deadeye',sm:['crit','critd'],st:[['crit',1.5],['critd',10]]}, // v1.0.132: either side of his start
+    {id:'huntpack',name:'Hunting Pack',sm:['speed','life'],st:[['petdmg',20],['aspd',3]]}],
   inner:[{id:'hunter',name:'Treasure Hunter',sm:['rarity','gold'],st:[['rarity',12],['gold',20]]},
     {id:'alch',name:'Alchemist',sm:['pot','regen'],st:[['potheal',25],['regen',3]]}]};
 // Keystones at the end of four long branches (v1.0.106). ks: the flag in G.stats.ks; effects in pasFinal and where
@@ -39,6 +42,8 @@ const PAS_KEYS=[{id:'k_bloodmagic',ks:'bloodmagic',name:'Blood Magic',t:'Your sk
   {id:'k_unwavering',ks:'unwavering',name:'Unwavering',t:'You can\'t be Frozen or slowed, and take 10% less damage · you can\'t dodge'},
   {id:'k_glass',ks:'glass',name:'Glass Cannon',t:'30% more damage · 30% less maximum Life'},
   {id:'k_overload',ks:'overload',name:'Elemental Overload',t:'Your chances to Ignite, Shock and Poison are doubled · you never deal critical hits'}];
+// v1.0.132: below the Ranger's start, past Elemental Ward (game.js projectile hits: pointBlankMul)
+const PAS_KEY_RANGER={id:'k_pointblank',ks:'pointblank',name:'Point Blank',t:'Your arrows and other projectiles deal up to 40% more damage up close (within 150) · up to 30% less far away (from 450)'};
 const PAS_CENTER={id:'heart',name:'Heart of Embers',st:[['dmg',4],['lifepct',3]]};
 const PAS_NODES={};let PAS_EDGES=[];
 function pasBuild(){
@@ -51,6 +56,7 @@ function pasBuild(){
   for(let i=0;i<NO;i++){const [x,y]=at(RO,ao(i)),id='o'+i;
     if(i===0)add(id,x,y,'start',{cls:'arcanist',name:'Arcanist',st:[['dmg',3]]});
     else if(i===NO/2)add(id,x,y,'start',{cls:'warden',name:'Warden',st:[['dmg',3]]});
+    else if(i===NO*3/4)add(id,x,y,'start',{cls:'ranger',name:'Ranger',st:[['dmg',3]]}); // v1.0.132 (it was a choice node)
     else if(i%2)add(id,x,y,'choice',{opts:PAS_CHOICE});else add(id,x,y,'small',small(ringSmall(i)));}
   for(let i=0;i<NO;i++)link('o'+i,'o'+(i+1)%NO);
   // inner ring: choice and small nodes, and the Heart of Embers in the middle (to the four diagonals)
@@ -66,6 +72,12 @@ function pasBuild(){
   for(let i=1;i<NO;i+=2){const c=Math.cos(ao(i)),side=c>0.3?'arcanist':c<-0.3?'warden':'shared',B=pool[side].shift();if(!B)continue;let prev='o'+i;
     [715,800,885].forEach((r,j)=>{const [x,y]=at(r,ao(i)),id=`b${i}_${j}`;add(id,x,y,'small',small(B.sm[j===1?1:0]));link(prev,id);prev=id;});
     const [x,y]=at(985,ao(i));add(B.id,x,y,'notable',{name:B.name,st:B.st,side});link(prev,B.id);}
+  // v1.0.132: the Ranger's branches from the ring slots either side of his start, and Point Blank below Elemental Ward
+  [[20,PAS_NOTABLE.ranger[0]],[22,PAS_NOTABLE.ranger[1]]].forEach(([i,B])=>{let prev='o'+i;
+    [715,800,885].forEach((r,j)=>{const [x,y]=at(r,ao(i)),id=`r${i}_${j}`;add(id,x,y,'small',small(B.sm[j===1?1:0]));link(prev,id);prev=id;});
+    const [x,y]=at(985,ao(i));add(B.id,x,y,'notable',{name:B.name,st:B.st,side:'ranger'});link(prev,B.id);});
+  {const K=PAS_KEY_RANGER,a=ao(NO*3/4),[x0,y0]=at(1075,a),[x1,y1]=at(1175,a);add('kr_0',x0,y0,'small',small('dmg'));link('ward','kr_0');
+    add(K.id,x1,y1,'key',{name:K.name,desc:K.t,ks:K.ks});link('kr_0',K.id);}
   // keystone branches: outward from the spoke slots on the diagonals
   [4,10,18,24].forEach((i,n)=>{let prev='o'+i;const K=PAS_KEYS[[0,1,2,3][n]];
     [720,820].forEach((r,j)=>{const [x,y]=at(r,ao(i)),id=`k${i}_${j}`;add(id,x,y,'small',small(j?'dmg':ringSmall(i)));link(prev,id);prev=id;});
@@ -76,7 +88,7 @@ function pasBuild(){
     const [x,y]=at(140,a+0.5);add(B.id,x,y,'notable',{name:B.name,st:B.st});link(prev,B.id);});
   PAS_EDGES=E;}
 pasBuild();
-const pasStart=c=>c.cls==='arcanist'?'o0':c.cls==='ranger'?'o21':'o'+14; // v1.0.124: the Ranger starts at the bottom for now (his own start comes with the tree step)
+const pasStart=c=>c.cls==='arcanist'?'o0':c.cls==='ranger'?'o21':'o'+14; // the Ranger: the bottom (his own start node since v1.0.132)
 // ---------- points ----------
 const bossBits=c=>{let n=0;for(let k=0;k<PAS_ACTS;k++)if((c.pasBoss||0)&1<<k)n++;return n;};
 const pasEarned=c=>Math.max(0,(c.lvl||1)-1)+PAS_BOSS_PTS*bossBits(c)+(c.para||0);
@@ -126,5 +138,8 @@ function pasFinal(c,s){const K=s.ks||{};if(K.glass){s.more=(s.more||1)*1.3;s.lif
   if(K.overload){for(const k of ['igniteCh','shockCh','poisonCh'])s[k]=Math.min(AIL_CH_CAP,(s[k]||0)*2);s.crit=0;s.noCrit=true;}}
 const hasKs=k=>!!(G.stats&&G.stats.ks&&G.stats.ks[k]);
 // One stat as text, as the hero would get it.
-const PAS_TXT={armpct:'+{v}% Armor',bleed:'+{v}% chance to Bleed',dmg:'+{v}% Damage'};
+const PAS_TXT={armpct:'+{v}% Armor',bleed:'+{v}% chance to Bleed',dmg:'+{v}% Damage',petdmg:'+{v}% damage by your wolf and hawk'};
 function pasStatText([k0,v],cls){const k=pasKey(k0,cls),t=PAS_TXT[k]||(AFF[k]&&AFF[k].t)||k;return t.replace('{v}',v);}
+// Point Blank (v1.0.132): by how far the projectile flew (shoot() keeps where it started)
+function pointBlankMul(q){if(!hasKs('pointblank')||q.sx==null)return 1;const d=Math.hypot(q.x-q.sx,q.y-q.sy);
+  return d<=150?1.4:d>=450?0.7:1.4-0.7*(d-150)/300;}
