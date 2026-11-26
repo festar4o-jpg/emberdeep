@@ -7,6 +7,21 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
   g.addColorStop(0,'rgba(255,255,245,1)');g.addColorStop(0.18,`rgba(${rgb},0.95)`);g.addColorStop(0.45,`rgba(${rgb},0.35)`);g.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=g;x.fillRect(0,0,S,S);return SPARK[rgb]=c;}
 // Bright, coloured particles glow; dark or dull ones (blood, dust, bone) don't.
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
+// v1.0.148: an impact flash where a blow lands: a hot burst and two streaks across the blow, gone in a tenth of a second.
+function drawHitFlash(f,t){const k=1-t,S=sparkSprite(rgbOf(f.col)),R=f.r*(0.6+0.6*t);upr(f.x,f.y);ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=k;ctx.drawImage(S,f.x-R,f.y-R,R*2,R*2);ctx.translate(f.x,f.y);ctx.strokeStyle=f.col;ctx.lineCap='round';
+  for(const s of [f.a+Math.PI/2,f.a+0.5]){const L=f.r*(0.8+0.9*t);ctx.globalAlpha=k*0.9;ctx.lineWidth=2.6*k+0.6;ctx.beginPath();ctx.moveTo(-Math.cos(s)*L,-Math.sin(s)*L*0.8);ctx.lineTo(Math.cos(s)*L,Math.sin(s)*L*0.8);ctx.stroke();}
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.restore();}
+// v1.0.148: the weapon's trail. With the angled camera it sweeps at weapon height (SWING_LIFT above the floor) and
+// grows across the swing (dir) in the first 40% of its life: a bright leading edge, a tail that thins and fades.
+const SWING_LIFT=24;
+function drawSwingArc(f,t){const hf=f.half||1.1,dir=f.dir||1,lw=f.lw||10,lift=TILT!==1?SWING_LIFT/TILT:0,grow=Math.min(1,t/0.4),fade=t<0.4?1:1-(t-0.4)/0.6;
+  const a0=f.a-hf*dir,span=2*hf*dir*grow,N=10;ctx.save();ctx.translate(0,-lift);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+  for(let i=0;i<N;i++){const u0=i/N,u1=(i+1)/N,w=0.25+0.75*u1; // the tail (u near 0) is thin and faint, the head bright
+    ctx.strokeStyle=f.col;ctx.globalAlpha=fade*w*0.45;ctx.lineWidth=lw*1.7*w;ctx.beginPath();ctx.arc(f.x,f.y,f.r,a0+span*u0,a0+span*u1,dir<0);ctx.stroke();
+    ctx.globalAlpha=fade*w;ctx.lineWidth=lw*0.55*w;ctx.stroke();}
+  const ha=a0+span;ctx.strokeStyle='#fff6e0';ctx.globalAlpha=fade*0.85;ctx.lineWidth=Math.max(1,lw*0.22);ctx.beginPath();ctx.arc(f.x,f.y,f.r,ha-0.35*dir*grow,ha,dir<0);ctx.stroke(); // the hot leading edge
+  ctx.restore();ctx.globalAlpha=1;}
 // Projectiles: a short fading tail and a hot core.
 // v1.0.139: with the angled camera, shots fly at chest height (PROJ_LIFT above the floor, from the hands of the upright
 // figures) instead of along the floor; where they hit is unchanged.
@@ -117,10 +132,16 @@ const matOf=e=>e.type==='boss'?['armor','armor','sap','ice','magma'][e.kind||0]:
 const MAT={flesh:{blood:'#5e0a06',spray:'#8a1410'},bone:{spray:'#b8ae90',sparks:0.3,sparkCol:'#fff0d0',dust:1},chitin:{blood:'#2a4224',spray:'#4a6a3a'},sap:{blood:'#34501a',spray:'#6a8a2a'},
   ice:{spray:'#dff4ff',sparks:0.7,sparkCol:'#bfe8ff'},magma:{blood:'#140604',spray:'#ff7a2a',sparks:1,sparkCol:'#ffb040'},armor:{blood:'#4e0a06',spray:'#7a1410',sparks:1}};
 function part(x,y,vx,vy,life,col,s,extra){if(G.parts.length>420*PERF.partMul||PERF.partMul<1&&fr(0,1)>PERF.partMul)return; /* fx rng: never shifts gameplay rolls */const q={x,y,vx,vy,life,max:life,col,s};if(extra)Object.assign(q,extra);G.parts.push(q);}
+// How far above the floor (in floor units) a creature's middle shows with the angled camera: half way up a painted
+// monster (monart.js sets e._top each frame), about its radius for a drawn one; 0 with the top-down camera.
+function bodyLift(e){if(TILT===1)return 0;const h=e._top!=null?e.y-e._top:e.r*2;return h*0.55/TILT;}
 // Struck: a spray along the blow, sparks off armour, bone and ice, a splat that lingers on the floor; heavy blows
 // (crits, two-handers, big chunks of life) also freeze the action for a few frames (hit-stop) and shake the screen.
+// v1.0.148: with the angled camera the spray, sparks and an impact flash burst from the body (bodyLift), not the feet;
+// blood still lands on the floor.
 function hitFeel(e,d,crit,opts){if(opts&&opts.dot)return;const mat=matOf(e),M=MAT[mat],p=G.p,a=Math.atan2(e.y-p.y,e.x-p.x),heavy=!!(crit||(opts&&opts.kb>=95)||d>=e.maxHp*0.25);
-  const ox=e.x-Math.cos(a)*e.r*0.4,oy=e.y-Math.sin(a)*e.r*0.4;
+  const ox=e.x-Math.cos(a)*e.r*0.4,oy=e.y-Math.sin(a)*e.r*0.4-bodyLift(e);
+  if(!(opts&&opts.splashed))G.fx.push({type:'hit',x:ox,y:oy,a,t:0,max:heavy?0.16:0.11,r:heavy?22:13,col:crit?'#ffd04a':M.sparkCol||'#fff0d8'});
   if(!(opts&&opts.splashed)){playSfx(mat);if(crit)playSfx('crit');} // sfx.js: a hit sound by material
   for(let k=0;k<(heavy?9:5);k++){const b=a+fr(-0.7,0.7),v=fr(60,200)*(heavy?1.3:1);part(ox,oy,Math.cos(b)*v,Math.sin(b)*v,fr(0.25,0.5),M.spray,fr(1.5,3));}
   const sp=M.sparks||(e.elite||e.shieldT>0?0.5:0);

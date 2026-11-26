@@ -79,10 +79,8 @@ function render(){
   drawProjectiles(); // fx.js
   // fx
   for(const f of G.fx){const t=f.t/f.max;
-    if(f.type==='arc'){const hf=f.half||1.1,sw=t*0.4*(f.dir||1),lw=(f.lw||10)*(1-t)+2;ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.col;
-      ctx.globalAlpha=(1-t)*0.45;ctx.lineWidth=lw*1.8;ctx.beginPath();ctx.arc(f.x,f.y,f.r,f.a-hf+sw,f.a+hf+sw);ctx.stroke();
-      ctx.globalAlpha=1-t;ctx.lineWidth=lw*0.6;ctx.stroke();ctx.strokeStyle='#fff6e0';ctx.globalAlpha=(1-t)*0.7;ctx.lineWidth=Math.max(1,lw*0.18);ctx.beginPath();ctx.arc(f.x,f.y,f.r,f.a-hf*0.8+sw,f.a+hf*0.8+sw);ctx.stroke();
-      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+    if(f.type==='arc')drawSwingArc(f,t); // fx.js
+    else if(f.type==='hit')drawHitFlash(f,t); // fx.js
     else if(f.type==='lflash'){ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.globalAlpha=1-t;ctx.fillStyle='#fff';ctx.fillRect(0,-f.w/4,f.len,f.w/2);ctx.fillStyle=f.col;ctx.globalAlpha=(1-t)*0.6;ctx.fillRect(0,-f.w/2,f.len,f.w);ctx.restore();ctx.globalAlpha=1;}
     else if(f.type==='boom'||f.type==='cracks')drawSkillFx(f,t);
     else if(f.type==='ring'){const R=f.r0+(f.r1-f.r0)*t;if(elementOf(f.col)==='ice'&&f.r1>100)drawIceRing(f,t,R);ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.col;ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);

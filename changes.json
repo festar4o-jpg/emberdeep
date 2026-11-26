@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.147",
+  "latest": "1.0.148",
   "notes": [
+    {
+      "v": "1.0.148",
+      "t": [
+        "Hits feel stronger: sparks and spray burst from the monster's body instead of its feet, with a bright impact flash (gold on critical hits)",
+        "Weapon swings leave a glowing trail that sweeps through the air at weapon height, bright at the front and fading behind"
+      ]
+    },
     {
       "v": "1.0.147",
       "t": [
