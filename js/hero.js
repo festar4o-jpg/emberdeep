@@ -103,11 +103,12 @@ function drawHero25(){const p=G.p,C2=G.char,L=HERO_LOOK[C2.cls]||HERO_LOOK.warde
   const breath=f<0&&!A?Math.sin(G.time*2.2)*0.6:0;
   const fx=p.x+ox,fy=p.y+oy-z; // the feet this frame
   const alpha=p.dead?0.4:p.dodge?0.55:1;
-  if(p.dead){ctx.save();ctx.globalAlpha=0.45;ctx.translate(fx,fy);ctx.rotate(c>=0?-1.45:1.45);ctx.drawImage(body,-HERO_HALF,-HERO_HALF-HERO_FOOT,HERO_HALF*2,HERO_HALF*2);ctx.restore();return;} // fallen over
+  if(p.dead){if(drawHeroArt(p,C2,W,A,u,spin,ang,fx,fy,1))return;ctx.save();ctx.globalAlpha=0.45;ctx.translate(fx,fy);ctx.rotate(c>=0?-1.45:1.45);ctx.drawImage(body,-HERO_HALF,-HERO_HALF-HERO_FOOT,HERO_HALF*2,HERO_HALF*2);ctx.restore();return;} // fallen over
   // rings at the feet: slowed, buffed
   if(p.slowT>0||p.buffT>0){ctx.save();ctx.translate(p.x,p.y);ctx.scale(1,TILT);
     if(p.slowT>0){ctx.strokeStyle='#9fdcff';ctx.globalAlpha=0.6;ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,p.r+6,0,TAU);ctx.stroke();ctx.setLineDash([]);}
     if(p.buffT>0){ctx.strokeStyle='#ffcc55';ctx.globalAlpha=0.5+Math.sin(G.time*8)*0.2;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,p.r+9,0,TAU);ctx.stroke();}ctx.restore();}
+  if(drawHeroArt(p,C2,W,A,u,spin,ang,fx,fy,alpha))return; // heroart.js: the painted hero, once its pictures are in
   const HH=heroHandSpots(W,off,A,u,S,spin);
   // one side: its arm (shoulder to hand) and what that hand holds, drawn in the floor frame lifted to hand height
   const arm=(side,spot,lift)=>{const sh=heroProj(ang,0,side*(L.w-1.5),HERO_SH_H-2+breath),hd=heroProj(ang,spot[0]*K,spot[1]*K,HERO_HAND_H*K+(lift||0)),

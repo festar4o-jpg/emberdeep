@@ -1,0 +1,14 @@
+Emberdeep: painted hero art (art/hero/)
+
+The hero pictures come from Flare, a free and open-source action RPG:
+  https://github.com/flareteam/flare-game  (mods/fantasycore/images/avatar)
+  https://flarerpg.org
+Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CREDITS.txt).
+Based on "Isometric Hero and Heroine" by Clint Bellanger: https://opengameart.org/content/isometric-hero-and-heroine
+
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
+
+Changes made for Emberdeep (tools/hero-art/build.js): frames cut to the animations the game uses, shrunk to 80%,
+packed into new sheets and saved as WebP; the spear is Flare's staff with its green crystal recoloured to steel.
+These changed pictures are shared under the same license (CC-BY-SA 3.0).
+The crossbow is drawn by the game's own code (js/heroart.js).

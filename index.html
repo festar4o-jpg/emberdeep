@@ -239,6 +239,8 @@
   <div class="filt">
     <b style="color:var(--gold)">Camera</b> <span class="fdim">Angled looks at the world from the side, like most action RPGs; Top-down looks straight down</span>
     <div class="tabs" id="setCam"></div>
+    <b style="color:var(--gold)">Hero</b> <span class="fdim">Painted: detailed art that shows your armour and weapon (downloads once, about 2 MB); Drawn: the simple figure</span>
+    <div class="tabs" id="setHero"></div>
     <b style="color:var(--gold)">Performance</b> <span class="fdim">frame rate (lower saves battery; Max follows the screen)</span>
     <div class="tabs" id="setCap"></div>
     <span class="fdim">sharpness (Low is softer but lightest; High is sharpest on high-res screens)</span>
@@ -289,7 +291,9 @@
     • Each act has its own monsters. Elite packs glow with a coloured ring and carry 1–3 affixes (more in later acts; always 3 in the Endless Depths): Fast (moves and attacks faster), Shielded (a bubble that makes it immune for a moment), Vampiric (heals when it hits you), Explodes on Death (its corpse blasts a moment later: step away), Molten (leaves a trail of fire), Teleporter (blinks next to you), Waller (raises stone walls), Frozen Pulse (frost strikes on you that slow), Summoner (calls in minions), Reflects Damage (part of your hits comes back), Storm-Charged (three lightning strikes around you that can Shock you) and Venomous (poison hits, and a poison cloud where you stand). Marked circles on the ground are where a strike lands: dodge out.<br>
     • Find the purple portal and press Descend.<br>
     • 💨 Dodge (right thumb, next to the skills; 🧪 sits right above it) dashes you out of danger, untouchable for a moment.<br>
-    • Keyboard: WASD to move, J/1–5 skills, Space/Shift dodge, Q potion, I bag, K skills, E trade/descend.
+    • Keyboard: WASD to move, J/1–5 skills, Space/Shift dodge, Q potion, I bag, K skills, E trade/descend.<br>
+    <b style="color:var(--gold)">Credits</b><br>
+    • Painted hero art from the free game Flare (flarerpg.org) by Clint Bellanger, Justin Jacobs and the Flare team, shared under CC-BY-SA 3.0; changed for Emberdeep (spear, sizes) and shared under the same license (art/hero/CREDITS.txt).
   </div>
   <div class="btn wide" id="fsBtn">⛶ Fullscreen</div>
   <div class="btn wide" id="townBtn">🏠 Return to Town</div>
@@ -336,6 +340,7 @@
 <script src="js/light.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/hero.js"></script>
+<script src="js/heroart.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/sfx.js"></script>
 <script src="js/music.js"></script>

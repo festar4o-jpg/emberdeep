@@ -8,13 +8,16 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
 // Bright, coloured particles glow; dark or dull ones (blood, dust, bone) don't.
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
 // Projectiles: a short fading tail and a hot core.
-function drawProjectiles(){if(!G.proj.length)return;drawArrows();ctx.globalCompositeOperation='lighter';
-  for(const q of G.proj){if(q.arrow)continue;projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2,vy=q.vy*TILT;upr(q.x,q.y); // render.js: a round glow, not squashed by the angled floor
-    for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,q.y-vy*0.014*k-r,r*2,r*2);}
-    ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,q.y-R,R*2,R*2);ctx.restore();}
+// v1.0.139: with the angled camera, shots fly at chest height (PROJ_LIFT above the floor, from the hands of the upright
+// figures) instead of along the floor; where they hit is unchanged.
+const projLift=()=>TILT!==1?30:0;
+function drawProjectiles(){if(!G.proj.length)return;drawArrows();ctx.globalCompositeOperation='lighter';const H=projLift();
+  for(const q of G.proj){if(q.arrow)continue;projTrail(q);const S=sparkSprite(rgbOf(q.col)),R=q.r*3.2,vy=q.vy*TILT,y=q.y-H;upr(q.x,q.y); // render.js: a round glow, not squashed by the angled floor
+    for(let k=3;k>=1;k--){const r=R*(1-k*0.2);ctx.globalAlpha=0.35-k*0.07;ctx.drawImage(S,q.x-q.vx*0.014*k-r,y-vy*0.014*k-r,r*2,r*2);}
+    ctx.globalAlpha=1;ctx.drawImage(S,q.x-R,y-R,R*2,R*2);ctx.restore();}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // v1.0.127: the Ranger's arrows: a wooden shaft along the flight, an iron head and pale fletching, a faint streak.
-function drawArrows(){for(const q of G.proj){if(!q.arrow)continue;const a=Math.atan2(q.vy*TILT,q.vx);ctx.save();ctx.translate(q.x,q.y);if(TILT!==1)ctx.scale(1,1/TILT);ctx.rotate(a); // the angle as seen on screen, the shape unsquashed
+function drawArrows(){for(const q of G.proj){if(!q.arrow)continue;const a=Math.atan2(q.vy*TILT,q.vx);ctx.save();ctx.translate(q.x,q.y);if(TILT!==1)ctx.scale(1,1/TILT);ctx.translate(0,-projLift());ctx.rotate(a); // the angle as seen on screen, the shape unsquashed
   ctx.globalAlpha=0.25;ctx.strokeStyle='#e8dcc4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(-14,0);ctx.stroke();ctx.globalAlpha=1;
   ctx.strokeStyle='#8a6a42';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(5,0);ctx.stroke();
   ctx.fillStyle='#cfd6dc';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(3,-2.6);ctx.lineTo(3,2.6);ctx.closePath();ctx.fill();
@@ -149,7 +152,7 @@ function elementOf(col){const [r,g,b]=rgbOf(col).split(',').map(Number);if(r>200
 const TRAIL={fire:[['#ffb040',0.7,1],['#2a1a12',0.35,0]],ice:[['#dff4ff',0.5,1]],chaos:[['#c48bff',0.6,1],['#1a0a24',0.25,0]],nature:[['#a8e060',0.45,1]],storm:[['#bff4ff',0.55,1]]};
 // Projectiles shed embers, frost glints or wisps as they fly.
 function projTrail(q){const el=q._el!==undefined?q._el:(q._el=elementOf(q.col));const T=el&&TRAIL[el];if(!T)return;
-  for(const [col,ch,hot] of T)if(fxRnd()<ch){const a=fr(0,TAU),v=fr(5,30);part(q.x+fr(-q.r,q.r)*0.6,q.y+fr(-q.r,q.r)*0.6,Math.cos(a)*v-q.vx*0.08,Math.sin(a)*v-q.vy*0.08,hot?fr(0.2,0.45):fr(0.5,0.9),col,hot?fr(1.2,2.4):fr(5,9),hot?null:{soft:1});}}
+  for(const [col,ch,hot] of T)if(fxRnd()<ch){const a=fr(0,TAU),v=fr(5,30);part(q.x+fr(-q.r,q.r)*0.6,q.y-projLift()/TILT+fr(-q.r,q.r)*0.6,Math.cos(a)*v-q.vx*0.08,Math.sin(a)*v-q.vy*0.08,hot?fr(0.2,0.45):fr(0.5,0.9),col,hot?fr(1.2,2.4):fr(5,9),hot?null:{soft:1});}}
 // Explosion: a white-hot flash, a swelling fireball, a ring of smoke and flying embers (and light, see light.js).
 function fxExplosion(x,y,r,col){col=col||'#ff8a2a';playSfx('boom');G.fx.push({type:'boom',x,y,r,t:0,max:0.55,col});
   for(let k=0;k<22;k++){const a=fr(0,TAU),v=fr(100,320);part(x,y,Math.cos(a)*v,Math.sin(a)*v,fr(0.3,0.7),k%2?col:'#ffe0a0',fr(1.5,3));}dustPuff(x,y,r*0.5,6,'#3a2a20');}

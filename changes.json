@@ -1,6 +1,15 @@
 {
-  "latest": "1.0.138",
+  "latest": "1.0.139",
   "notes": [
+    {
+      "v": "1.0.139",
+      "t": [
+        "New painted hero: detailed art for all three classes with real swing, cast and bow-shot animations, running, getting hit and falling (Settings > Hero: Painted or Drawn)",
+        "Your armour shows: robe, leather, chain or plate, plus your helm, gloves, boots and shield type; every weapon type has its own look, with a steel-tipped spear and a heavy crossbow",
+        "Spells and arrows now fly at chest height from the hands, not along the floor",
+        "The hero pictures download once (about 2 MB for one hero) and then work offline; art from the free game Flare (credits under How to play)"
+      ]
+    },
     {
       "v": "1.0.138",
       "t": [
