@@ -45,6 +45,8 @@ function gatherLights(Lt){
     if(f.type==='ring')add(f.x,f.y,(f.r1||60)+40,0.75*k,rgbOf(f.col),0.3*k);
     else if(f.type==='arc')add(f.x+Math.cos(f.a)*f.r*0.6,f.y+Math.sin(f.a)*f.r*0.6,f.r+40,0.45*k,rgbOf(f.col),0.18*k);
     else if(f.type==='boom')add(f.x,f.y,f.r*3,0.95*k,rgbOf(f.col),0.55*k);
+    else if(f.type==='pillar')add(f.x,f.y,f.w*3+60,0.8*k,rgbOf(f.col),0.4*k); // fx.js: boss and elite pillars light the room
+    else if(f.type==='hit'&&f.r>=18)add(f.x,f.y,f.r*4,0.5*k,rgbOf(f.col),0.2*k); // big impacts flash light
     else if(f.type==='cracks')add(f.x,f.y,f.r*1.6,0.5*k,rgbOf(f.col),0.25*k);
     else if(f.type==='bolt'){for(let n=0;n<f.pts.length;n+=2)add(f.pts[n].x,f.pts[n].y,90,0.85*k,'190,225,255',0.4*k);}
     else if(f.type==='lflash')add(f.x+Math.cos(f.a)*f.len/2,f.y+Math.sin(f.a)*f.len/2,f.len*0.6,0.7*k,rgbOf(f.col),0.3*k);
@@ -62,6 +64,17 @@ function gatherLights(Lt){
 function vignette(){const k=CW+'x'+CH;if(VIG&&VIG_K===k)return VIG;VIG_K=k;const w=Math.ceil(CW/4),h=Math.ceil(CH/4);VIG=mkCanvas(w,h);const x=VIG.getContext('2d');
   const g=x.createRadialGradient(w/2,h/2,Math.min(w,h)*0.35,w/2,h/2,Math.hypot(w,h)/2);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.6)');x.fillStyle=g;x.fillRect(0,0,w,h);return VIG;}
 // Called by render() in screen space (ctx transform = DPR).
+// v1.0.151: the light pools lie flat on the floor, so a figure standing in one would be lit at the feet and fade into
+// the dark above. Each standing figure (you and every monster on screen) is lit up to its head as brightly as the
+// floor under its feet (i), and takes a little of the colour of its strongest coloured light (rgb, g).
+// The light at a point: each source's falloff, (1 - d/r)^1.5 like the falloff sprite.
+function lightAt(L,x,y){let i=0,g=0,rgb=null;for(const l of L){const d=Math.hypot(l.x-x,l.y-y); /* pools are circles on the floor */if(d>=l.r)continue;const f=Math.pow(1-d/l.r,1.5);
+  i+=clamp(l.i,0,1)*f;if(l.rgb&&l.g*f>g){g=l.g*f;rgb=l.rgb;}}return {i:clamp(i,0,1),g,rgb};}
+function litFigures(L){const out=[],add=(x,y,h)=>{const sx=(x-G.cam.x)*Z+CW/2,sy=(y-G.cam.y)*Z*TILT+CH/2;if(sx<-80||sx>CW+80||sy<-40||sy>CH+h*Z+40)return; // on screen only
+    const a=lightAt(L,x,y);if(a.i>0.05)out.push({x,y,h,...a});};
+  if(G.p&&!G.p.dead)add(G.p.x,G.p.y,56);
+  for(const e of G.enemies)if(!e.dead&&!e.hidden)add(e.x,e.y,e._top!=null?e.y-e._top:e.r*2);
+  return out;}
 function drawLighting(Lt){
   const w=Math.ceil(CW*LIGHT_RES),h=Math.ceil(CH*LIGHT_RES);
   if(!LCV){LCV=mkCanvas(w,h);LX=LCV.getContext('2d');}else if(LCV.width!==w||LCV.height!==h){LCV.width=w;LCV.height=h;}
@@ -69,10 +82,13 @@ function drawLighting(Lt){
   LX.setTransform(1,0,0,1,0,0);LX.globalCompositeOperation='source-over';LX.globalAlpha=1;LX.clearRect(0,0,w,h);LX.fillStyle=Lt.dark;LX.fillRect(0,0,w,h);
   LX.globalCompositeOperation='destination-out';
   for(const l of L){const r=l.r*k;LX.globalAlpha=clamp(l.i,0,1);LX.drawImage(S,(l.x*Z+ox)*LIGHT_RES-r,(l.y*zy+oy)*LIGHT_RES-r*TILT,r*2,r*2*TILT);}
+  const F=TILT!==1?litFigures(L):[]; // v1.0.151: standing figures are lit up to their heads
+  for(const f of F){LX.globalAlpha=f.i*0.85;const fx=(f.x*Z+ox)*LIGHT_RES,fy=(f.y*zy+oy)*LIGHT_RES,hw=Math.max(16,f.h*0.38)*k,hh=f.h*0.7*k;LX.drawImage(S,fx-hw,fy-f.h*0.5*k-hh,hw*2,hh*2);}
   LX.globalCompositeOperation='source-over';LX.globalAlpha=1;LX.drawImage(vignette(),0,0,w,h); // the vignette rides along in the light map: one full-screen draw
   ctx.drawImage(LCV,0,0,w,h,0,0,w/LIGHT_RES,h/LIGHT_RES);
   ctx.globalCompositeOperation='lighter';let n=0;
   for(const l of L){if(!(l.g>0)||!l.rgb||n++>=GLOW_MAX)continue;const r=l.r*Z*0.55;ctx.globalAlpha=clamp(l.g,0,1);ctx.drawImage(falloff(l.rgb),l.x*Z+ox-r,l.y*zy+oy-r*TILT,r*2,r*2*TILT);}
+  for(const f of F){if(!f.rgb||!(f.g>0.03))continue;const hw=Math.max(16,f.h*0.4)*Z,hh=f.h*0.6*Z,x=f.x*Z+ox,y=f.y*zy+oy-f.h*0.5*Z;ctx.globalAlpha=clamp(f.g*0.35,0,0.35);ctx.drawImage(falloff(f.rgb),x-hw,y-hh,hw*2,hh*2);} // tinted by the light they stand in
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
 }
 // ---------- soft drop shadows ----------

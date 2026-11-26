@@ -41,7 +41,7 @@ function demonBlast(e){G.blasting=true;try{aoe(e.x,e.y,80,G.stats.explode/100,{s
   burst(e.x,e.y,16,'#ff3a2a',200);G.fx.push({type:'ring',x:e.x,y:e.y,r0:8,r1:85,t:0,max:0.25,col:'#ff4a2a'});}
 function aggroPack(e){if(e.aggro)return;for(const o of G.enemies)if(o.pack===e.pack)o.aggro=true;e.aggro=true;}
 function killEnemy(e){
-  e.dead=true;if(e.type!=='boss')playSfx(['bone','ice','chitin'].includes(matOf(e))?'shatter':'kill');stainFloor(e);addCorpse(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y,e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);
+  e.dead=true;if(e.type!=='boss')playSfx(['bone','ice','chitin'].includes(matOf(e))?'shatter':'kill');stainFloor(e);addCorpse(e);/* fx.js: a stain painted into the map */G.char.kills=(G.char.kills||0)+1;burst(e.x,e.y-bodyLift(e),e.type==='boss'?60:14,e.type==='boss'?'#ff5a3a':'#5a1a1a',e.type==='boss'?320:160);deathFx(e); /* fx.js: from the body, and its spirit rises */
   const T0=ETYPES[e.type];
   if(T0.cloud)addEHaz(e.x,e.y,70,4,e.dmg*0.55,'poison'); // spore toads burst into a poison cloud
   affixDeath(e);
@@ -132,11 +132,11 @@ function slowPlayer(amt,t){const p=G.p;if(hasKs('unwavering'))return; /* passive
 const HAZ_RES={fire:'fres',frost:'cres',poison:'pres'},resMul=k=>k?1-resOf(G.stats,k)/100:1;
 function addEHaz(x,y,r,t,dps,kind){if(G.ehaz.length>70)G.ehaz.shift();G.ehaz.push({x,y,r,t,max:t,dps,kind});}
 function healPlayer(v,silent){const p=G.p;if(p.dead)return;const before=p.hp;p.hp=Math.min(G.stats.life,p.hp+v);if(!silent&&p.hp-before>=1)floatText(p.x,p.y-p.r-20,'+'+Math.round(p.hp-before),'#5f5',false);}
-function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({sk:G.sk,x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home||o.arrow&&hasPw('heartseek'),arrow:o.arrow,bleed:o.bleed,sx:p.x,sy:p.y});} // uniques.js: Heartseeker // arrow: drawn as an arrow (fx.js)
+function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;castFlash(p.x+Math.cos(ang)*18,p.y+Math.sin(ang)*18,col,o.arrow?8:12); /* fx.js */G.proj.push({sk:G.sk,x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home||o.arrow&&hasPw('heartseek'),arrow:o.arrow,bleed:o.bleed,sx:p.x,sy:p.y});} // uniques.js: Heartseeker // arrow: drawn as an arrow (fx.js)
 function enemyShoot(e,ang,spd,col,dmg,r,extra){G.proj.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r||5,col,life:2.5,from:'e',dmg,src:e},extra));}
 function eShoot(e,ang){e._lunge=G.time; // sprites.js: recoil as the shot leaves
 const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
-function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
+function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);spellImpact(x,y,'#ff9a3a',Math.min(2.6,rad/40)); /* fx.js: the fireball, at body height */aoe(x,y,rad,mult,{});burst(x,y,22,'#ff8a2a',220);G.fx.push({type:'ring',x,y,r0:8,r1:rad,t:0,max:0.25,col:'#ffaa44'});G.shake=Math.max(G.shake,4);}
 
 function gainXp(v){
   const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
@@ -298,8 +298,8 @@ function update(dt){
   for(const q of G.proj){
     if(q.home)homeIn(q,dt);
     q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
-    if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
-    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult*arrowMul(q,e)*pointBlankMul(q),{weapon:q.weapon,bleed:q.bleed});if(q.arrow)arrowAfter(q,e); /* uniques.js: Falconer's Hood, Stormstring */ /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
+    if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.from==='p'&&!q.arrow&&!q.explode)spellImpact(q.x-q.vx*dt,q.y-q.vy*dt,q.col,0.6); /* fx.js: a fizzle */if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
+    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{if(!q.arrow)spellImpact(q.x,q.y,q.col,q.r>=10?1.3:1); /* fx.js */hitEnemy(e,q.mult*arrowMul(q,e)*pointBlankMul(q),{weapon:q.weapon,bleed:q.bleed});if(q.arrow)arrowAfter(q,e); /* uniques.js: Falconer's Hood, Stormstring */ /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
         if(q.pierce>0){q.pierce--;q.life=life;hit=false;(q.hits||(q.hits=new Set())).add(e);continue;}}break;}}
       if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);G.sk=null;}
     else if(!p.dead&&Math.hypot(p.x-q.x,p.y-q.y)<p.r+q.r){q.life=0;if(dmgPlayer(q.dmg,q.src)&&q.slow)slowPlayer(q.slow,1.6);if(q.r>=7)burst(q.x,q.y,8,q.col,120);}

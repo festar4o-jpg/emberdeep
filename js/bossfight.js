@@ -54,6 +54,7 @@ function bossGate(e){if(e.type!=='boss'||e.dead)return;
   const th=phaseAt(e)[e.phase];if(th!=null&&e.hp<e.maxHp*th){e.hp=e.maxHp*th;bossTransition(e);}}
 function bossTransition(e){e.phase++;e.transT=TRANS_T;e.hpLock=e.hp;e.busy=0;e.wind=0;e.tele=null;e.act=null;e.dash=0;e.punishT=0;e.staggerT=0;e.stun=0;e.stagger=0;
   const col=ACTS[e.kind||0].col,p=G.p;G.shake=Math.max(G.shake,14);G.hitStop=0.1;playSfx('phase');
+  G.fx.push({type:'pillar',x:e.x,y:e.y,t:0,max:1.1,col,w:70,h:420}); // fx.js: a column of light bursts up
   G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:240,t:0,max:0.7,col});G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:150,t:0,max:0.45,col:'#ffffff'});
   const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<170&&d>0){const k=(170-d)*0.8;moveEnt(p,(p.x-e.x)/d*k,(p.y-e.y)/d*k);}
   G.phaseBanner={text:`Phase ${ROMAN_PH[e.phase]}`,sub:(bossDef(e).phases[e.phase-1]||{}).name||'',t:G.time,col};}

@@ -1,6 +1,28 @@
 {
-  "latest": "1.0.148",
+  "latest": "1.0.151",
   "notes": [
+    {
+      "v": "1.0.151",
+      "t": [
+        "Lighting: you and the monsters are lit up to your heads by the light you stand in, instead of fading into the dark above the feet",
+        "Figures take a little of the light's colour: warm by torches, cold by frost, red by lava"
+      ]
+    },
+    {
+      "v": "1.0.150",
+      "t": [
+        "Monster deaths: a burst from the body and a wisp of light rising as they fall; elites flare in their colour with a column of light, champions in gold",
+        "Bosses rise into the fight, change phase and die in tall columns of light that light up the room"
+      ]
+    },
+    {
+      "v": "1.0.149",
+      "t": [
+        "Spells and arrows flash at the hand as they leave it",
+        "Spells burst in their own colour where they hit (fire, frost, lightning...), at the monster's body, and fizzle against walls",
+        "Novas and shockwaves glow as they spread, with sparks riding the edge; explosions get a fireball"
+      ]
+    },
     {
       "v": "1.0.148",
       "t": [

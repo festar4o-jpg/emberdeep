@@ -7,10 +7,36 @@ function sparkSprite(rgb){let c=SPARK[rgb];if(c)return c;const S=48;c=mkCanvas(S
   g.addColorStop(0,'rgba(255,255,245,1)');g.addColorStop(0.18,`rgba(${rgb},0.95)`);g.addColorStop(0.45,`rgba(${rgb},0.35)`);g.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=g;x.fillRect(0,0,S,S);return SPARK[rgb]=c;}
 // Bright, coloured particles glow; dark or dull ones (blood, dust, bone) don't.
 function isHot(col){let h=HOT[col];if(h!=null)return h;const [r,g,b]=rgbOf(col).split(',').map(Number),mx=Math.max(r,g,b),mn=Math.min(r,g,b);return HOT[col]=mx>=235||(mx>=200&&mx-mn>=90);}
+// v1.0.149: spells. A flash at the hand as a shot leaves (castFlash), and where a spell lands a big flash and sparks in
+// its own colour at body height (spellImpact: k scales it; explosions use it for their fireball). Both reuse the
+// 'hit' flash below; with the top-down camera they stay on the floor (projLift 0).
+function castFlash(x,y,col,r){G.fx.push({type:'hit',x,y:y-projLift()/TILT,a:0,t:0,max:0.1,r,col,soft:1});}
+function spellImpact(x,y,col,k){const ly=y-projLift()/TILT;G.fx.push({type:'hit',x,y:ly,a:fr(0,TAU),t:0,max:0.18,r:20*k,col});
+  for(let i=0;i<Math.ceil(8*k);i++){const b=fr(0,TAU),v=fr(60,200)*k;part(x,ly,Math.cos(b)*v,Math.sin(b)*v,fr(0.2,0.45),col,fr(1.4,2.8));}}
+// v1.0.150: deaths and bosses. A dying monster's spirit rises from its body as a fading wisp of light: faint for
+// common monsters, brighter in the elite's colour (and a shockwave), gold for champions; small bursting things (BURSTS)
+// already pop. Bosses rise, change phase and die in a column of light (pillar: upright, widening then fading).
+function deathFx(e){if(e.hidden||BURSTS[e.type]||e.type==='boss')return;const y=e.y-bodyLift(e),champ=e.su||e.zb,elite=e.elite||champ;
+  const col=champ?'#ffd04a':e.elite?(e.affs&&e.affs.length?AFFIXES[e.affs[0]].col:'#8fa8ff'):'#c8d4ff';
+  G.fx.push({type:'wisp',x:e.x,y,t:0,max:elite?1.2:0.8,col,r:elite?16:9,a:elite?0.9:0.45});
+  if(elite){G.fx.push({type:'ring',x:e.x,y:e.y,r0:e.r,r1:e.r*4,t:0,max:0.5,col});G.fx.push({type:'pillar',x:e.x,y:e.y,t:0,max:0.9,col,w:30,h:200});}}
+function drawWisp(f,t){const k=1-t,y=f.y-60*t*(2-t),r=f.r*(1-0.5*t);upr(f.x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=f.a*k;
+  ctx.drawImage(sparkSprite(rgbOf(f.col)),f.x+Math.sin(t*9+f.x)*4-r,y-r,r*2,r*2);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.restore();}
+function drawPillar(f,t){const k=t<0.15?t/0.15:1-(t-0.15)/0.85,W=f.w*(0.4+0.6*Math.min(1,t/0.2)),H=f.h*(0.6+0.4*Math.min(1,t/0.25));upr(f.x,f.y);
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.75*k;ctx.drawImage(beamSprite(rgbOf(f.col)),f.x-W/2,f.y-H,W,H);
+  ctx.globalAlpha=0.5*k;ctx.drawImage(beamSprite('255,255,255'),f.x-W/8,f.y-H*0.95,W/4,H*0.95);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.restore();}
+// Shockwave rings (novas, slams, bursts) on the floor. v1.0.149: a soft glow fills the ring as it spreads, a bright
+// edge, and sparks ride the rim; a big frost ring also cracks into ice (drawIceRing).
+function drawRing(f,t){const R=f.r0+(f.r1-f.r0)*t,k=1-t,rgb=rgbOf(f.col);if(elementOf(f.col)==='ice'&&f.r1>100)drawIceRing(f,t,R);
+  ctx.globalCompositeOperation='lighter';if(R>4){ctx.globalAlpha=k*k*0.3;ctx.drawImage(falloff(rgb),f.x-R,f.y-R,R*2,R*2);} // light.js: the glow inside
+  ctx.strokeStyle=f.col;ctx.beginPath();ctx.arc(f.x,f.y,R,0,TAU);ctx.globalAlpha=k*0.35;ctx.lineWidth=12*k+2;ctx.stroke();ctx.globalAlpha=k;ctx.lineWidth=3;ctx.stroke();
+  if(R>20){const S=sparkSprite(rgb),n=Math.min(14,Math.round(R/12)),off=(f.x+f.y)*0.01+t*1.5,s=6*k+2;ctx.globalAlpha=k; // sparks along the rim
+    for(let i=0;i<n;i++){const a=off+i/n*TAU;ctx.drawImage(S,f.x+Math.cos(a)*R-s,f.y+Math.sin(a)*R-s,s*2,s*2);}}
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 // v1.0.148: an impact flash where a blow lands: a hot burst and two streaks across the blow, gone in a tenth of a second.
 function drawHitFlash(f,t){const k=1-t,S=sparkSprite(rgbOf(f.col)),R=f.r*(0.6+0.6*t);upr(f.x,f.y);ctx.globalCompositeOperation='lighter';
   ctx.globalAlpha=k;ctx.drawImage(S,f.x-R,f.y-R,R*2,R*2);ctx.translate(f.x,f.y);ctx.strokeStyle=f.col;ctx.lineCap='round';
-  for(const s of [f.a+Math.PI/2,f.a+0.5]){const L=f.r*(0.8+0.9*t);ctx.globalAlpha=k*0.9;ctx.lineWidth=2.6*k+0.6;ctx.beginPath();ctx.moveTo(-Math.cos(s)*L,-Math.sin(s)*L*0.8);ctx.lineTo(Math.cos(s)*L,Math.sin(s)*L*0.8);ctx.stroke();}
+  if(!f.soft)for(const s of [f.a+Math.PI/2,f.a+0.5]){const L=f.r*(0.8+0.9*t);ctx.globalAlpha=k*0.9;ctx.lineWidth=2.6*k+0.6;ctx.beginPath();ctx.moveTo(-Math.cos(s)*L,-Math.sin(s)*L*0.8);ctx.lineTo(Math.cos(s)*L,Math.sin(s)*L*0.8);ctx.stroke();}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.restore();}
 // v1.0.148: the weapon's trail. With the angled camera it sweeps at weapon height (SWING_LIFT above the floor) and
 // grows across the swing (dir) in the first 40% of its life: a bright leading edge, a tail that thins and fades.
