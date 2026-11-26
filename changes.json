@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.139",
+  "latest": "1.0.140",
   "notes": [
+    {
+      "v": "1.0.140",
+      "t": [
+        "Painted hero: half the size it was (now a little smaller than the old hero; it was far too big for the world), standing on the right spot, and the running steps now match how far you move instead of a fast blur"
+      ]
+    },
     {
       "v": "1.0.139",
       "t": [

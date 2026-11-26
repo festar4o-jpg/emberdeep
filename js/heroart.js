@@ -9,7 +9,13 @@
 // downloads once. Until every layer of the hero's look has loaded, the last complete look is shown, and before any
 // look has loaded, the drawn hero (hero.js). Settings › Hero: Painted or Drawn. Gameplay never changes.
 const HA={idx:null,want:false,img:{},cur:null,dieT:0};
-const HA_DRAW=0.9; // world px per art px: the figure about 70 tall, the drawn hero's height plus a little
+// World px per art px. The figure is about 120 art px from soles to head (Flare's HD art), so 0.45 makes it about 54 tall,
+// a little under the drawn hero's 57 (v1.0.139 drew it at 0.9: about 108 tall, twice the old hero, far too big).
+const HA_DRAW=0.45;
+const HA_LIFT=6; // art px: Flare's anchor lies a little below the middle of the feet; lift the figure so they stand on the hero's spot
+// v1.0.140: one run cycle (8 frames) per 88 px moved: at full speed (165 px/s) about the art's own 0.53 s stride; walking
+// slowly slows the legs with it. (It was tied to the drawn hero's 34 px stride: five strides a second, a blur.)
+const HA_STRIDE=88;
 const HA_BASE='art/hero/';
 // The draw order per facing (Flare engine/hero_layers.txt), facings 0..7 = SW, W, NW, N, NE, E, SE, S.
 const HA_ORDER=[['main','feet','legs','hands','chest','off','head'],['main','feet','legs','hands','chest','off','head'],['main','feet','legs','hands','chest','off','head'],
@@ -56,14 +62,14 @@ function drawHeroArt(p,C2,W,A,u,spin,ang,fx,fy,alpha){if(!haOn())return false;ha
       fi=Math.min(HA.idx.anims[an].n-1,Math.floor(u*HA.idx.anims[an].n));}
     else if(spin){an='swing';fi=Math.floor(G.time*16)%HA.idx.anims.swing.n;}
     else if(p.hurt>0){an='hit';fi=p.hurt>0.07?0:1;}
-    else if(p._hs>0){an='run';fi=Math.floor((p._hw||0)*HA.idx.anims.run.n)%HA.idx.anims.run.n;}
+    else if(p._hs>0){an='run';fi=Math.floor((p._ha||0)*HA.idx.anims.run.n)%HA.idx.anims.run.n;}
     else fi=haFrame('stance',G.time);}
-  const D=HA_DRAW;ctx.save();if(alpha<1)ctx.globalAlpha=alpha;
+  const D=HA_DRAW;fy-=HA_LIFT*D;ctx.save();if(alpha<1)ctx.globalAlpha=alpha;
   for(const slot of HA_ORDER[d]){const n=look.L[slot];if(!n)continue;const Ly=HA.idx.layers[n];
     if(slot==='main'&&look.xbow){if(an==='die')continue;const g=Ly.xb&&Ly.xb[an]&&Ly.xb[an][d]&&Ly.xb[an][d][fi];if(g)haCrossbow(g,fx,fy,D,look.xbow==='repeater');continue;}
     const fr=Ly.a[an]&&Ly.a[an][d]&&Ly.a[an][d][fi];if(!fr)continue;
     ctx.drawImage(HA.img[n],fr[0],fr[1],fr[2],fr[3],fx-fr[4]*D,fy-fr[5]*D,fr[2]*D,fr[3]*D);}
-  if(playerFrozen()){ctx.fillStyle='rgba(150,210,255,.30)';ctx.strokeStyle='rgba(225,245,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(fx,fy-32,17,36,0,0,TAU);ctx.fill();ctx.stroke();} // ailments.js
+  if(playerFrozen()){ctx.fillStyle='rgba(150,210,255,.30)';ctx.strokeStyle='rgba(225,245,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(fx,fy-36*D/0.9,19*D/0.9,40*D/0.9,0,0,TAU);ctx.fill();ctx.stroke();} // ailments.js
   ctx.restore();return true;}
 // A heavy crossbow at the bow hand, its stock running back to the chin: g = [grip x, grip y, bow line x, y] (art px from the feet).
 function haCrossbow(g,fx,fy,D,rep){const gx=fx+g[0]*D,gy=fy+g[1]*D,hx=fx,hy=fy-59*D;let sx=hx-gx,sy=hy-gy;const dl=Math.hypot(sx,sy)||1;sx/=dl;sy/=dl;

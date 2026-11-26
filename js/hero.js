@@ -96,7 +96,7 @@ function drawHero25(){const p=G.p,C2=G.char,L=HERO_LOOK[C2.cls]||HERO_LOOK.warde
   const ang=spin?G.time*20:p.face,c=Math.cos(ang),s=Math.sin(ang);
   // walking: a stride phase from the distance moved; standing still: frame -1 (feet together) and a slow breath
   const dx=p.x-(p._hx??p.x),dy=p.y-(p._hy??p.y),mv=Math.hypot(dx,dy);p._hx=p.x;p._hy=p.y;
-  if(mv>0.05){p._hw=((p._hw||0)+mv/34)%1;p._hs=0.25;}else p._hs=Math.max(0,(p._hs||0)-1/60);
+  if(mv>0.05){p._hw=((p._hw||0)+mv/34)%1;p._ha=((p._ha||0)+mv/HA_STRIDE)%1;p._hs=0.25;}else p._hs=Math.max(0,(p._hs||0)-1/60);
   const f=p._hs>0&&!p.dead?Math.floor(p._hw*HERO_FR)%HERO_FR:-1;
   const d=((Math.round(ang/(Math.PI/4))%8)+8)%8,body=heroBody(C2.cls,d,f);
   const push=(A?S*4:0)-(p.hurt>0?p.hurt*10:0),ox=c*push,oy=s*push*TILT; // lean into a blow, rock back when hit
