@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.132",
+  "latest": "1.0.133",
   "notes": [
+    {
+      "v": "1.0.133",
+      "t": [
+        "8 Ranger uniques: one from each act boss (Thornspine Longbow, The Wolfmother's Fang, Quiver of Endless Rain, Stormstring, Heartseeker) and Snaretooth Grips, Falconer's Hood, Galeforce Treads",
+        "Ranger set: Trappings of the Wild Hunt (bow, quiver, cloak, boots); the full set makes your wolf and hawk 60% stronger and gives Focus with their hits"
+      ]
+    },
     {
       "v": "1.0.132",
       "t": [

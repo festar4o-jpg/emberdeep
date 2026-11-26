@@ -72,6 +72,16 @@ const UPOW={
   plagueSpread:{t:`+${PLAGUE_CH}% chance to Poison, and a poisoned enemy that dies passes its poison to every enemy nearby`,d:()=>`Spreads to enemies within ${PLAGUE_R / TILE | 0} tiles`},
   coldBite:{t:`Your hits Chill enemies (${Math.round(BITE_SLOW*100)}% slower), and Chilled or Frozen enemies take ${Math.round((BITE_MUL-1)*100)}% more damage from you`,d:()=>`Chilled for 2s (${Math.round(BITE_SLOW*100)}% slower) · +${Math.round((BITE_MUL-1)*100)}% damage to them · this Chill never builds a Freeze on its own`},
   emberStrike:{t:`Every ${EMBER_EVERY}th hit erupts in fire around its target`,d:()=>pwDet(EMBER_MULT,`to enemies around the target · ${G.p&&G.p.emberN||0}/${EMBER_EVERY}`)},
+  // v1.0.133: the Ranger's (hooks in ranger.js, skills.js Arrow Shot, game.js shoot/projectiles/tryDodge, subclasses.js arrowMul)
+  ricochet:{cls:'ranger',t:"Arrow Shot's arrows ricochet to another enemy nearby",d:()=>pwDet(0.6*(1+0.12*(pwRank(0)-1)),'to the next enemy within 250')},
+  wolfFang:{cls:'ranger',t:"Your wolf's bites make enemies Bleed, and it has 30% more Life",d:()=>`Bleeds for 80% of each bite over 3s · +30% wolf Life`},
+  rainFollow:{cls:'ranger',t:'Rain of Arrows follows you, and lasts 1s longer',d:()=>`${RAIN_T+1}s of volleys around you, each `+pwDet(0.6+0.07*(pwRank(4)-1),'')},
+  trapChain:{cls:'ranger',t:'A trap that springs sets off your other traps within 250',d:()=>`Up to ${TRAP_MAX*2} traps at once with Cluster Traps, all in one go`},
+  arrowMark:{cls:'ranger',t:'Your arrows Mark enemies for 2s: Marked enemies take 10% more damage',d:()=>'+10% damage taken for 2s (a Hawk\'s Mark is stronger and wins)'},
+  dodgeCaltrops:{cls:'ranger',t:'Your dodge leaves caltrops behind',d:()=>pwDet(0.4,'twice a second for 3s, and 50% slower enemies')},
+  thunderShot:{cls:'ranger',t:'Every 5th arrow that hits calls down lightning on its target',d:()=>pwDet(2,`· ${G.p&&G.p.tsN||0}/5 arrows`)},
+  heartseek:{cls:'ranger',t:'Your arrows curve toward enemies and deal 40% more damage to enemies above 90% Life',d:()=>'+40% damage while the enemy has over 90% Life'},
+  wildHunt:{cls:'ranger',t:'Your wolf and hawk deal 60% more damage, and you gain 3 Focus whenever one of them hits',d:()=>'+60% pet damage · +3 Focus a pet hit'},
   kingsPyre:{t:'Each kill stokes the Pyre: +3% damage per stack, up to 10 stacks; they fade 4s after your last kill',d:()=>`Up to +30% damage · now ${G.p&&G.p.pyreT>0?G.p.pyreN||0:0} stacks (+${3*(G.p&&G.p.pyreT>0?G.p.pyreN||0:0)}%)`}
 };
 // Combos: a unique and a Runebind (or set) with matching powers do something extra when both are worn.
@@ -144,7 +154,16 @@ const UNIQUES={
   tyrantstride:{name:"Tyrant's Stride",type:'boots',cls:null,act:2,boss:1,pw:['dodgeFury']},
   plaguelocket:{name:"Plaguebearer's Locket",type:'amulet',cls:null,act:3,boss:2,pw:['plagueSpread']},
   rimeseal:{name:'Rimebound Seal',type:'ring',cls:null,act:4,boss:3,pw:['coldBite']},
-  cindergrasp:{name:'Grasp of the Cinder King',type:'gloves',cls:null,act:5,boss:4,pw:['emberStrike']}
+  cindergrasp:{name:'Grasp of the Cinder King',type:'gloves',cls:null,act:5,boss:4,pw:['emberStrike']},
+  // v1.0.133: the Ranger's: one for each act boss, three that drop anywhere
+  thornspine:{name:'Thornspine Longbow',type:'weapon',wt:'longbow',cls:'ranger',act:1,boss:0,pw:['ricochet']},
+  wolfmother:{name:"The Wolfmother's Fang",type:'amulet',cls:'ranger',act:2,boss:1,pw:['wolfFang']},
+  endlessrain:{name:'Quiver of Endless Rain',type:'quiver',cls:'ranger',act:3,boss:2,pw:['rainFollow']},
+  stormstring:{name:'Stormstring',type:'weapon',wt:'recurve',cls:'ranger',act:4,boss:3,strong:1,pw:['thunderShot']},
+  heartseeker:{name:'Heartseeker',type:'weapon',wt:'greatbow',cls:'ranger',act:5,boss:4,strong:1,pw:['heartseek']},
+  snaretooth:{name:'Snaretooth Grips',type:'gloves',cls:'ranger',act:2,pw:['trapChain']},
+  falconer:{name:"Falconer's Hood",type:'helm',cls:'ranger',act:3,pw:['arrowMark']},
+  galeforce:{name:'Galeforce Treads',type:'boots',cls:'ranger',act:4,pw:['dodgeCaltrops']}
 };
 // Act boss drop tables (v1.0.99, like Diablo 2 / PoE2 bosses): BOSS_LOOT[act] = the uniques only that act's boss drops
 // (any cycle; never other monsters, the shop or the set/unique guarantee). Each kill: BOSS_UQ_CH for one of them,
@@ -180,7 +199,9 @@ const SETS={
   unseenhour:{aura:'190,90,255',name:'Veil of the Unseen Hour',cls:null,act:4,items:['uhband','uhlocket','uhgloves','uhsash'],
     bonus:[[2,[{k:'crit',v:5}]],[3,[{k:'critd',v:25}]]],full:[{pw:'veilCrit'}]},
   embercore:{aura:'255,70,30',name:'Relics of the Ember Core',cls:null,act:5,zone:5,items:['ecdiadem','eccarapace','ecgrasp','ecstriders','ecgirdle','echeart'],
-    bonus:[[2,[{k:'life',v:60},{k:'dmg',v:10}]],[4,[{k:'cdr',v:10},{k:'crit',v:6},{k:'res',v:30}]]],full:[{k:'dmg',v:20},{pw:'coreFlare'}]}
+    bonus:[[2,[{k:'life',v:60},{k:'dmg',v:10}]],[4,[{k:'cdr',v:10},{k:'crit',v:6},{k:'res',v:30}]]],full:[{k:'dmg',v:20},{pw:'coreFlare'}]},
+  wildhunt:{aura:'140,200,90',name:'Trappings of the Wild Hunt',cls:'ranger',act:3,items:['whbow','whquiver','whcloak','whboots'], // v1.0.133
+    bonus:[[2,[{k:'aspd',v:10},{k:'move',v:8}]],[3,[{k:'crit',v:5},{k:'life',v:40}]]],full:[{pw:'wildHunt'}]}
 };
 const SET_ITEMS={
   wfband:{name:"Wanderer's Lucky Band",set:'wanderer',type:'ring',affs:['life','crit','regen'],sb:[[2,[{k:'critd',v:15}]]]},
@@ -216,7 +237,11 @@ const SET_ITEMS={
   ecgrasp:{name:'Ember Core Grasp',set:'embercore',type:'gloves',affs:['dmg','aspd','critd']},
   ecstriders:{name:'Ember Core Striders',set:'embercore',type:'boots',affs:['move','life','armor']},
   ecgirdle:{name:'Ember Core Girdle',set:'embercore',type:'belt',affs:['life','regen','pot']},
-  echeart:{name:'Heart of the Ember Core',set:'embercore',type:'amulet',affs:['dmg','life','crit']}
+  echeart:{name:'Heart of the Ember Core',set:'embercore',type:'amulet',affs:['dmg','life','crit']},
+  whbow:{name:'Wild Hunt Longbow',set:'wildhunt',type:'weapon',wt:'longbow',affs:['dmg','aspd','critd']},
+  whquiver:{name:'Wild Hunt Quiver',set:'wildhunt',type:'quiver',affs:['aspd','crit','life']},
+  whcloak:{name:'Wild Hunt Cloak',set:'wildhunt',type:'body',kind:'leather',affs:['life','evade','res']},
+  whboots:{name:'Wild Hunt Boots',set:'wildhunt',type:'boots',affs:['move','life','evade']}
 };
 // zone 5: in a dungeon depth of act 5 (any cycle), not in town (so no shop) and not anywhere else.
 const inSetZone=S=>!S.zone||(!G.inTown&&G.depth>0&&actIdx(G.depth)+1===S.zone);
@@ -342,3 +367,12 @@ function cinderPatch(ang,reach){const p=G.p,x=p.x+Math.cos(ang)*reach*0.6,y=p.y+
 function iceShards(e){const n=8;for(let k=0;k<n;k++){const a=k/n*TAU;
   G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:6,col:'#bff0ff',life:0.5,from:'p',mult:0.6,pierce:1,hits:new Set([e])});}
   burst(e.x,e.y,16,'#dff6ff',200);}
+// ---------- v1.0.133: the Ranger's unique powers ----------
+// After an arrow lands (game.js projectiles): Falconer's Hood Marks, Stormstring counts to its lightning.
+function arrowAfter(q,e){if(e.dead&&!hasPw('thunderShot'))return;
+  if(hasPw('arrowMark')&&!e.dead){e.markAmt=Math.max(e.markUntil>G.time&&e.markAmt||0,0.1);e.markUntil=Math.max(e.markUntil||0,G.time+2);}
+  if(hasPw('thunderShot')){const p=G.p;p.tsN=(p.tsN||0)+1;if(p.tsN>=5&&!e.dead){p.tsN=0;G.fx.push({type:'bolt',pts:[{x:e.x+rand(-10,10),y:e.y-240},{x:e.x,y:e.y}],t:0,max:0.25});
+    burst(e.x,e.y,14,'#a0d0ff',200);G.shake=Math.max(G.shake,4);hitEnemy(e,2,{splashed:true});}}}
+// Thornspine Longbow: an Arrow Shot hit sends an arrow on to the nearest other enemy
+function ricochet(e,m){if(!hasPw('ricochet')||!e)return;const t=nearest(e.x,e.y,250,new Set([e]));if(!t)return;const a=Math.atan2(t.y-e.y,t.x-e.x);
+  G.proj.push({sk:G.sk,x:e.x,y:e.y,vx:Math.cos(a)*760,vy:Math.sin(a)*760,r:4,col:'#e8dcc4',life:0.5,from:'p',mult:m*0.6,weapon:true,pierce:0,arrow:true,hits:new Set([e])});}

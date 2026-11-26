@@ -77,7 +77,7 @@ const SKILLS={
     {name:'Arrow Shot',icon:'🏹',cd:0.5,cost:0,
       desc:r=>`Loose an arrow for ${pct(1+0.12*(r-1))} weapon damage. Each hit restores 3 Focus.`,
       cast(r){const p=G.p,a=aimPoint(600),m=1+0.12*(r-1),steady=hasMod('asSteady'),bl=hasMod('asBarbed'),pc=(G.stats.pierce||0)+(steady?2:0); // skillmods.js: Steady Aim, Barbed Arrows, Split Arrow
-        shoot(a,760,4,'#e8dcc4',{mult:m,weapon:true,pierce:pc,onhit:()=>gainRes(steady?6:3),arrow:true,bleed:bl});
+        shoot(a,760,4,'#e8dcc4',{mult:m,weapon:true,pierce:pc,onhit:e=>{gainRes(steady?6:3);ricochet(e,m);},arrow:true,bleed:bl}); // uniques.js: Thornspine Longbow
         if(hasMod('asSplit')){const a0=p.face;for(const k of [-1,1]){const b=a0+k*0.2;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},760,4,'#e8dcc4',{mult:m*0.5,weapon:true,pierce:pc,onhit:()=>gainRes(1),arrow:true,bleed:bl});}p.face=a0;}
         startAtk('bow','mh',0);}},
     // v1.0.125

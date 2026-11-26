@@ -98,7 +98,7 @@ function tryDodge(){const p=G.p;if(hasKs('unwavering'))return false; /* passives
   if(G.char&&G.char.cls==='arcanist'){ /* the Arcanist's dodge is a Blink: an instant hop along open floor, untouchable for a moment */
     const x0=p.x,y0=p.y;for(let d=8;d<=BLINK_DIST;d+=8){const x=x0+Math.cos(a)*d,y=y0+Math.sin(a)*d;if(blockedAt(x,y,p.r))break;p.x=x;p.y=y;}
     p.dodge={t:0,dur:0.14,a,blink:true};p.face=a;burst(x0,y0,14,'#c48bff',160);burst(p.x,p.y,14,'#c48bff',160);G.fx.push({type:'ring',x:p.x,y:p.y,r0:6,r1:40,t:0,max:0.2,col:'#c48bff'});return true;}
-  p.dodge={t:0,dur:DODGE_DUR,a};burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);return true;}
+  p.dodge={t:0,dur:DODGE_DUR,a};burst(p.x,p.y+p.r*0.5,10,'#c8b090',120);if(hasPw('dodgeCaltrops'))G.skz.push({k:'caltrop',x:p.x,y:p.y,t:3,tick:0,m:0.4,sk:null}); /* uniques.js: Galeforce Treads */return true;}
 const BLINK_DIST=175;
 // el: the hit's element (a resistance key) when not the attacker's own (src.elem, src.elemS share of the hit).
 function dmgPlayer(raw,src,el){
@@ -132,7 +132,7 @@ function slowPlayer(amt,t){const p=G.p;if(hasKs('unwavering'))return; /* passive
 const HAZ_RES={fire:'fres',frost:'cres',poison:'pres'},resMul=k=>k?1-resOf(G.stats,k)/100:1;
 function addEHaz(x,y,r,t,dps,kind){if(G.ehaz.length>70)G.ehaz.shift();G.ehaz.push({x,y,r,t,max:t,dps,kind});}
 function healPlayer(v,silent){const p=G.p;if(p.dead)return;const before=p.hp;p.hp=Math.min(G.stats.life,p.hp+v);if(!silent&&p.hp-before>=1)floatText(p.x,p.y-p.r-20,'+'+Math.round(p.hp-before),'#5f5',false);}
-function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({sk:G.sk,x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home,arrow:o.arrow,bleed:o.bleed,sx:p.x,sy:p.y});} // arrow: drawn as an arrow (fx.js)
+function shoot(a,spd,r,col,o){const p=G.p;const ang=Math.atan2(a.y-p.y,a.x-p.x);p.face=ang;G.proj.push({sk:G.sk,x:p.x+Math.cos(ang)*18,y:p.y+Math.sin(ang)*18,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r,col,life:1.4,from:'p',mult:o.mult,explode:o.explode,onhit:o.onhit,weapon:o.weapon,pierce:o.pierce||0,home:o.home||o.arrow&&hasPw('heartseek'),arrow:o.arrow,bleed:o.bleed,sx:p.x,sy:p.y});} // uniques.js: Heartseeker // arrow: drawn as an arrow (fx.js)
 function enemyShoot(e,ang,spd,col,dmg,r,extra){G.proj.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,r:r||5,col,life:2.5,from:'e',dmg,src:e},extra));}
 function eShoot(e,ang){e._lunge=G.time; // sprites.js: recoil as the shot leaves
 const S=ETYPES[e.type].shot,n=S.n||1,sl=S.slow||0;for(let k=0;k<n;k++)enemyShoot(e,ang+(k-(n-1)/2)*0.16+rand(-0.05,0.05),S.spd,S.col,e.dmg*(n>1?0.75:1),S.r,sl?{slow:sl}:null);}
@@ -299,7 +299,7 @@ function update(dt){
     if(q.home)homeIn(q,dt);
     q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
     if(wallAt(Math.floor(q.x/TILE),Math.floor(q.y/TILE))){q.life=0;if(q.explode)explodeAt(q.x-q.vx*dt,q.y-q.vy*dt,q.explode,q.mult);continue;}
-    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult*arrowMul(q,e)*pointBlankMul(q),{weapon:q.weapon,bleed:q.bleed}); /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
+    if(q.from==='p'){let hit=false;G.sk=q.sk??null;for(const e of G.enemies){if(e.dead||e.hidden)continue;if(Math.hypot(e.x-q.x,e.y-q.y)<e.r+q.r){if(q.hits&&q.hits.has(e))continue;const life=q.life;q.life=0;hit=true;if(q.explode){explodeAt(q.x,q.y,q.explode,q.mult);if(q.onhit)q.onhit();}else{hitEnemy(e,q.mult*arrowMul(q,e)*pointBlankMul(q),{weapon:q.weapon,bleed:q.bleed});if(q.arrow)arrowAfter(q,e); /* uniques.js: Falconer's Hood, Stormstring */ /* subclasses.js: Long Shot, Headshot */if(q.onhit)q.onhit(e); /* q.bleed: Serrated (skillalts.js) */ /* the enemy hit (skillalts.js Ice Shards) */
         if(q.pierce>0){q.pierce--;q.life=life;hit=false;(q.hits||(q.hits=new Set())).add(e);continue;}}break;}}
       if(!hit&&q.life<=0&&q.explode)explodeAt(q.x,q.y,q.explode,q.mult);G.sk=null;}
     else if(!p.dead&&Math.hypot(p.x-q.x,p.y-q.y)<p.r+q.r){q.life=0;if(dmgPlayer(q.dmg,q.src)&&q.slow)slowPlayer(q.slow,1.6);if(q.r>=7)burst(q.x,q.y,8,q.col,120);}

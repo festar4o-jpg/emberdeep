@@ -8,15 +8,16 @@ function placeTrap(x,y,m,stun,sk,fire){ /* fire: Fire Trap's burning-ground dama
   const qf=!!fire&&hasMod('ftQuick'),hair=hasMod('trHair')||qf;if(qf){m*=0.75;fire*=0.75;} /* Quick Fuse */
   G.skz.push({k:'trap',x,y,t:TRAP_LIFE,wild:!!fire&&hasMod('ftWild'),arm:hair?0:TRAP_ARM,trig:TRAP_TRIG*(hair?1.5:1),bleed:!fire&&hasMod('trBarb'),fire:fire||0,m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
 // Rain of Arrows: RAIN_HITS volleys over RAIN_T s on a circle. v1.0.128: Arrow Storm (twice as long), Pinning Rain (slows), Downpour (smaller, harder).
-function rainAt(x,y,m,sk){const T=RAIN_T*(hasMod('rnStorm')?2:1),dn=hasMod('rnDown'),R=RAIN_R*(dn?0.7:1);
-  G.skz.push({k:'rain',x,y,t:T,tick:RAIN_T/RAIN_HITS,R,pin:hasMod('rnPin'),m:m*(dn?1.6:1),sk});G.fx.push({type:'tele',x,y,r:R,t:0,max:T,col:'#c8b088',own:1});}
+function rainAt(x,y,m,sk){const fol=hasPw('rainFollow'),T=RAIN_T*(hasMod('rnStorm')?2:1)+(fol?1:0),dn=hasMod('rnDown'),R=RAIN_R*(dn?0.7:1); /* uniques.js: Quiver of Endless Rain */
+  if(fol){x=G.p.x;y=G.p.y;}G.skz.push({k:'rain',x,y,t:T,tick:RAIN_T/RAIN_HITS,R,pin:hasMod('rnPin'),follow:fol,m:m*(dn?1.6:1),sk});if(!fol)G.fx.push({type:'tele',x,y,r:R,t:0,max:T,col:'#c8b088',own:1});}
 const RZ={
   trap(z,p,dt){if(z.arm>0){z.arm-=dt;return;}
-    const e=G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<(z.trig||TRAP_TRIG)+e.r);
+    const e=z.force?z:G.enemies.find(e=>!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<(z.trig||TRAP_TRIG)+e.r); /* force: set off by another (Snaretooth Grips) */
+    if(e&&hasPw('trapChain'))for(const o of G.skz)if(o!==z&&o.k==='trap'&&o.t>0&&!o.force&&Math.hypot(o.x-z.x,o.y-z.y)<250){o.arm=0;o.force=true;}
     if(e&&z.fire){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{kb:30});G.hazards.push({sk:z.sk,x:z.x,y:z.y,r:FTRAP_R*(z.wild?1.5:1),t:z.wild?6:FTRAP_T,tick:0.25,mult:z.fire}); /* Wildfire */fxExplosion(z.x,z.y,TRAP_R,'#ff8a2a');G.shake=Math.max(G.shake,7);playSfx('boom');return;}
     if(e){z.t=0;aoe(z.x,z.y,TRAP_R,z.m,{stun:z.stun,kb:60,bleed:z.bleed});fxCracks(z.x,z.y,TRAP_R*0.8);burst(z.x,z.y,26,'#d8d0c0',260);G.fx.push({type:'ring',x:z.x,y:z.y,r0:10,r1:TRAP_R,t:0,max:0.35,col:'#e8dcc4'});
       G.shake=Math.max(G.shake,7);playSfx('snap');}},
-  rain(z,p,dt){const R=z.R||RAIN_R;z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-R,R)*0.8,z.y+fr(-R,R)*0.8-40,0,260,0.16,'#e8dcc4',2);
+  rain(z,p,dt){const R=z.R||RAIN_R;if(z.follow){z.x=p.x;z.y=p.y;}z.tick-=dt;if(fr(0,1)<0.9)part(z.x+fr(-R,R)*0.8,z.y+fr(-R,R)*0.8-40,0,260,0.16,'#e8dcc4',2);
     if(z.pin)for(const e of G.enemies)if(!e.dead&&!e.hidden&&Math.hypot(e.x-z.x,e.y-z.y)<R+e.r)chillHit(e,0.4,0.3,true); // Pinning Rain
     if(z.tick<=0&&z.t>-0.01){z.tick+=RAIN_T/RAIN_HITS;aoe(z.x,z.y,R,z.m,{weapon:true,quiet:true});burst(z.x,z.y,6,'#c8b088',120);}}};
 // ---------- Call of the Wild (v1.0.126): the wolf ----------
@@ -28,7 +29,7 @@ const WOLF_SPD=215,WOLF_R=12,WOLF_BITE=1,WOLF_LEASH=260,WOLF_FAR=620;
 function wolfLife(r){return Math.round(G.stats.life*(0.4+0.03*(r-1)));}
 // v1.0.128 modifiers (skillmods.js): Pack (two wolves, 60% Life, 70% damage), Alpha (one big wolf, twice the Life, +40% damage), Bond (ranger.js bites, modTakenMul).
 function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];const pack=hasMod('wfPack'),alpha=hasMod('wfAlpha'),n=pack?2:1;
-  const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)*(hasPerk('thickHide')?1.6:1)) /* subclasses.js: Thick Hide */,m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
+  const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)*(hasPerk('thickHide')?1.6:1)*(hasPw('wolfFang')?1.3:1)) /* subclasses.js: Thick Hide; uniques.js: The Wolfmother's Fang */,m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
   for(const q of G.pets)if(q.kind==='hawk')q.hp=0; /* a hawk or wolves, not both */let ws=G.pets.filter(q=>q.kind==='wolf');for(const w of ws.slice(n))w.hp=0;ws=ws.slice(0,n);G.pets=G.pets.filter(q=>q.hp>0);
   for(const w of ws){w.maxHp=life;w.hp=life;w.m=m;w.big=alpha;floatText(w.x,w.y-20,'Healed','#7fe07f',false);}
   while(ws.length<n){const k=ws.length,b=p.face+Math.PI+(n>1?(k?0.6:-0.6):0);let x=p.x+Math.cos(b)*30,y=p.y+Math.sin(b)*30;if(blockedAt(x,y,WOLF_R)){x=p.x;y=p.y;}
@@ -39,7 +40,7 @@ function petTick(dt){if(!G.pets||!G.pets.length)return;const p=G.p;
     const dp=Math.hypot(p.x-w.x,p.y-w.y);if(dp>WOLF_FAR||G.inTown&&dp>200){w.x=p.x;w.y=p.y;} // left behind (a new area, a portal): back at your side
     const t=G.inTown?null:nearest(p.x,p.y,WOLF_LEASH);let gx=p.x-Math.cos(p.face+side*0.5)*34,gy=p.y-Math.sin(p.face+side*0.5)*34;
     if(t){const reach=t.r+w.r+6,d=Math.hypot(t.x-w.x,t.y-w.y);gx=t.x;gy=t.y;w.face=Math.atan2(t.y-w.y,t.x-w.x);
-      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m*petMul(),{weapon:true,kb:20});G.sk=sk;petKill(t); /* subclasses.js: Pack Leader, Alpha Roar */gainRes(1);if(hasMod('wfBond'))healPlayer(G.stats.life*0.005,true);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
+      if(d<=reach){gx=w.x;gy=w.y;if(w.bite<=0){w.bite=WOLF_BITE/(1+(G.stats.aspd||0)/100);const sk=G.sk;G.sk=3;hitEnemy(t,w.m*petMul(),{weapon:true,kb:20,bleed:hasPw('wolfFang')});G.sk=sk;petKill(t);if(hasPw('wildHunt'))gainRes(3); /* subclasses.js: Pack Leader, Alpha Roar */gainRes(1);if(hasMod('wfBond'))healPlayer(G.stats.life*0.005,true);burst(t.x,t.y,5,'#c8c0b0',100);if(fr(0,1)<0.5)playSfx('bite');}}}
     const dx=gx-w.x,dy=gy-w.y,dd=Math.hypot(dx,dy);if(dd>8){const st=Math.min(dd,WOLF_SPD*(t?1.15:dp>120?1.3:1)*dt);moveEnt(w,dx/dd*st,dy/dd*st);w.walk+=st;if(!t)w.face=Math.atan2(dy,dx);}
     // monsters next to it hit it now and then (every one of their attack times)
     for(const e of G.enemies){if(e.dead||e.hidden||!e.aggro||!(e.dmg>0))continue;if(Math.hypot(e.x-w.x,e.y-w.y)>e.r+w.r+8){continue;}
@@ -88,7 +89,7 @@ function callHawk(r){const p=G.p;if(!G.pets)G.pets=[];for(const q of G.pets)if(q
 function hawkTick(h,dt){const p=G.p;h.t-=dt;h.walk+=dt;if(h.t<=0){h.hp=0;burst(h.x,h.y,10,'#c8b088',120);return;}
   h.cd-=dt;let gx,gy;
   if(h.dive&&(h.dive.dead||h.dive.hidden))h.dive=null;
-  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m*petMul(),{weapon:true,kb:10,bleed:h.bleed});G.sk=sk;petKill(e);
+  if(h.dive){const e=h.dive;gx=e.x;gy=e.y;if(Math.hypot(e.x-h.x,e.y-h.y)<e.r+10){const sk=G.sk;G.sk=3;hitEnemy(e,h.m*petMul(),{weapon:true,kb:10,bleed:h.bleed});G.sk=sk;petKill(e);if(hasPw('wildHunt'))gainRes(3);
       e.markAmt=Math.max(e.markUntil>G.time&&e.markAmt||0,h.mark);e.markUntil=G.time+(h.markT||MARK_T);burst(e.x,e.y,8,'#e8d8a8',140);h.dive=null;h.cd=(h.every||HAWK_EVERY)/(1+(G.stats.aspd||0)/100);}}
   else{h.ang+=dt*2.4;gx=p.x+Math.cos(h.ang)*55;gy=p.y+Math.sin(h.ang)*30-30;
     if(h.cd<=0&&!G.inTown){const t=nearest(p.x,p.y,320);if(t){h.dive=t;playSfx('screech');}}}

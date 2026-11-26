@@ -82,10 +82,10 @@ function pyreBurst(e){if(!(e.burnT>0)||!hasPerk('pyreBurst'))return;const R=90,d
     o.hp-=d;o.flash=0.1;floatText(o.x+rand(-8,8),o.y-o.r-6,d,'#ff9a4a',false);if(o.type==='boss')bossGate(o);if(o.hp<=0&&!o.dead)killEnemy(o);}}
 // Ranger (v1.0.131). Hooks: ranger.js (Pack Leader: petMul, Thick Hide in callWolf/petTick, Alpha Roar: petKill),
 // skills.js skillCd + skillmods.js modCost (Wild Call), game.js projectiles (Long Shot, Headshot: arrowMul), perkStats.
-const petMul=()=>(hasPerk('packLeader')?1.4:1)*(1+(G.stats&&G.stats.petdmg||0)/100); // passives.js: Hunting Pack
+const petMul=()=>(hasPerk('packLeader')?1.4:1)*(1+(G.stats&&G.stats.petdmg||0)/100)*(hasPw('wildHunt')?1.6:1); // passives.js: Hunting Pack; uniques.js: Wild Hunt set
 function petKill(e){if(e.dead&&hasPerk('alphaRoar'))healPlayer(G.stats.life*0.05,true);}
 // an arrow q hitting: Long Shot by how far it flew, Headshot on every 6th arrow hit
-function arrowMul(q,e){if(!q.arrow)return 1;let m=1;
+function arrowMul(q,e){if(!q.arrow)return 1;let m=1;if(hasPw('heartseek')&&e.hp>e.maxHp*0.9)m*=1.4; /* uniques.js: Heartseeker */
   if(hasPerk('longShot')&&q.sx!=null)m*=1+0.3*Math.min(1,Math.hypot(q.x-q.sx,q.y-q.sy)/400);
   if(hasPerk('headshot')){const p=G.p;p.hsN=(p.hsN||0)+1;if(p.hsN>=6){p.hsN=0;m*=3;floatText(e.x,e.y-e.r-26,'Headshot!','#ffd36b',true);}}
   return m;}
