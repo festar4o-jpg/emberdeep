@@ -1,6 +1,19 @@
 {
-  "latest": "1.0.145",
+  "latest": "1.0.147",
   "notes": [
+    {
+      "v": "1.0.147",
+      "t": [
+        "Act 5 monsters are painted: little fire-wyvern Imps, the molten Magma Brute, the crimson Ember Summoner, and the Cinder King, a huge burning skeleton knight",
+        "Every act's monsters and bosses now share the painted look (the Vine Lasher keeps its drawn plant)"
+      ]
+    },
+    {
+      "v": "1.0.146",
+      "t": [
+        "Act 4 monsters are painted: see-through icy Frost Wraiths, the frost-giant Ice Golem, crystal Shardlings, and Rimeheart, the Frozen King, a crowned skeleton king"
+      ]
+    },
     {
       "v": "1.0.145",
       "t": [

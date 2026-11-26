@@ -15,6 +15,14 @@ Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CRE
   sporetoad (Act 3)         Flare's fire ant, recoloured moss
   marshtroll (Act 3)        Flare's hobgoblin (Empyrean campaign), recoloured marsh green
   boss2  (Mother of Rot)    Flare's fire ant, giant and recoloured dark moss
+  frostwraith (Act 4)       Flare's zombie, recoloured ice and see-through (as Flare's own ghost zombie)
+  icegolem (Act 4)          Flare's minotaur, recoloured ice
+  shardling (Act 4)         Flare's ice ant
+  boss3  (Rimeheart)        Flare's high skeleton mage boss (Empyrean campaign), recoloured ice
+  imp    (Act 5)            Flare's fire wyvern, small
+  magmabrute (Act 5)        Flare's hobgoblin (Empyrean campaign), recoloured molten
+  summoner (Ember Summoner) Flare's skeleton mage boss (Empyrean campaign), recoloured crimson
+  boss4  (the Cinder King)  Flare's skeleton knight boss (Empyrean campaign), recoloured burning
 
 License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
 
