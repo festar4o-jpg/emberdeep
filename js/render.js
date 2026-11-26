@@ -419,7 +419,7 @@ const SHAPES={};
 }
 function drawEnemy(e){
   const T=ETYPES[e.type];
-  if(e.hidden){ // burrowed sandworm: a moving mound of sand
+  if(e.hidden){e._mhid=1; // burrowed sandworm: a moving mound of sand (monart.js: it rises with its spawn animation)
     ctx.fillStyle='rgba(50,34,18,.6)';ctx.beginPath();ctx.ellipse(e.x,e.y,e.r*1.1,e.r*0.6,0,0,TAU);ctx.fill();
     ctx.fillStyle='#9a7a4a';for(let k=0;k<5;k++){const a=k*1.26+G.time*3+e.seed;ctx.beginPath();ctx.arc(e.x+Math.cos(a)*e.r*0.7,e.y+Math.sin(a)*e.r*0.35,3,0,TAU);ctx.fill();}return;}
   const art=TILT!==1&&maReady(e); // monart.js: a painted monster (its art carries its own shadow)

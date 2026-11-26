@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.143",
+  "latest": "1.0.144",
   "notes": [
+    {
+      "v": "1.0.144",
+      "t": [
+        "Act 2 monsters are painted: dark Scarab beetles, the robed Dust Mage, the sandy Sandworm that bursts up out of the sand, and the Ash Tyrant, a huge armoured antlion",
+        "All painted monsters are a little smaller, to fit the dungeons better",
+        "Acts 3 to 5 keep their drawn monsters for now"
+      ]
+    },
     {
       "v": "1.0.143",
       "t": [

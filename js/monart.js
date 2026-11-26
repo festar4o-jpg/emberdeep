@@ -11,14 +11,16 @@ const MA_BASE='art/mon/';
 const maOn=()=>SETTINGS.mons!=='drawn'&&typeof Image!=='undefined'&&typeof fetch==='function';
 function maLoadIndex(){if(MA.want)return;MA.want=true;fetch(MA_BASE+'mon.json').then(r=>r.ok?r.json():null).then(j=>{if(j&&j.mons)MA.idx=j;}).catch(()=>{MA.want=false;});}
 // Which painted monster an enemy is, or null: the Act 1 boss, and the monster types that have art (zone bosses and
-// champions of those types too). Pinnacle bosses keep their own looks.
-function maKey(e){if(e.type==='boss')return e.kind===0&&!e.zb&&!e.ab?'boss0':null;return MA.idx.mons[e.type]?e.type:null;}
+// champions of those types too); act bosses by act (boss0 = Act 1). Pinnacle bosses keep their own looks.
+function maKey(e){if(e.type==='boss'){const k='boss'+e.kind;return typeof e.kind==='number'&&!e.zb&&!e.ab&&MA.idx.mons[k]?k:null;}return MA.idx.mons[e.type]?e.type:null;} // act bosses: boss0..boss4
 function maSheet(key,s){const n=key+(s?'-'+s:'');let im=MA.img[n];if(!im){im=MA.img[n]=new Image();im.decoding='async';im.src=MA_BASE+n+'.webp';}return im.complete&&im.naturalWidth?im:null;}
 // The painted monster for e when all its sheets are in, else null (and the loading starts).
 function maReady(e){if(!maOn())return null;maLoadIndex();if(!MA.idx)return null;const key=maKey(e);if(!key)return null;
   const M=MA.idx.mons[key];let ok=true;for(let s=0;s<M.sheets;s++)if(!maSheet(key,s))ok=false;return ok?key:null;}
 // Its size: the art's own scale, grown with the monster (elites and champions are bigger).
-function maScale(e,M){const T=ETYPES[e.type];return M.draw*(T&&T.r?e.r/T.r:1);}
+// MA_SIZE: all painted monsters a touch smaller than built (v1.0.144: they felt too big for the dungeons).
+const MA_SIZE=0.85;
+function maScale(e,M){const T=ETYPES[e.type];return M.draw*MA_SIZE*(T&&T.r?e.r/T.r:1);}
 const maDir=a=>((Math.round(a/(Math.PI/4))+4)%8+8)%8;
 // The animation and frame for what the monster is doing now.
 function maPose(e,M){const t=G.time,A=M.a,strike=A.swing?'swing':A.shoot?'shoot':'cast';
@@ -33,6 +35,8 @@ function maPose(e,M){const t=G.time,A=M.a,strike=A.swing?'swing':A.shoot?'shoot'
   const sw=(t-(e._mstr??-9))/0.3,sh=(t-(e._lunge??-9))/0.35;
   if(sw>=0&&sw<1){const n=A[an].n;return [an,Math.min(n-1,half(n)+Math.floor(sw*(n-half(n))))];}
   if(sh>=0&&sh<1){const n=A[strike].n;return [strike,Math.min(n-1,Math.floor(sh*n))];}
+  if(e._mhid){e._mhid=0;e._memerge=t;} // render.js: it was under the sand until now
+  const em=(t-(e._memerge??-9))/0.6;if(em>=0&&em<1&&A.spawn)return ['spawn',Math.min(A.spawn.n-1,Math.floor(em*A.spawn.n))]; // bursting up out of the sand
   if(e.flash>0&&A.hit)return ['hit',e.flash>0.05?0:Math.min(1,A.hit.n-1)];
   if(e.stun>0||e.frozen>0)return ['stance',0];
   if(e._mhs>0&&A.run)return ['run',Math.floor(e._mrun*A.run.n)%A.run.n];
