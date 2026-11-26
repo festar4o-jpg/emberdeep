@@ -106,10 +106,12 @@ function haCrossbow(g,fx,fy,D,rep){const gx=fx+g[0]*D,gy=fy+g[1]*D,hx=fx,hy=fy-5
 const HA_TINT=[null,null,'#c89a58','#6f9a3c','#6fb4ff','#ff5626'],HA_TINT_A=0.42,HA_GLOW={3:'#ffa83a',5:'#3dff6a'};
 const HA_VAR=new Map(),HA_VAR_S=0.8; // kept at 80%: close to the hero's size on a sharp phone screen, and lighter on memory
 // One frame recoloured ('tint') or as a solid silhouette ('glow'), painted once and kept (cleared when it grows large).
-function haVariant(n,fr,kind,col){const key=n+'|'+fr[0]+'|'+fr[1]+'|'+kind+col;let c=HA_VAR.get(key);if(c)return c;
-  if(HA_VAR.size>700)HA_VAR.clear();const w=Math.ceil(fr[2]*HA_VAR_S),h=Math.ceil(fr[3]*HA_VAR_S);c=mkCanvas(w,h);const x=c.getContext('2d');x.drawImage(HA.img[n],fr[0],fr[1],fr[2],fr[3],0,0,w,h);
+function haVariant(n,fr,kind,col){return artVariant(HA.img[n],n,fr,kind,col);}
+// Any sheet's frame (id names the sheet) recoloured or as a silhouette; also used by monart.js for hit flashes.
+function artVariant(img,id,fr,kind,col){const key=id+'|'+fr[0]+'|'+fr[1]+'|'+kind+col;let c=HA_VAR.get(key);if(c)return c;
+  if(HA_VAR.size>700)HA_VAR.clear();const w=Math.ceil(fr[2]*HA_VAR_S),h=Math.ceil(fr[3]*HA_VAR_S);c=mkCanvas(w,h);const x=c.getContext('2d');x.drawImage(img,fr[0],fr[1],fr[2],fr[3],0,0,w,h);
   if(kind==='tint'){x.globalCompositeOperation='color';x.globalAlpha=HA_TINT_A;x.fillStyle=col;x.fillRect(0,0,w,h);
-    x.globalAlpha=1;x.globalCompositeOperation='destination-in';x.drawImage(HA.img[n],fr[0],fr[1],fr[2],fr[3],0,0,w,h);}
+    x.globalAlpha=1;x.globalCompositeOperation='destination-in';x.drawImage(img,fr[0],fr[1],fr[2],fr[3],0,0,w,h);}
   else{x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,w,h);}
   HA_VAR.set(key,c);return c;}
 // One layer's frame at (x, y, w, h), coloured and glowing by the item that made it.

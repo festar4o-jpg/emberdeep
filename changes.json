@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.142",
+  "latest": "1.0.143",
   "notes": [
+    {
+      "v": "1.0.143",
+      "t": [
+        "Act 1 monsters are painted in the same style as your hero: the Ghoul, the Bone Archer, the Minotaur (was the Ogre) and Varrok the Hollow",
+        "They run, wind up and strike, shoot, flinch when hit and fall with their own death animation",
+        "Settings > Monsters: Painted or Drawn (the other acts' monsters come next)"
+      ]
+    },
     {
       "v": "1.0.142",
       "t": [

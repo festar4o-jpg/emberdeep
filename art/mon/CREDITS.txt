@@ -1,0 +1,15 @@
+Emberdeep: painted monster art (art/mon/)
+
+The monster pictures come from Flare, a free and open-source action RPG:
+  https://github.com/flareteam/flare-game  (mods/fantasycore and mods/empyrean_campaign, images/enemies)
+  https://flarerpg.org
+Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CREDITS.txt).
+  grunt  (Ghoul)            Flare's zombie
+  archer (Bone Archer)      Flare's skeleton archer
+  brute  (Minotaur)         Flare's minotaur
+  boss0  (Varrok, Act 1)    Flare's skeleton knight boss
+
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
+
+Changes made for Emberdeep (tools/hero-art/build-mon.js): frames cut to the animations the game uses, shrunk,
+packed into new sheets and saved as WebP. These changed pictures are shared under the same license (CC-BY-SA 3.0).

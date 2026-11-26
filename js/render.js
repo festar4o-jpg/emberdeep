@@ -422,10 +422,13 @@ function drawEnemy(e){
   if(e.hidden){ // burrowed sandworm: a moving mound of sand
     ctx.fillStyle='rgba(50,34,18,.6)';ctx.beginPath();ctx.ellipse(e.x,e.y,e.r*1.1,e.r*0.6,0,0,TAU);ctx.fill();
     ctx.fillStyle='#9a7a4a';for(let k=0;k<5;k++){const a=k*1.26+G.time*3+e.seed;ctx.beginPath();ctx.arc(e.x+Math.cos(a)*e.r*0.7,e.y+Math.sin(a)*e.r*0.35,3,0,TAU);ctx.fill();}return;}
-  const bs=e.type==='boss'?BOSS_SCALE:1;softShadow(e.x,e.y+e.r*0.55*bs,e.r*1.5*bs,e.r*0.7*bs,T.shape==='wraith'||T.shape==='imp'?0.5:1);
+  const art=TILT!==1&&maReady(e); // monart.js: a painted monster (its art carries its own shadow)
+  const bs=e.type==='boss'?BOSS_SCALE:1;if(!art)softShadow(e.x,e.y+e.r*0.55*bs,e.r*1.5*bs,e.r*0.7*bs,T.shape==='wraith'||T.shape==='imp'?0.5:1);
+  e._top=null;
   if(e.elite){ctx.strokeStyle=e.affs&&e.affs.length?AFFIXES[e.affs[0]].col:'#6f8fff';ctx.lineWidth=2;ctx.globalAlpha=0.6+Math.sin(G.time*5)*0.3;ctx.beginPath();ctx.arc(e.x,e.y,e.r+5,0,TAU);ctx.stroke();ctx.globalAlpha=1;}
-  const S=creatureSprite(e,T); // sprites.js: pre-rendered, only rotated and stamped here
-  if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face,P=creaturePose(e),ex=e.x+Math.cos(e.face)*P.dx,ey=e.y+Math.sin(e.face)*P.dx;
+  const S=!art&&creatureSprite(e,T); // sprites.js: pre-rendered, only rotated and stamped here
+  if(art){const top=drawMonArt(e,T);if(top!==false)e._top=top;}
+  else if(S){const ang=T.shape==='shard'?G.time*2+e.seed:e.face,P=creaturePose(e),ex=e.x+Math.cos(e.face)*P.dx,ey=e.y+Math.sin(e.face)*P.dx;
     let sc=P.sc;if(e.introT>0){const u=1-e.introT/2.4;sc*=0.55+0.45*Math.min(1,u*1.6);ctx.globalAlpha=Math.min(1,u*2);} // a boss rising for its entrance
     if(G.crowd>12&&e.type!=='boss'&&!e.elite)blit(S,ex,ey,ang,T.shape==='wraith'?0.9:null);else litBlit(S,ex,ey,ang,T.shape==='wraith'?0.9:null,sc);ctx.globalAlpha=1;
     if(e.flash>0)blit(whiteOf(S),ex,ey,ang,Math.min(1,e.flash/0.1)*0.85); // a brief white hit flash
@@ -435,15 +438,16 @@ function drawEnemy(e){
     if(T.shape==='troll'&&e.hp<e.maxHp&&G.time-(e.lastHit||-9)>2&&!(e.bleedT>0)){ctx.strokeStyle='rgba(120,230,90,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.r+3,0,TAU);ctx.stroke();}}
   else{let col=e.col||T.col;if(e.flash>0)col='#fff';else if(e.frozen>0)col='#9fd8ff';if(e.wind>0&&Math.floor(G.time*20)%2===0)col='#ff8a6a';
     ctx.save();ctx.translate(e.x,e.y);(SHAPES[T.shape]||SHAPES.blob)(e,col,T);ctx.restore();}
-  if(e.stun>0){ctx.fillStyle='#ffd54a';ctx.font='12px sans-serif';ctx.fillText('✦',e.x+Math.cos(G.time*8)*8,e.y-e.r-6);}
-  if(e.hp<e.maxHp&&e.type!=='boss'){const w=e.r*2;ctx.fillStyle='#000a';ctx.fillRect(e.x-w/2,e.y-e.r-10,w,4);ctx.fillStyle=e.elite?'#6f8fff':'#c22';ctx.fillRect(e.x-w/2,e.y-e.r-10,w*Math.max(0,e.hp/e.maxHp),4);}
+  const hy=e._top??e.y-e.r; // the top of the monster: above a painted one's head
+  if(e.stun>0){ctx.fillStyle='#ffd54a';ctx.font='12px sans-serif';ctx.fillText('✦',e.x+Math.cos(G.time*8)*8,hy-6);}
+  if(e.hp<e.maxHp&&e.type!=='boss'){const w=e.r*2;ctx.fillStyle='#000a';ctx.fillRect(e.x-w/2,hy-10,w,4);ctx.fillStyle=e.elite?'#6f8fff':'#c22';ctx.fillRect(e.x-w/2,hy-10,w*Math.max(0,e.hp/e.maxHp),4);}
   drawAilPips(e); // ailments.js
   if(e.shieldT>0){ctx.strokeStyle='#bcd0ff';ctx.fillStyle='rgba(150,180,255,.18)';ctx.lineWidth=2;ctx.globalAlpha=0.7+Math.sin(G.time*10)*0.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,TAU);ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
   if(e.type==='boss')drawBossState(e); /* bossfight.js */
   if(e.elite||e.type==='thief'||e.zb||e.type==='nest')drawEliteLabel(e);
 }
 // Elite name, with its affixes on a line underneath (each in its own colour).
-function drawEliteLabel(e){const A=e.affs||[],y=e.y-e.r-14,ny=A.length?y-12:y;
+function drawEliteLabel(e){const A=e.affs||[],y=(e._top??e.y-e.r)-14,ny=A.length?y-12:y;
   ctx.font=e.su||e.zb?'bold 12px Georgia':'11px Georgia';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(e.name,e.x,ny);ctx.fillStyle=e.zb?'#ff8a5a':e.su||e.type==='thief'?'#f2d04a':'#8fa8ff'; /* champions gold, zone bosses orange */ctx.fillText(e.name,e.x,ny);
   if(!A.length)return;ctx.font='9px sans-serif';const sep=' · ',sw=ctx.measureText(sep).width,ws=A.map(k=>ctx.measureText(AFFIXES[k].name).width);
   let x=e.x-(ws.reduce((a,b)=>a+b,0)+sw*(A.length-1))/2;ctx.textAlign='left';

@@ -169,7 +169,7 @@ const ETYPES={
   // Act 1
   grunt:{name:'Ghoul',r:15,hp:18,dmg:5,spd:100,range:18,cd:1.1,xp:8,col:'#6f7f4e',ai:'melee',drop:0.09,cost:1},
   archer:{name:'Bone Archer',r:13,hp:14,dmg:5,spd:85,range:290,cd:1.9,xp:10,col:'#cfc6a8',ai:'ranged',drop:0.1,cost:1,shape:'archer',shot:{spd:280,col:'#e8e0c0'}},
-  brute:{name:'Ogre',r:24,hp:70,dmg:13,spd:62,range:24,cd:1.7,xp:26,col:'#8b5a3c',ai:'melee',drop:0.22,cost:2.5,heavy:1},
+  brute:{name:'Minotaur',r:24,hp:70,dmg:13,spd:62,range:24,cd:1.7,xp:26,col:'#8b5a3c',ai:'melee',drop:0.22,cost:2.5,heavy:1},
   // Act 2
   scarab:{name:'Scarab',r:9,hp:6,dmg:3,spd:170,range:10,cd:0.8,xp:3,col:'#2f5a78',ai:'swarm',drop:0.03,cost:0.45,shape:'scarab'},
   dustmage:{name:'Dust Mage',r:13,hp:17,dmg:6,spd:70,range:330,cd:2.3,xp:14,col:'#b89458',ai:'blink',drop:0.12,cost:1.5,shape:'robe',orb:'#ffd890',shot:{spd:250,col:'#f0c878',n:3}},

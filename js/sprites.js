@@ -59,7 +59,7 @@ PAINT.archer=(x,r,f)=>{const s=swing(f);
   x.lineWidth=2;x.beginPath();x.moveTo(-r*0.42,0);x.lineTo(r*0.28,0);x.stroke();
   for(const sd of [-1,1]){x.fillStyle='rgba(60,48,36,.9)';path(x,[[-r*0.25,sd*r*0.5],[r*0.15,sd*r*0.88],[-r*0.1,sd*r*1.02],[-r*0.45,sd*r*0.75]]);x.fill();}
   oval(x,r*0.2,0,r*0.33,r*0.3,'#cfc6aa',1.2);dot(x,r*0.33,-r*0.12,r*0.08,'#120c08');dot(x,r*0.33,r*0.12,r*0.08,'#120c08');eyes(x,r*0.36,r*0.12,r*0.035,'#ff8a5a');};
-// Ogre: hulking, hide wrap over one shoulder, small head pushed forward, a heavy club.
+// Minotaur (the drawn look, was the Ogre: Settings › Monsters: Drawn): hulking, hide wrap over one shoulder, small head pushed forward, a heavy club.
 PAINT.ogre=(x,r,f)=>{walker(x,r,f,{skin:'#7d634d',torso:'#6b5240',sleeve:'#6e5442',boot:'#2a1e14',chest:0.6,wide:0.92,head:0.27,headX:0.4,armY:0.95,
   torsoDeco:(x,r)=>{x.fillStyle='#4a3a28';path(x,[[-r*0.5,-r*0.85],[r*0.25,-r*0.6],[r*0.15,r*0.2],[-r*0.55,r*0.1]]);x.fill();x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;x.stroke();
     x.strokeStyle='#2a1e12';x.lineWidth=1.6;x.beginPath();x.moveTo(-r*0.45,-r*0.55);x.lineTo(r*0.2,r*0.15);x.stroke();grit(x,0,0,r*0.75,40);
@@ -262,11 +262,12 @@ function creaturePose(e){const t=G.time,r=e.r;let dx=0,sc=1;
   return {dx,sc};}
 // Death: the body lurches back, sinks and darkens into the floor where its stain is left.
 function addCorpse(e){const T=ETYPES[e.type];if(!T||e.hidden)return;if(BURSTS[e.type])return deathBurst(e); // fx.js: small and brittle things burst
-  const S=creatureSprite(e,T);if(!S)return;const boss=e.type==='boss';
-  G.fx.push({type:'corpse',S,x:e.x,y:e.y,a:e.face,dir:e.face+Math.PI,t:0,max:boss?5:3,sc:boss?BOSS_SCALE:1,boss});
+  const boss=e.type==='boss',A=TILT!==1&&monArtCorpse(e); // monart.js: a painted monster falls its own way
+  if(A)G.fx.push(A);else{const S=creatureSprite(e,T);if(!S)return;
+  G.fx.push({type:'corpse',S,x:e.x,y:e.y,a:e.face,dir:e.face+Math.PI,t:0,max:boss?5:3,sc:boss?BOSS_SCALE:1,boss});}
   if(boss){G.shake=Math.max(G.shake,14);G.hitStop=0.12;buzz('boss');playSfx('bossdie');fxExplosion(e.x,e.y,e.r*2.2,ACTS[e.kind||0].col);}}
 // Lurch back and topple over (first half second), lie there darkening, then fade out over the last 1.2s.
-function drawCorpses(){for(const f of G.fx){if(f.type!=='corpse')continue;const k=Math.min(1,f.t/0.45),e=1-(1-k)*(1-k),fade=Math.min(1,(f.max-f.t)/1.2);
+function drawCorpses(){for(const f of G.fx){if(f.type!=='corpse')continue;if(f.art){drawArtCorpse(f);continue;} /* monart.js */const k=Math.min(1,f.t/0.45),e=1-(1-k)*(1-k),fade=Math.min(1,(f.max-f.t)/1.2);
   const x=f.x+Math.cos(f.dir)*9*e,y=f.y+Math.sin(f.dir)*9*e;softShadow(x,y+6,f.S.half*0.55*f.sc,f.S.half*0.25*f.sc,fade*0.8);
   const h=f.S.half*f.sc*(1-0.12*e);ctx.save();ctx.translate(x,y);ctx.rotate(f.a+0.45*e);ctx.globalAlpha=fade*0.95;ctx.drawImage(f.S,-h,-h,h*2,h*2);
   ctx.globalAlpha=fade*0.5*e;ctx.drawImage(darkOf(f.S),-h,-h,h*2,h*2);ctx.restore();}}
