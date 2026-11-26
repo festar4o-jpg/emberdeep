@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.144",
+  "latest": "1.0.145",
   "notes": [
+    {
+      "v": "1.0.145",
+      "t": [
+        "Act 3 monsters are painted: mossy Spore Toads, the green Marsh Troll, and the Mother of Rot, a giant queen of the Spore Toads",
+        "The Vine Lasher keeps its drawn plant look; Acts 4 and 5 come next"
+      ]
+    },
     {
       "v": "1.0.144",
       "t": [

@@ -12,6 +12,9 @@ Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CRE
   dustmage (Dust Mage)      Flare's skeleton mage
   sandworm (Act 2)          Flare's antlion, recoloured sandy
   boss1  (the Ash Tyrant)   Flare's armoured antlion, recoloured ash
+  sporetoad (Act 3)         Flare's fire ant, recoloured moss
+  marshtroll (Act 3)        Flare's hobgoblin (Empyrean campaign), recoloured marsh green
+  boss2  (Mother of Rot)    Flare's fire ant, giant and recoloured dark moss
 
 License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
 
