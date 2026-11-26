@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.140",
+  "latest": "1.0.141",
   "notes": [
+    {
+      "v": "1.0.141",
+      "t": [
+        "Painted hero: gear from later acts takes its act's colours (desert sand, marsh moss, frost blue, ember red)",
+        "Unique pieces shimmer gold and set pieces shimmer green",
+        "The Ranger carries her quiver on her back; the Arcanist's orb or tome floats at his off hand"
+      ]
+    },
     {
       "v": "1.0.140",
       "t": [

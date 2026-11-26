@@ -10,7 +10,7 @@
 // server again and goes back online if it answers.
 // Saves live in localStorage, which a service worker never reads, writes or clears.
 // FILES must list every file the page loads; VERSION must equal GAME_VERSION in js/core.js (tests/game-check.js checks both).
-const VERSION='1.0.140',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
+const VERSION='1.0.141',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
 // The painted hero's pictures (art/, js/heroart.js) are big and rarely change, so they live in their own cache that
 // survives game updates: each one is downloaded the first time it is needed and then always served from the cache.
 // Rebuilt art (tools/hero-art/build.js) needs a new ART name, which drops the old pictures.
