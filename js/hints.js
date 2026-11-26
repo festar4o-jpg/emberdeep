@@ -26,5 +26,9 @@ const AIL_HINT={burn:['🔥 Burning','Fire damage over time for a few seconds. F
 function hintAil(kind){const h=AIL_HINT[kind];if(h)hint('ail_'+kind,h[0],h[1]);}
 function hintMod(i){const c=G.char;if(c.skills[i]===MOD_UNLOCK[0]){G.modDot=true;hint('mod','Skill modifier unlocked',`Open ✨ and pick one under ${skName(c.cls,i)}. You can swap it any time, for free.`);}}
 function hintPath(){const c=G.char;if(c&&c.lvl>=SUB_LVL&&!c.sub&&hasPaths(c))hint('path','Choose your path','Open ✨ › Path. Each class has two; the choice is for good.');}
+// v1.0.134: the Ranger's (ranger.js, skills.js tryCast)
+function hintRanger(k){const H={wolf:['Your wolf','It follows you and bites the nearest enemy. It can die: call it again to heal it or bring it back. It comes with you to new areas.'],
+  trap:['Traps','A trap arms in half a second and springs when an enemy steps close. Lay them where monsters will walk.'],
+  focus:['Out of Focus','Focus refills by itself and with every arrow that hits. Arrow Shot costs none: keep shooting to fill it.']}[k];if(H)hint('rg_'+k,H[0],H[1]);}
 function hintElite(){hint('elite','Elite pack','Elites carry affixes: their name says what they do. A marked circle on the ground is a strike about to land: dodge out.');}
 function hintItem(it){if(it&&(it.affs||[]).some(a=>a.k==='igniteCh'||a.k==='shockCh'||a.k==='poisonCh'))hint('ailstat','Status effect stat','"+% chance to Ignite / Shock / Poison" adds that effect to every hit. Each skill on ✨ shows what its own hits leave.');}

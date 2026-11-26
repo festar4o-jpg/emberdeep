@@ -1,10 +1,10 @@
 // The Ranger's moving parts (v1.0.125): Spike Trap and Rain of Arrows live in G.skz (cleared with the area) and are
 // ticked by skillalts.js skzTick through RZ[kind]. The skills themselves are in skills.js (SKILLS.ranger).
-const TRAP_ARM=0.5,TRAP_LIFE=15,TRAP_MAX=3,TRAP_R=110,TRAP_TRIG=46,RAIN_R=130,RAIN_T=2,RAIN_HITS=6;
+const TRAP_ARM=0.5,TRAP_LIFE=15,TRAP_MAX=3,TRAP_R=120,TRAP_TRIG=46,RAIN_R=150,RAIN_T=2,RAIN_HITS=6;
 // Spike Trap: thrown to a spot; armed after TRAP_ARM s, it springs when an enemy steps close: a burst that Stuns.
 // v1.0.128 modifiers (skillmods.js): Cluster Traps (3 at once, up to 6), Hair Trigger (armed at once, springs from 50% further), Lacerating Trap (Bleed).
 const trapMax=()=>hasMod('trCluster')?TRAP_MAX*2:TRAP_MAX;
-function placeTrap(x,y,m,stun,sk,fire){ /* fire: Fire Trap's burning-ground damage (v1.0.129) */const own=G.skz.filter(z=>z.k==='trap'&&z.t>0);if(own.length>=trapMax())own[0].t=0; // the oldest one goes
+function placeTrap(x,y,m,stun,sk,fire){ /* fire: Fire Trap's burning-ground damage (v1.0.129) */hintRanger('trap');const own=G.skz.filter(z=>z.k==='trap'&&z.t>0);if(own.length>=trapMax())own[0].t=0; // the oldest one goes
   const qf=!!fire&&hasMod('ftQuick'),hair=hasMod('trHair')||qf;if(qf){m*=0.75;fire*=0.75;} /* Quick Fuse */
   G.skz.push({k:'trap',x,y,t:TRAP_LIFE,wild:!!fire&&hasMod('ftWild'),arm:hair?0:TRAP_ARM,trig:TRAP_TRIG*(hair?1.5:1),bleed:!fire&&hasMod('trBarb'),fire:fire||0,m,stun,sk,fx:0});G.fx.push({type:'ring',x,y,r0:6,r1:24,t:0,max:0.3,col:'#c8b088'});}
 // Rain of Arrows: RAIN_HITS volleys over RAIN_T s on a circle. v1.0.128: Arrow Storm (twice as long), Pinning Rain (slows), Downpour (smaller, harder).
@@ -28,7 +28,7 @@ const RZ={
 const WOLF_SPD=215,WOLF_R=12,WOLF_BITE=1,WOLF_LEASH=260,WOLF_FAR=620;
 function wolfLife(r){return Math.round(G.stats.life*(0.4+0.03*(r-1)));}
 // v1.0.128 modifiers (skillmods.js): Pack (two wolves, 60% Life, 70% damage), Alpha (one big wolf, twice the Life, +40% damage), Bond (ranger.js bites, modTakenMul).
-function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];const pack=hasMod('wfPack'),alpha=hasMod('wfAlpha'),n=pack?2:1;
+function callWolf(r){const p=G.p;if(!G.pets)G.pets=[];hintRanger('wolf');const pack=hasMod('wfPack'),alpha=hasMod('wfAlpha'),n=pack?2:1;
   const life=Math.round(wolfLife(r)*(pack?0.6:alpha?2:1)*(hasPerk('thickHide')?1.6:1)*(hasPw('wolfFang')?1.3:1)) /* subclasses.js: Thick Hide; uniques.js: The Wolfmother's Fang */,m=(0.8+0.1*(r-1))*(pack?0.7:alpha?1.4:1);
   for(const q of G.pets)if(q.kind==='hawk')q.hp=0; /* a hawk or wolves, not both */let ws=G.pets.filter(q=>q.kind==='wolf');for(const w of ws.slice(n))w.hp=0;ws=ws.slice(0,n);G.pets=G.pets.filter(q=>q.hp>0);
   for(const w of ws){w.maxHp=life;w.hp=life;w.m=m;w.big=alpha;floatText(w.x,w.y-20,'Healed','#7fe07f',false);}

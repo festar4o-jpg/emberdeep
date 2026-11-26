@@ -186,7 +186,7 @@ const CLASSES={
   arcanist:{name:'Arcanist',icon:'🔮',color:'#6b4aa8',res:'Mana',hp:95,hpL:11,mp:80,mpL:4,regen:6,
     desc:'Fragile spellcaster. Hurls fire, frost and lightning from a distance. Uses Mana.'},
   // v1.0.124: evade and move are built in (calcStats); Focus refills on its own and with every arrow that hits
-  ranger:{name:'Ranger',icon:'🏹',color:'#5a8a3a',res:'Focus',hp:110,hpL:13,mp:100,mpL:0,regen:9,evade:8,move:6,
+  ranger:{name:'Ranger',icon:'🏹',color:'#5a8a3a',res:'Focus',hp:110,hpL:13,mp:100,mpL:0,regen:10,evade:8,move:6,
     desc:'Nimble archer. Fights from range with bows, traps and a wolf, and dodges blows instead of blocking them. Uses Focus.'}
 };
 

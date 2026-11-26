@@ -13,7 +13,7 @@ const sunReady=c=>FRAG_KEYS.every(k=>fragsOf(c)[k]>0);
 const SUN_COL='#ffcc55';
 const ARCH={
   ash:{name:'The Ashen Warden',sub:'Keeper of the first Citadel, armoured in cinders',look:4,hp:9,dmg:0.9,pace:0.9,elem:['fres',0.6],enrage:'burns white-hot!',phaseAt:[0.5],frag:'ash',
-    vs:{warden:[1.1,'Steel bites his cooling armour'],arcanist:[0.95,'Fire feeds him']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
+    vs:{warden:[1.1,'Steel bites his cooling armour'],arcanist:[0.95,'Fire feeds him'],ranger:[1.05,'Arrows find the gaps in his armour']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
     phases:[{name:'Ash Storm',enter(e){e.arena={x:e.homeX,y:e.homeY,r:480,min:240,rate:10};toast('An ash storm closes in','Stay inside the ring');},tick(e,dt){cinderJets(e,dt,2);}}],
     moves:[
       {name:'Cinder Rain',w:3,cd:1.4,fn(e){e.busy=0.7;for(let i=0;i<6;i++)bossLater(e,i*0.2,()=>{const [x,y]=i===0?[G.p.x,G.p.y]:near(170);groundStrike(e,x,y,66,1.05,e.dmg*1.15,'#ff6a1a',()=>addEHaz(x,y,50,2.5,e.dmg*0.24,'fire'));});}},
@@ -21,7 +21,7 @@ const ARCH={
         ()=>{e.dash=0.5;e.dashHit=false;e.dashDmg=BIG(e);e.dvx=Math.cos(a)*740;e.dvy=Math.sin(a)*740;},1.6);}},
       {name:'Flame Ring',w:3,cd:1.2,fn(e){ring(e,24,200,'#ff8a2a',e.dmg*0.4,8,rand(0,TAU),5);e.busy=0.6;}}]},
   frost:{name:'The Rime Sentinel',sub:'Its watch never ended; the cold only grew',look:3,hp:9,dmg:0.9,pace:0.9,elem:['cres',0.6],enrage:'freezes the air solid!',phaseAt:[0.5],frag:'frost',
-    vs:{warden:[0.95,'Ice turns your edge'],arcanist:[1.1,'Fire cracks its shell']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
+    vs:{warden:[0.95,'Ice turns your edge'],arcanist:[1.1,'Fire cracks its shell'],ranger:[0.9,'Its shell turns your arrows']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
     phases:[{name:'Shattering Floor',enter(e){toast('The floor begins to crack','Keep moving');},tick(e,dt){e.crT=(e.crT||1)-dt;if(e.crT<=0){e.crT=0.9;const [x,y]=near(220);groundStrike(e,x,y,60,1.2,e.dmg*0.9,'#bfe8ff',()=>addEHaz(x,y,46,3,e.dmg*0.2,'frost'));}}}],
     moves:[
       {name:'Glacial Lances',w:3,cd:1.4,fn(e){const a0=Math.atan2(G.p.y-e.y,G.p.x-e.x);e.busy=0.8;for(let k=-1;k<=1;k++)lineStrike(e,e.x,e.y,a0+k*0.35,420,40,0.9,e.dmg*1.1,'#bfe8ff');}},
@@ -29,7 +29,7 @@ const ARCH={
         G.fx.push({type:'ring',x:e.x,y:e.y,r0:20,r1:175,t:0,max:0.4,col:'#dff4ff'});});}},
       {name:'Icicle Volley',w:3,cd:1.1,fn(e){ring(e,18,230,'#dff4ff',e.dmg*0.42,7,rand(0,TAU),4,{slow:0.3});e.busy=0.5;}}]},
   rot:{name:'The Rotted Matron',sub:'She remembers the marsh, and brought it with her',look:2,hp:9,dmg:0.9,pace:0.9,elem:['pres',0.6],enrage:'bursts with spores!',phaseAt:[0.5],frag:'rot',
-    vs:{warden:[1.05,'Her rot drinks magic, not steel'],arcanist:[0.95,'Spells sink into her']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
+    vs:{warden:[1.05,'Her rot drinks magic, not steel'],arcanist:[0.95,'Spells sink into her'],ranger:[1.1,'You strike her from a distance']},loot:{n:3,rare:2,unique:0,ilvl:4,gold:200},
     phases:[{name:'Rising Rot',enter(e){toast('The rot rises','Find clean ground');},tick(e,dt){e.rtT=(e.rtT||1.4)-dt;if(e.rtT<=0){e.rtT=1.1;const [x,y]=near(260);addEHaz(x,y,70,6,e.dmg*0.26,'poison');}}}],
     moves:[
       {name:'Spore Burst',w:3,cd:1.3,fn(e){e.busy=0.7;for(let i=0;i<4;i++){const [x,y]=near(150);groundStrike(e,x,y,70,1.1,e.dmg*1.1,'#9fe04a',()=>addEHaz(x,y,60,3.5,e.dmg*0.25,'poison'));}}},
@@ -40,7 +40,7 @@ const ARCH={
   // THE HOLLOW SUN: four phases (75 / 50 / 25%): Coronal Shield (solar wisps hold it), the crater collapses (a shrinking
   // ring), Collapse (faster ring, rotating jets); Eclipse (hide in the moving shadows), Gravity Well (run against the pull).
   sun:{name:'The Hollow Sun',sub:'A dead star that wants to burn again',look:4,hp:26,dmg:1,pace:0.85,spd:0.95,elem:['fres',0.5],enrage:'collapses inward!',phaseAt:[0.75,0.5,0.25],pinnacle:1,
-    vs:{warden:[1,'Nothing here favours anyone'],arcanist:[1,'Nothing here favours anyone']},loot:{n:6,rare:3,unique:1,ilvl:8,gold:400},
+    vs:{warden:[1,'Nothing here favours anyone'],arcanist:[1,'Nothing here favours anyone'],ranger:[1,'Nothing here favours anyone']},loot:{n:6,rare:3,unique:1,ilvl:8,gold:400},
     phases:[
       {name:'Coronal Shield',enter(e){shieldAdds(e,'imp',3,'Solar Wisp',2.2);}},
       {name:'The Crater Collapses',enter(e){e.arena={x:e.homeX,y:e.homeY,r:540,min:230,rate:12};toast('The crater collapses','Stay inside the ring');}},

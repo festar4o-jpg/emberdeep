@@ -66,8 +66,8 @@ const SKILL_ALTS={
         G.fx.push({type:'tele',x:a.x,y:a.y,r:120*(big?1.4:1),t:0,max:T,col:'#a06aff',own:1});}}],
   ranger:[ // v1.0.129 (moving parts in ranger.js)
     {id:'pierce',name:'Piercing Shot',icon:'➹',cd:0.9,cost:0,elem:'phys',sfx:'twang',
-      desc:r=>`A heavy, fast arrow that passes through every enemy in a line for ${pct(1.6+0.14*(r-1))} weapon damage. Each hit restores 2 Focus. Slower than Arrow Shot.`,
-      cast(r){const p=G.p,a=aimPoint(700),twin=hasMod('psTwin'),m=(1.6+0.14*(r-1))*(twin?0.65:1),bl=hasMod('psBleed'),mount=hasMod('psMount'); /* Twin Shot, Serrated Shot, Mounting Power */
+      desc:r=>`A heavy, fast arrow that passes through every enemy in a line for ${pct(1.8+0.16*(r-1))} weapon damage. Each hit restores 2 Focus. Slower than Arrow Shot.`,
+      cast(r){const p=G.p,a=aimPoint(700),twin=hasMod('psTwin'),m=(1.8+0.16*(r-1))*(twin?0.65:1),bl=hasMod('psBleed'),mount=hasMod('psMount'); /* Twin Shot, Serrated Shot, Mounting Power */
         for(const k of twin?[-1,1]:[0]){const b=Math.atan2(a.y-p.y,a.x-p.x),ox=-Math.sin(b)*10*k,oy=Math.cos(b)*10*k;let q;
           shoot({x:a.x+ox,y:a.y+oy},1000,5,'#f0e6d0',{mult:m,weapon:true,pierce:99,bleed:bl,onhit:()=>{gainRes(2);if(mount&&q)q.mult=Math.min(m*1.75,q.mult*1.15);},arrow:true});q=G.proj[G.proj.length-1];q.heavy=true;}
         startAtk('bow','mh',0);}},
@@ -75,15 +75,15 @@ const SKILL_ALTS={
       desc:r=>`Flip backwards out of danger (nothing can hit you in the air), leaving caltrops that slow enemies by 50% and hit them for ${pct(0.35+0.04*(r-1))} damage twice a second for ${CALTROP_T}s. Costs 15 Focus.`,
       cast(r){vault(r);}},
     {id:'firetrap',name:'Fire Trap',icon:'🔥',cd:6,cost:25,elem:'fire',sfx:'swing',
-      desc:r=>`Throw a trap that springs when an enemy steps close: a fire burst for ${pct(1.6+0.18*(r-1))} damage (it can Ignite), then burning ground for ${FTRAP_T}s that deals ${pct(0.4+0.045*(r-1))} twice a second. Shares the limit of ${TRAP_MAX} traps. Costs 25 Focus.`,
+      desc:r=>`Throw a trap that springs when an enemy steps close: a fire burst for ${pct(2+0.22*(r-1))} damage (it can Ignite), then burning ground for ${FTRAP_T}s that deals ${pct(0.5+0.055*(r-1))} twice a second. Shares the limit of ${TRAP_MAX} traps. Costs 25 Focus.`,
       cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
-        placeTrap(x,y,1.6+0.18*(r-1),0,G.sk,0.4+0.045*(r-1));}},
+        placeTrap(x,y,2+0.22*(r-1),0,G.sk,0.5+0.055*(r-1));}},
     {id:'hawk',name:'Hawk',icon:'🦅',cd:12,cost:30,sfx:'screech',
       desc:r=>`A hawk circles you for ${HAWK_T}s and dives at enemies near you for ${pct(0.7+0.07*(r-1))} weapon damage (faster with Attack Speed), Marking them: Marked enemies take ${Math.round((0.15+0.01*(r-1))*100)}% more damage for ${MARK_T}s. It replaces your wolf. Costs 30 Focus.`,
       cast(r){callHawk(r);}},
     {id:'explosive',name:'Explosive Arrow',icon:'💣',cd:8,cost:40,elem:'fire',sfx:'twang',
-      desc:r=>`An arrow that sticks in the first enemy it hits and explodes ${BOMB_T}s later for ${pct(3.2+0.38*(r-1))} weapon damage around it (it can Ignite). Costs 40 Focus.`,
-      cast(r){const a=aimPoint(600),sk=G.sk,m=(3.2+0.38*(r-1))*(hasMod('exPayload')?1.25:1);shoot(a,700,5,'#ff9a3a',{mult:0.3,weapon:true,arrow:true,onhit:e=>{if(e)stickBomb(e,m,sk);}});G.proj[G.proj.length-1].fire=true;startAtk('bow','mh',0);}}]};
+      desc:r=>`An arrow that sticks in the first enemy it hits and explodes ${BOMB_T}s later for ${pct(4+0.45*(r-1))} weapon damage around it (it can Ignite). Costs 40 Focus.`,
+      cast(r){const a=aimPoint(600),sk=G.sk,m=(4+0.45*(r-1))*(hasMod('exPayload')?1.25:1);shoot(a,700,5,'#ff9a3a',{mult:0.3,weapon:true,arrow:true,onhit:e=>{if(e)stickBomb(e,m,sk);}});G.proj[G.proj.length-1].fire=true;startAtk('bow','mh',0);}}]};
 // Modifiers of the second skills (v1.0.114): 3 each, unlocked at ranks MOD_UNLOCK like the first skills' (skillmods.js).
 // v1.0.114 balance (per button, against the first skill): Ice Shards 45% a shard, Seismic Wave 180% a quake, Firewall
 // 60% a tick, Black Hole collapse 300%.

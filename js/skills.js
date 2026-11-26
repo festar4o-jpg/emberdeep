@@ -75,27 +75,27 @@ const SKILLS={
   // v1.0.124: the Ranger. Arrow Shot works; the others come in the next steps (soon: shown, not learnable yet).
   ranger:[
     {name:'Arrow Shot',icon:'🏹',cd:0.5,cost:0,
-      desc:r=>`Loose an arrow for ${pct(1+0.12*(r-1))} weapon damage. Each hit restores 3 Focus.`,
-      cast(r){const p=G.p,a=aimPoint(600),m=1+0.12*(r-1),steady=hasMod('asSteady'),bl=hasMod('asBarbed'),pc=(G.stats.pierce||0)+(steady?2:0); // skillmods.js: Steady Aim, Barbed Arrows, Split Arrow
+      desc:r=>`Loose an arrow for ${pct(0.9+0.13*(r-1))} weapon damage. Each hit restores 3 Focus.`,
+      cast(r){const p=G.p,a=aimPoint(600),m=0.9+0.13*(r-1),steady=hasMod('asSteady'),bl=hasMod('asBarbed'),pc=(G.stats.pierce||0)+(steady?2:0); // skillmods.js: Steady Aim, Barbed Arrows, Split Arrow
         shoot(a,760,4,'#e8dcc4',{mult:m,weapon:true,pierce:pc,onhit:e=>{gainRes(steady?6:3);ricochet(e,m);},arrow:true,bleed:bl}); // uniques.js: Thornspine Longbow
         if(hasMod('asSplit')){const a0=p.face;for(const k of [-1,1]){const b=a0+k*0.2;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},760,4,'#e8dcc4',{mult:m*0.5,weapon:true,pierce:pc,onhit:()=>gainRes(1),arrow:true,bleed:bl});}p.face=a0;}
         startAtk('bow','mh',0);}},
     // v1.0.125
     {name:'Multishot',icon:'🎯',cd:1.2,cost:15,
-      desc:r=>`Loose a fan of 5 arrows, each for ${pct(0.65+0.08*(r-1))} weapon damage. Each hit restores 1 Focus. Costs 15 Focus.`,
+      desc:r=>`Loose a fan of 5 arrows, each for ${pct(0.65+0.08*(r-1))} weapon damage, piercing 1 enemy. Each hit restores 1 Focus. Costs 15 Focus.`,
       cast(r){const p=G.p,a=aimPoint(560),a0=p.face,vol=hasMod('msVolley'),foc=hasMod('msFocus'),N=vol?4:foc?1:2,gap=vol?0.11:foc?0.04:0.13,m=(0.65+0.08*(r-1))*(vol?0.8:foc?1.6:1),fb=hasMod('msReturn')?4:1; // skillmods.js: Volley, Focused Fire, Hunter's Return
-        for(let k=-N;k<=N;k++){const b=a0+k*gap;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:m,weapon:true,pierce:G.stats.pierce||0,onhit:()=>gainRes(fb),arrow:true});}p.face=a0;}},
-    {name:'Spike Trap',icon:'🪤',cd:4,cost:25,
-      desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.2+0.25*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${trapMax()} at once. Costs 25 Focus.`,
+        for(let k=-N;k<=N;k++){const b=a0+k*gap;shoot({x:p.x+Math.cos(b)*100,y:p.y+Math.sin(b)*100},740,4,'#e8dcc4',{mult:m,weapon:true,pierce:(G.stats.pierce||0)+1,onhit:()=>gainRes(fb),arrow:true});}p.face=a0;}},
+    {name:'Spike Trap',icon:'🪤',cd:3,cost:20,
+      desc:r=>`Throw a trap that arms in ${TRAP_ARM}s and springs when an enemy steps close: ${pct(2.4+0.37*(r-1))} damage around it and a ${(1.2+0.04*(r-1)).toFixed(1)}s Stun. Up to ${trapMax()} at once. Costs 20 Focus.`,
       cast(r){const a=aimPoint(220),p=G.p;let x=a.x,y=a.y;const d=Math.hypot(x-p.x,y-p.y);if(d>220){x=p.x+(x-p.x)/d*220;y=p.y+(y-p.y)/d*220;}if(blockedAt(x,y,10)){x=p.x;y=p.y;}
-        const m=(2.2+0.25*(r-1))*(hasMod('trBarb')?1.2:1),st=1.2+0.04*(r-1); // skillmods.js: Lacerating Trap, Cluster Traps
+        const m=(2.4+0.37*(r-1))*(hasMod('trBarb')?1.2:1),st=1.2+0.04*(r-1); // skillmods.js: Lacerating Trap, Cluster Traps
         if(hasMod('trCluster')){for(let k=0;k<3;k++){const b=p.face+k*TAU/3;let tx=x+Math.cos(b)*45,ty=y+Math.sin(b)*45;if(blockedAt(tx,ty,10)){tx=x;ty=y;}placeTrap(tx,ty,m*0.5,st,G.sk);}}else placeTrap(x,y,m,st,G.sk);}},
     {name:'Call of the Wild',icon:'🐺',cd:10,cost:30,
       desc:r=>`Call a wolf to fight beside you. It bites for ${pct(0.8+0.1*(r-1))} weapon damage (faster with Attack Speed), has ${Math.round((0.4+0.03*(r-1))*100)}% of your Life and heals 2% a second. Calling it again heals it fully. Costs 30 Focus.`,
       cast(r){callWolf(r);}},
-    {name:'Rain of Arrows',icon:'🌧️',cd:8,cost:40,
-      desc:r=>`Arrows rain on an area for ${RAIN_T}s: ${RAIN_HITS} volleys, each hitting everything in it for ${pct(0.6+0.07*(r-1))} weapon damage. Costs 40 Focus.`,
-      cast(r){const a=aimPoint(440);rainAt(a.x,a.y,0.6+0.07*(r-1),G.sk);}}
+    {name:'Rain of Arrows',icon:'🌧️',cd:7,cost:40,
+      desc:r=>`Arrows rain on an area for ${RAIN_T}s: ${RAIN_HITS} volleys, each hitting everything in it for ${pct(0.8+0.17*(r-1))} weapon damage. Costs 40 Focus.`,
+      cast(r){const a=aimPoint(440);rainAt(a.x,a.y,0.8+0.17*(r-1),G.sk);}}
   ]
 };
 function rk(i){const c=G.char;return c.skills[i]>0?c.skills[i]+G.stats.skill[i]:0;}
@@ -123,7 +123,7 @@ function tryCast(i){
   if(sk.soon)return; // v1.0.124: a skill that isn't ready yet
   const lc=lifeCost(i); // Bloodleap Greaves: pay Life instead of Fury
   const cost=modCost(i,sk.cost); // skillmods.js: Rapid Fire
-  if(lc?p.hp<=lc+1:p.res<cost)return;
+  if(lc?p.hp<=lc+1:p.res<cost){if(!lc&&G.char.cls==='ranger')hintRanger('focus');return;} // hints.js
   if(lc){p.hp-=lc;floatText(p.x,p.y-p.r-8,'-'+lc,'#e04060',false);}else p.res-=cost;
   p.cd[i]=skillCd(i);p.cdMax[i]=p.cd[i];
   if(i>0&&hasPw('ouroboros')&&Math.random()<0.3){p.cd[i]=0;floatText(p.x,p.y-p.r-24,'Free!','#ff9a3a',false);

@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.133",
+  "latest": "1.0.134",
   "notes": [
+    {
+      "v": "1.0.134",
+      "t": [
+        "The Ranger is complete! Balance: Rain of Arrows and Spike Trap hit much harder, Multishot arrows pierce 1 enemy, Focus refills a little faster",
+        "Piercing Shot, Fire Trap and Explosive Arrow are stronger",
+        "Every boss now has a matchup for the Ranger (shown under its name), plus Ranger hints and How to play"
+      ]
+    },
     {
       "v": "1.0.133",
       "t": [
