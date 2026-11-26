@@ -133,3 +133,24 @@ function haFocus(f,z){const col=HA_TINT[f.tier]||(f.rarity===3?'#ffa83a':f.rarit
     ctx.strokeStyle='#d9b25a';ctx.lineWidth=0.8;ctx.strokeRect(-2.6,-1.8,5.2,3.6);ctx.fillStyle=col;ctx.fillRect(-0.7,-0.7,1.4,1.4);ctx.restore();return;}
   const g=ctx.createRadialGradient(z.x-1.2,z.y-1.4,0.3,z.x,z.y,4);g.addColorStop(0,'#ffffff');g.addColorStop(0.35,col);g.addColorStop(1,'#141020');
   ctx.fillStyle='#0c0907';ctx.beginPath();ctx.arc(z.x,z.y,4.6,0,TAU);ctx.fill();ctx.fillStyle=g;ctx.beginPath();ctx.arc(z.x,z.y,3.9,0,TAU);ctx.fill();}
+// v1.0.142: the hero on the character screen (2.5D step 3). The painted hero stands large above the gear slots,
+// wearing what is equipped (act colours and shimmer included), breathing; every few seconds he shows his weapon
+// (a swing, cast or shot), and a tap turns him around. Drawn each frame while the inventory is open (main.js frame);
+// the menu pauses the game, so the doll keeps its own clock. Hidden with Settings › Hero: Drawn.
+const DOLL={d:6,t0:0,cv:null}; // facing (6: toward the camera); the figure fills 80% of the doll's height
+function drawDoll(now){const cv=DOLL.cv||(DOLL.cv=$('dollCv'));if(!cv||!G.char)return;const box=cv.parentNode;
+  if(!haOn()){box.classList.add('hidden');return;}box.classList.remove('hidden');
+  if(!cv.onclick)cv.onclick=()=>{DOLL.d=(DOLL.d+1)%8;DOLL.t0=-1e9;}; // a tap turns him one step (and skips the show)
+  const w=cv.clientWidth||300,h=cv.clientHeight||170,R=window.devicePixelRatio||1;if(cv.width!==Math.round(w*R)){cv.width=Math.round(w*R);cv.height=Math.round(h*R);}
+  const t=now/1000;if(!DOLL.t0)DOLL.t0=t;
+  const C2=G.char,eq=C2.equip,mw=eq.mainhand&&eq.mainhand.slot==='weapon'?eq.mainhand:null,W=mw?WEAPONS[mw.wt]:null;
+  const show=(t-DOLL.t0)%5,u=show<0.7?show/0.7:0; // every 5 s: 0.7 s of the weapon's move
+  const ang=(DOLL.d-4)*Math.PI/4,keep=[ctx,G.time,TILT],x=cv.getContext('2d');
+  ctx=x;G.time=t;TILT=TILT_ANGLED; // draw through the game's own painter, into the doll's canvas
+  try{x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,cv.width,cv.height);
+    const g=x.createRadialGradient(cv.width/2,cv.height*0.82,4,cv.width/2,cv.height*0.82,cv.height*0.6);g.addColorStop(0,'rgba(255,190,120,.16)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,cv.width,cv.height); // a warm pool of light
+    const k=R*h*0.8/120/HA_DRAW;x.setTransform(k,0,0,k,cv.width/2,cv.height*0.86);
+    const p={x:0,y:0,hurt:0,dead:false,_hs:0,_ha:0};
+    const ok=drawHeroArt(p,C2,W,u>0?{t:u,dur:1,style:W?W.anim:'swing'}:null,u,false,ang,0,0,1);
+    if(!ok){x.setTransform(R,0,0,R,0,0);x.fillStyle='#a89a80';x.font='13px sans-serif';x.textAlign='center';x.fillText('Loading your hero…',w/2,h/2);}}
+  finally{[ctx,G.time,TILT]=keep;}}

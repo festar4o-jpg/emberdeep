@@ -1,6 +1,12 @@
 {
-  "latest": "1.0.141",
+  "latest": "1.0.142",
   "notes": [
+    {
+      "v": "1.0.142",
+      "t": [
+        "Your hero now stands large on the Inventory screen, wearing your gear with its colours and glow; every few seconds he shows off his weapon, and a tap turns him around"
+      ]
+    },
     {
       "v": "1.0.141",
       "t": [
