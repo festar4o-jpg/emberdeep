@@ -45,7 +45,7 @@ function heroArtLook(C2){const eq=C2.equip||{},f=C2.cls==='ranger',P=f?'f_':'m_'
   const it={chest:eq.body,legs:eq.body,head:eq.helm,hands:eq.gloves,feet:eq.boots,main:mw,off:L.off?off:null};
   return {sex:f?'f':'m',L,xbow,it,quiver:off&&off.slot==='quiver'?off:null,focus:off&&off.slot==='focus'?off:null};}
 const HA_IDX_HAS=n=>!HA.idx||!!HA.idx.layers[n];
-function haImg(n){let im=HA.img[n];if(!im){im=HA.img[n]=new Image();im.decoding='async';im.src=HA_BASE+n+'.webp';}return im.complete&&im.naturalWidth?im:null;}
+function haImg(n){let im=HA.img[n];if(!im){im=HA.img[n]=new Image();im.decoding='async';im.src=HA_BASE+n+'.webp'+(HA.idx&&HA.idx.layers[n]&&HA.idx.layers[n].v?'?v='+HA.idx.layers[n].v:'');} /* ?v: sw.js keeps each version */return im.complete&&im.naturalWidth?im:null;}
 function haLoadIndex(){if(HA.want)return;HA.want=true;fetch(HA_BASE+'hero.json').then(r=>r.ok?r.json():null).then(j=>{if(j&&j.layers)HA.idx=j;}).catch(()=>{HA.want=false;});}
 // The look to draw now: the wanted one once all its pictures are in, else the last complete one.
 function haReady(look){if(!HA.idx)return null;let ok=true;for(const n of Object.values(look.L))if(!haImg(n))ok=false;

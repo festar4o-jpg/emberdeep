@@ -108,7 +108,7 @@ function drawHero25(){const p=G.p,C2=G.char,L=HERO_LOOK[C2.cls]||HERO_LOOK.warde
   if(p.slowT>0||p.buffT>0){ctx.save();ctx.translate(p.x,p.y);ctx.scale(1,TILT);
     if(p.slowT>0){ctx.strokeStyle='#9fdcff';ctx.globalAlpha=0.6;ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,p.r+6,0,TAU);ctx.stroke();ctx.setLineDash([]);}
     if(p.buffT>0){ctx.strokeStyle='#ffcc55';ctx.globalAlpha=0.5+Math.sin(G.time*8)*0.2;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,p.r+9,0,TAU);ctx.stroke();}ctx.restore();}
-  if(drawHeroArt(p,C2,W,A,u,spin,ang,fx,fy,alpha))return; // heroart.js: the painted hero, once its pictures are in
+  if(drawHeroArt(p,C2,W,A,u,spin,spin?p.face:ang,fx,fy,alpha))return; // heroart.js: the painted hero, once its pictures are in (v1.0.154: Whirlwind no longer spins the figure: fx.js drawWhirl spins around it)
   const HH=heroHandSpots(W,off,A,u,S,spin);
   // one side: its arm (shoulder to hand) and what that hand holds, drawn in the floor frame lifted to hand height
   const arm=(side,spot,lift)=>{const sh=heroProj(ang,0,side*(L.w-1.5),HERO_SH_H-2+breath),hd=heroProj(ang,spot[0]*K,spot[1]*K,HERO_HAND_H*K+(lift||0)),

@@ -33,6 +33,19 @@ function drawRing(f,t){const R=f.r0+(f.r1-f.r0)*t,k=1-t,rgb=rgbOf(f.col);if(elem
   if(R>20){const S=sparkSprite(rgb),n=Math.min(14,Math.round(R/12)),off=(f.x+f.y)*0.01+t*1.5,s=6*k+2;ctx.globalAlpha=k; // sparks along the rim
     for(let i=0;i<n;i++){const a=off+i/n*TAU;ctx.drawImage(S,f.x+Math.cos(a)*R-s,f.y+Math.sin(a)*R-s,s*2,s*2);}}
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+// v1.0.154: Whirlwind. Three glowing blade trails sweep around the hero at weapon height, over a faint swirl that
+// shows the reach (88, skills.js), and dust and wind streaks fly off the edge. Drawn while G.p.spin runs.
+const WHIRL_R=88;
+function drawWhirl(p){const lift=TILT!==1?SWING_LIFT/TILT:0,t=G.time,R=WHIRL_R*0.8;ctx.save();ctx.translate(0,-lift);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+  ctx.globalAlpha=0.14;ctx.drawImage(falloff('220,210,190'),p.x-WHIRL_R,p.y-WHIRL_R,WHIRL_R*2,WHIRL_R*2); // light.js: the swirl of air
+  for(let b=0;b<3;b++){const h=t*14+b*TAU/3,N=8,span=1.6;
+    for(let i=0;i<N;i++){const u0=i/N,u1=(i+1)/N,w=0.2+0.8*u1;ctx.strokeStyle='#e8dcc4';ctx.globalAlpha=0.35*w;ctx.lineWidth=14*w;
+      ctx.beginPath();ctx.arc(p.x,p.y,R,h-span+span*u0,h-span+span*u1);ctx.stroke();ctx.globalAlpha=0.8*w;ctx.lineWidth=4*w;ctx.stroke();}
+    ctx.strokeStyle='#fff8e8';ctx.globalAlpha=0.9;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,R,h-0.3,h);ctx.stroke();} // the hot blade edge
+  ctx.restore();ctx.globalAlpha=1;
+  if(fxRnd()<0.8){const a=fxRnd()*TAU,x=p.x+Math.cos(a)*WHIRL_R*0.9,y=p.y+Math.sin(a)*WHIRL_R*0.9,v=fr(90,170); // dust thrown off the edge, along the spin
+    part(x,y,-Math.sin(a)*v+Math.cos(a)*30,Math.cos(a)*v+Math.sin(a)*30,fr(0.35,0.7),'#8a7a62',fr(5,9),{soft:1});}
+  if(fxRnd()<0.5){const a=fxRnd()*TAU,x=p.x+Math.cos(a)*R,y=p.y+Math.sin(a)*R-lift,v=fr(160,260);part(x,y,-Math.sin(a)*v,Math.cos(a)*v,fr(0.15,0.3),'#fff0d0',fr(1.2,2));}} // wind sparks
 // v1.0.148: an impact flash where a blow lands: a hot burst and two streaks across the blow, gone in a tenth of a second.
 function drawHitFlash(f,t){const k=1-t,S=sparkSprite(rgbOf(f.col)),R=f.r*(0.6+0.6*t);upr(f.x,f.y);ctx.globalCompositeOperation='lighter';
   ctx.globalAlpha=k;ctx.drawImage(S,f.x-R,f.y-R,R*2,R*2);ctx.translate(f.x,f.y);ctx.strokeStyle=f.col;ctx.lineCap='round';

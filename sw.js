@@ -10,11 +10,11 @@
 // server again and goes back online if it answers.
 // Saves live in localStorage, which a service worker never reads, writes or clears.
 // FILES must list every file the page loads; VERSION must equal GAME_VERSION in js/core.js (tests/game-check.js checks both).
-const VERSION='1.0.153',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
+const VERSION='1.0.154',CACHE='emberdeep-'+VERSION,TIMEOUT=2000,INSTALL_TIMEOUT=10000;
 // The painted hero's pictures (art/, js/heroart.js) are big and rarely change, so they live in their own cache that
 // survives game updates: each one is downloaded the first time it is needed and then always served from the cache.
 // Rebuilt art (tools/hero-art/build.js) needs a new ART name, which drops the old pictures.
-const ART='emberart-1';
+const ART='emberart-2'; // v1.0.154: -1 kept art/*.json forever, so art added later never showed; dropped
 const FILES=[ "./", "index.html", "style.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "js/core.js", "js/items.js", "js/uniques.js", "js/maps.js", "js/towns.js", "js/skills.js", "js/skillmods.js", "js/skillalts.js", "js/ranger.js", "js/ailments.js", "js/subclasses.js", "js/passives.js", "js/monsters.js", "js/bossfight.js", "js/game.js", "js/render.js", "js/light.js", "js/sprites.js", "js/hero.js", "js/heroart.js", "js/monart.js", "js/fx.js", "js/sfx.js", "js/music.js", "js/ui.js", "js/stash.js", "js/sockets.js", "js/charms.js", "js/smith.js", "js/currency.js", "js/encounters.js", "js/waystone.js", "js/zones.js", "js/acts.js", "js/portal.js", "js/sigils.js", "js/pinnacle.js", "js/rifts.js", "js/embers.js", "js/backup.js", "js/perf.js", "js/hints.js", "js/treeui.js", "js/updates.js", "changes.json", "js/main.js"];
 // One cache entry per file, whatever ?query it was opened with (play.sh opens ./?v=<time>).
 const key=u=>{const x=new URL(u,self.location.href);x.search='';x.hash='';return x.href;};
@@ -33,8 +33,12 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.
   .then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).origin!==self.location.origin)return;
   const nav=r.mode==='navigate';
-  if(new URL(r.url).pathname.includes('/art/')){e.respondWith(caches.open(ART).then(async c=>{const k=key(r.url),m=await c.match(k);if(m)return m;
-    const res=await fetch(r);if(res.ok&&res.type==='basic')await c.put(k,res.clone()).catch(()=>{});return res;}).catch(()=>Response.error()));return;}
+  if(new URL(r.url).pathname.includes('/art/')){const json=new URL(r.url).pathname.endsWith('.json');e.respondWith(caches.open(ART).then(async c=>{
+    // the art lists (hero.json, mon.json) change as art is added: network first, the cached copy when offline.
+    // Pictures carry ?v=<hash of the file> (tools/hero-art/stamp.js) and are kept under their full address, forever.
+    const k=json?key(r.url):r.url;if(!json){const m=await c.match(k);if(m)return m;}
+    try{const res=await fresh(r,json?TIMEOUT:INSTALL_TIMEOUT);if(res.ok&&res.type==='basic')await c.put(k,res.clone()).catch(()=>{});return res;}
+    catch(err){const m=await c.match(k);if(m)return m;throw err;}}).catch(()=>Response.error()));return;}
   if(nav)offline=false; // every page load gives the server another chance
   e.respondWith((async()=>{
     if(offline){const m=await cached(r);if(m)return m;}

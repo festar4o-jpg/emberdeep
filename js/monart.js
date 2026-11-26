@@ -12,7 +12,7 @@ function maLoadIndex(){if(MA.want)return;MA.want=true;fetch(MA_BASE+'mon.json').
 // Which painted monster an enemy is, or null: the Act 1 boss, and the monster types that have art (zone bosses and
 // champions of those types too); act bosses by act (boss0 = Act 1). Pinnacle bosses keep their own looks.
 function maKey(e){if(e.type==='boss'){const k='boss'+e.kind;return typeof e.kind==='number'&&!e.zb&&!e.ab&&MA.idx.mons[k]?k:null;}return MA.idx.mons[e.type]?e.type:null;} // act bosses: boss0..boss4
-function maSheet(key,s){const n=key+(s?'-'+s:'');let im=MA.img[n];if(!im){im=MA.img[n]=new Image();im.decoding='async';im.src=MA_BASE+n+'.webp';}return im.complete&&im.naturalWidth?im:null;}
+function maSheet(key,s){const n=key+(s?'-'+s:'');let im=MA.img[n];if(!im){im=MA.img[n]=new Image();im.decoding='async';im.src=MA_BASE+n+'.webp'+(MA.idx&&MA.idx.mons[key]&&MA.idx.mons[key].v?'?v='+MA.idx.mons[key].v:'');} /* ?v: sw.js keeps each version */return im.complete&&im.naturalWidth?im:null;}
 // The painted monster for e when all its sheets are in, else null (and the loading starts).
 function maReady(e){if(!maOn())return null;maLoadIndex();if(!MA.idx)return null;const key=maKey(e);if(!key)return null;
   const M=MA.idx.mons[key];let ok=true;for(let s=0;s<M.sheets;s++)if(!maSheet(key,s))ok=false;return ok?key:null;}

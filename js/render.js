@@ -77,6 +77,7 @@ function render(){
   drawMarks(onScreen); // ranger.js: Hawk's Mark
   // projectiles
   drawProjectiles(); // fx.js
+  if(G.p&&G.p.spin>0&&!G.p.dead)drawWhirl(G.p); // fx.js: Whirlwind
   // fx
   for(const f of G.fx){const t=f.t/f.max;
     if(f.type==='arc')drawSwingArc(f,t); // fx.js

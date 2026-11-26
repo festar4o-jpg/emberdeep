@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.153",
+  "latest": "1.0.154",
   "notes": [
+    {
+      "v": "1.0.154",
+      "t": [
+        "Fixed: monsters, NPCs and wolves painted after Act 1 now show; the game no longer keeps an old list of painted art (it downloads the new art once)",
+        "Whirlwind: your hero keeps facing his way and swings while glowing blade trails sweep around him, with a swirl of air and dust flying off the edge"
+      ]
+    },
     {
       "v": "1.0.153",
       "t": [
