@@ -1,0 +1,11 @@
+Emberdeep: painted props (art/props/)
+
+Standing props (barrels, crates, chests, graves, trees, reeds, the anvil, the waystone circle, a lectern, tents,
+braziers, chains, statues) cut from Flare's town and dungeon tilesets, a free and open-source action RPG:
+  https://github.com/flareteam/flare-game  (mods/fantasycore/images/tilesets: tileset_grassland, tileset_dungeon)
+Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CREDITS.txt).
+
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
+
+Changes made for Emberdeep (tools/hero-art/build-props.js): each prop cut out of its tileset, shrunk, packed into
+one sheet and saved as WebP. These changed pictures are shared under the same license (CC-BY-SA 3.0).

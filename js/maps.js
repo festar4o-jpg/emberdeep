@@ -422,7 +422,7 @@ function standProp(x,fx,fy,box,fn){if(!STAND){fn(x);return;}
 // Paint one now, with the same colour grade as the floor (gradeMap), kept inside its own shape (one shared mask canvas).
 let STAND_MASK=null;
 function paintStand(s,grade){const c=mkCanvas(s.w,s.h),x=c.getContext('2d'),R0=Math.random;x.translate(-s.x,-s.y);
-  Math.random=artRng(s.seed);try{s.fn(x);}finally{Math.random=R0;}s.fn=null;s.cv=c;
+  Math.random=artRng(s.seed);try{s.fn(x);}finally{Math.random=R0;}s.cv=c; /* fn kept: propart.js paints again with the props sheet */
   const [d,tone]=GRADE[grade]||THEMES[grade]&&THEMES[grade].grade||GRADE.town;
   if(!STAND_MASK)STAND_MASK=mkCanvas(s.w,s.h);else if(STAND_MASK.width<s.w||STAND_MASK.height<s.h){STAND_MASK.width=Math.max(STAND_MASK.width,s.w);STAND_MASK.height=Math.max(STAND_MASK.height,s.h);}
   const M=STAND_MASK.getContext('2d');M.setTransform(1,0,0,1,0,0);M.clearRect(0,0,s.w,s.h);M.drawImage(c,0,0);

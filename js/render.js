@@ -337,6 +337,12 @@ function heroHands(part,C2,W,mw,off,A,u,S,spin,HH){
 }
 function drawMerchant(){
   const {x,y}=G.merchant;
+  if(propOn()&&PR.idx){ // propart.js: a market tent with barrels and crates, the painted merchant in front
+    propArt(ctx,'tent',x+6,y-16,1.55);const pa=Math.atan2(G.p.y-y,G.p.x-x),near=Math.hypot(G.p.x-x,G.p.y-y)<220;
+    if(!drawNpcArt('npc_trader',x,y-4,near?pa:Math.PI/2)){ctx.fillStyle='#2f6b4a';ctx.beginPath();ctx.arc(x,y-18,15,0,TAU);ctx.fill();}
+    propArt(ctx,'crate',x-46,y+12,1.1);propArt(ctx,'barrel',x-30,y+18,1.05);propArt(ctx,'crate_open',x+44,y+14,1.1,true);propArt(ctx,'barrel',x+60,y+8,1.05);
+    ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Merchant',x,y-122);ctx.fillStyle='#f2d04a';ctx.fillText('Merchant',x,y-122);return;}
+  if(propOn())propLoad();
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-60,y+12,120,8);
   ctx.fillStyle='#3a2612';ctx.fillRect(x-55,y-60,5,64);ctx.fillRect(x+50,y-60,5,64);
   for(let k=0;k<8;k++){ctx.fillStyle=k%2?'#e8dcc4':'#a3262f';ctx.fillRect(x-60+k*15,y-72,15,14);}
@@ -355,7 +361,8 @@ function drawSmith(){
   ctx.fillStyle='#3a3530';ctx.strokeStyle='#140d08';ctx.lineWidth=2;ctx.fillRect(x+24,y-20,22,26);ctx.strokeRect(x+24,y-20,22,26);ctx.fillStyle=`rgba(255,${120+60*fl|0},40,1)`;ctx.fillRect(x+29,y-10,12,8);
   const painted=drawNpcArt('npc_smith',x-8,y-12,Math.atan2(G.p.y-y,G.p.x-x)); // monart.js: the painted smith behind his anvil
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-24,y+10,40,7);
-  ctx.fillStyle='#4a4f57';ctx.strokeStyle='#1a1c20';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-22,y-4);ctx.lineTo(x+12,y-4);ctx.lineTo(x+6,y+2);ctx.lineTo(x-16,y+2);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(x-10,y+2,10,10);
+  if(!propArt(ctx,'anvil',x-5,y+8,1.05)){ /* propart.js: the anvil on its stump */
+  ctx.fillStyle='#4a4f57';ctx.strokeStyle='#1a1c20';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-22,y-4);ctx.lineTo(x+12,y-4);ctx.lineTo(x+6,y+2);ctx.lineTo(x-16,y+2);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(x-10,y+2,10,10);}
   if(!painted){ctx.fillStyle='#7a4a2a';ctx.strokeStyle='#140d08';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x-6,y-26,13,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(x-6,y-24,6.5,0,TAU);ctx.fill();}
   if(!painted){const sw=Math.max(0,Math.sin(G.time*4))*0.9;ctx.save();ctx.translate(x+4,y-28);ctx.rotate(-0.6+sw);ctx.strokeStyle='#6b4423';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(14,0);ctx.stroke();ctx.fillStyle='#8f979e';ctx.fillRect(12,-4,7,8);ctx.restore();}
   ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';const ly=painted?y-80:y-46;ctx.strokeText('Blacksmith',x,ly);ctx.fillStyle='#e8a060';ctx.fillText('Blacksmith',x,ly);
@@ -363,6 +370,7 @@ function drawSmith(){
 // Stash chest: wooden box with iron bands and a gold lock.
 function drawStash(){
   const {x,y}=G.stash;
+  if(propArt(ctx,'chest',x,y+10,1.15)){ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Stash',x,y-48);ctx.fillStyle='#d9a441';ctx.fillText('Stash',x,y-48);return;} // propart.js
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-30,y+10,60,7);
   ctx.strokeStyle='#140d08';ctx.lineWidth=3;
   ctx.fillStyle='#6b4423';ctx.fillRect(x-26,y-18,52,30);ctx.strokeRect(x-26,y-18,52,30);

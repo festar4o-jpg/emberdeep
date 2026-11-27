@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.154",
+  "latest": "1.0.155",
   "notes": [
+    {
+      "v": "1.0.155",
+      "t": [
+        "Towns get painted props in the same style: the Stash is an iron-banded chest, the Crafting Bench a lectern with an open book, the Waystone a glowing stone circle, the Blacksmith works at an anvil on a stump, and the Merchant sells from a market tent with crates and barrels",
+        "Graves, trees, reeds, barrels, crates, stumps, braziers and chains around the towns are painted too (Settings > Props: Painted or Drawn)"
+      ]
+    },
     {
       "v": "1.0.154",
       "t": [

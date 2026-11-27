@@ -159,6 +159,9 @@ tap('benchClose',closeBench);
 tap('benchBtn',openBench);
 // The bench in town: a dark table with a glowing rune cloth and a few floating orbs of currency.
 function drawBench(){const {x,y}=G.bench,t=G.time;
+  if(propArt(ctx,'lectern',x,y+12,1.25)){const g=0.55+0.45*Math.sin(t*2.3); /* propart.js: a lectern with an open book of recipes */
+    for(const [col,k] of [['#9ab0ff',0],['#ffb040',1],['#c890ff',2]]){const a=t*1.4+k/3*TAU;ctx.fillStyle=col;ctx.globalAlpha=0.85*g+0.15;ctx.beginPath();ctx.arc(x+Math.cos(a)*20,y-44+Math.sin(a)*5,3.5,0,TAU);ctx.fill();}ctx.globalAlpha=1;
+    ctx.font='12px Georgia';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText('Crafting Bench',x,y-62);ctx.fillStyle='#c890ff';ctx.fillText('Crafting Bench',x,y-62);return;}
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x-34,y+10,68,7);
   ctx.fillStyle='#3a2a20';ctx.strokeStyle='#140d08';ctx.lineWidth=2;for(const o of [-26,22])ctx.fillRect(x+o,y-2,5,14);
   ctx.fillStyle='#5a4030';ctx.fillRect(x-32,y-10,64,10);ctx.strokeRect(x-32,y-10,64,10);
