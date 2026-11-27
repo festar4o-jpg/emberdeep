@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.157",
+  "latest": "1.0.158",
   "notes": [
+    {
+      "v": "1.0.158",
+      "t": [
+        "Town houses are redrawn with much more detail, each town in its own style: fieldstone and slate in Gravewatch, plastered mudbrick with domes and awnings in Kesh Oasis, thatched huts on stilts in Mirewatch, snowy log cabins with icicles in Frosthold, and iron-roofed basalt forges with ember stacks in Cinderforge",
+        "Settings > Houses: Detailed or Simple"
+      ]
+    },
     {
       "v": "1.0.157",
       "t": [

@@ -225,7 +225,7 @@ function drawTownAmb(){const W=G.town;if(!W)return;const A=W.T.amb;
       for(const [i,j] of sc){const sx=i*TILE+rand(0,TILE),sy=j*TILE+rand(0,TILE),v=Math.random();standProp(x,sx,sy+8,[sx-80,sy-140,sx+80,sy+40],x=>D.scenery(x,sx,sy,v));} // maps.js: stands upright
       const ps=W.props.slice().sort((a,b)=>a.j+a.h-(b.j+b.h));
       for(const p of ps){const px=p.i*TILE,py=p.j*TILE;
-        if(p.k==='house')standProp(x,px+p.w*TILE/2,py+p.h*TILE,[px-20,py-80,px+p.w*TILE+20,py+p.h*TILE+20],x=>house(x,p,D.house));
+        if(p.k==='house')standProp(x,px+p.w*TILE/2,py+p.h*TILE,[px-20,py-80,px+p.w*TILE+20,py+p.h*TILE+20],x=>SETTINGS.houses==='simple'?house(x,p,D.house):drawHouse(x,p,D.house)); /* houses.js: detailed, one look per act */
         else if(p.k==='center'){const cx=(p.i+1)*TILE,cy=(p.j+1)*TILE;standProp(x,cx,cy+30,[cx-90,cy-150,cx+90,cy+90],x=>D.center(x,cx,cy));}
         else standProp(x,px+20,py+34,[px-60,py-140,px+100,py+60],x=>D.prop[p.k](x,px+20,py+20,p.v));}
       for(const s of [-1,1]){const gx=(R.x-5)*TILE,gy=(R.cy+(s<0?-1.2:2.2))*TILE;standProp(x,gx,gy+10,[gx-40,gy-110,gx+40,gy+40],x=>D.gatepost(x,gx,gy));}}};}
