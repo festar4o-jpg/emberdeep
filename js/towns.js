@@ -226,9 +226,9 @@ function drawTownAmb(){const W=G.town;if(!W)return;const A=W.T.amb;
       const ps=W.props.slice().sort((a,b)=>a.j+a.h-(b.j+b.h));
       for(const p of ps){const px=p.i*TILE,py=p.j*TILE;
         if(p.k==='house')standProp(x,px+p.w*TILE/2,py+p.h*TILE,[px-20,py-80,px+p.w*TILE+20,py+p.h*TILE+20],x=>SETTINGS.houses==='simple'?house(x,p,D.house):drawHouse(x,p,D.house)); /* houses.js: detailed, one look per act */
-        else if(p.k==='center'){const cx=(p.i+1)*TILE,cy=(p.j+1)*TILE;standProp(x,cx,cy+30,[cx-90,cy-150,cx+90,cy+90],x=>D.center(x,cx,cy));}
+        else if(p.k==='center'){const cx=(p.i+1)*TILE,cy=(p.j+1)*TILE;standProp(x,cx,cy+30,[cx-90,cy-150,cx+90,cy+90],x=>SETTINGS.houses!=='simple'&&drawCenter(x,D.house.style,cx,cy)||D.center(x,cx,cy)); /* houses.js */}
         else standProp(x,px+20,py+34,[px-60,py-140,px+100,py+60],x=>D.prop[p.k](x,px+20,py+20,p.v));}
-      for(const s of [-1,1]){const gx=(R.x-5)*TILE,gy=(R.cy+(s<0?-1.2:2.2))*TILE;standProp(x,gx,gy+10,[gx-40,gy-110,gx+40,gy+40],x=>D.gatepost(x,gx,gy));}}};}
+      for(const s of [-1,1]){const gx=(R.x-5)*TILE,gy=(R.cy+(s<0?-1.2:2.2))*TILE;standProp(x,gx,gy+10,[gx-40,gy-110,gx+40,gy+40],x=>SETTINGS.houses!=='simple'&&drawGatePost(x,D.house.style,gx,gy)||D.gatepost(x,gx,gy));}}};}
   // ---- shared props ----
   const P={
     grave(x,cx,cy,v){if(propArt(x,v<0.5?'grave1':'grave2',cx,cy+12,1,v>0.75))return; /* propart.js */shadow(x,cx,cy+12,14,5);if(v<0.5){x.fillStyle='#5a5e66';x.strokeStyle='#22252a';x.lineWidth=2;x.beginPath();x.moveTo(cx-10,cy+12);x.lineTo(cx-10,cy-6);x.arc(cx,cy-6,10,Math.PI,0);x.lineTo(cx+10,cy+12);x.closePath();x.fill();x.stroke();x.fillStyle='rgba(0,0,0,.35)';x.fillRect(cx-5,cy-4,10,2);x.fillRect(cx-5,cy+1,10,2);}

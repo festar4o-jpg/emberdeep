@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.159",
+  "latest": "1.0.160",
   "notes": [
+    {
+      "v": "1.0.160",
+      "t": [
+        "Each town's centrepiece is redrawn in its style: a roofed fieldstone well in Gravewatch, a lily pool in a sandstone rim in Kesh Oasis, a huge glowing mushroom in Mirewatch, a bonfire in a ring of snowy stones in Frosthold, and a basalt font of molten metal with rune spikes in Cinderforge",
+        "The gate posts on the road in match: lanterns, domes and banners, a skull post, antlers, a fire bowl (Settings > Houses: Detailed or Simple)"
+      ]
+    },
     {
       "v": "1.0.159",
       "t": [

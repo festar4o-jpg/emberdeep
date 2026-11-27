@@ -136,3 +136,91 @@ const HOUSE_STYLE={gable:houseGable,flat:houseFlat,thatch:houseThatch,snow:house
 function drawHouse(x,p,S){const px=p.i*TILE,py=p.j*TILE,W=p.w*TILE,H=p.h*TILE,m=4;
   x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(px+W/2,py+H-2,W/2,8,0,0,Math.PI*2);x.fill();
   (HOUSE_STYLE[S.style]||houseGable)(x,{px,py,W,H,L:px+m,Rt:px+W-m,ww:W-2*m,front:p.front,v:p.v});}
+// ---------- v1.0.160: town centrepieces and gate posts, same styles ----------
+const TP=2*Math.PI;
+function hRing(x,cx,cy,rx,ry,n,fn){for(let k=0;k<n;k++){const a=k/n*TP;fn(cx+Math.cos(a)*rx,cy+Math.sin(a)*ry,a,k);}}
+// rough stone with a lit top
+function hStone(x,X,Y,w,h,col){x.fillStyle=HS.c(col,0.55);x.beginPath();x.ellipse(X,Y+h*0.25,w/2,h/2,0,0,TP);x.fill();x.fillStyle=HS.c(col,HS.r(0.9,1.1));x.beginPath();x.ellipse(X,Y,w/2*0.92,h/2*0.8,0,0,TP);x.fill();
+  x.fillStyle='rgba(255,255,255,.12)';x.beginPath();x.ellipse(X-w*0.12,Y-h*0.18,w*0.22,h*0.16,0,0,TP);x.fill();}
+const CENTER={
+  // Gravewatch: a roofed fieldstone well, crank, rope and bucket
+  gable(x,cx,cy){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.ellipse(cx+4,cy+26,40,12,0,0,TP);x.fill();
+    x.fillStyle='#2a2c30';x.beginPath();x.ellipse(cx,cy+8,32,22,0,0,TP);x.fill();
+    x.fillStyle='#0a1420';x.beginPath();x.ellipse(cx,cy+2,22,13,0,0,TP);x.fill();x.fillStyle='rgba(120,170,220,.3)';x.beginPath();x.ellipse(cx-5,cy,9,3.5,0,0,TP);x.fill();
+    hRing(x,cx,cy+4,27,17,16,(X,Y,a)=>{if(Math.sin(a)<-0.2)hStone(x,X,Y,13,9,'#62666e');});
+    for(let k=0;k<3;k++)for(let s=-1;s<=1;s+=2){const X=cx+s*(10+k*9),Y=cy+20+k*2;HS.rect(x,X-6,Y-4,12,10,HS.c('#585c64',HS.r(0.85,1.1)));HS.rect(x,X-6,Y-4,12,1.5,'#7a7e86');}
+    hRing(x,cx,cy+4,27,17,16,(X,Y,a)=>{if(Math.sin(a)>=-0.2)hStone(x,X,Y,13,9,'#5c6068');});
+    x.fillStyle='rgba(70,100,55,.55)';for(let k=0;k<4;k++){x.beginPath();x.ellipse(cx+HS.r(-26,26),cy+HS.r(14,26),HS.r(4,8),2.5,0,0,TP);x.fill();}
+    for(const s of [-1,1]){HS.rect(x,cx+s*26-3,cy-40,6,52,'#4a3424');HS.rect(x,cx+s*26-3,cy-40,2,52,'#6a4a30');}
+    HS.rect(x,cx-30,cy-28,60,4,'#3a2a1c');HS.dot(x,cx+31,cy-26,3,'#2a2a2e');HS.line(x,'#2a2a2e',2,[cx+31,cy-26,cx+37,cy-20]);
+    HS.line(x,'#a08a5a',1.2,[cx+2,cy-26,cx+2,cy-6]);HS.rect(x,cx-3,cy-8,10,9,'#5a3e26');HS.rect(x,cx-3,cy-8,10,2,'#3a3a3e');
+    HS.poly(x,'#1a1d24',[cx-40,cy-34,cx,cy-58,cx+40,cy-34,cx+36,cy-30,cx-36,cy-30]);
+    for(let r=0;r<4;r++){const y=cy-54+r*6,w=8+r*9;for(let X=cx-w;X<cx+w-2;X+=8)HS.rect(x,X,y,7,5,HS.c('#3a4254',HS.r(0.85,1.15)*(0.85+r*0.08)));}
+    HS.rect(x,cx-3,cy-61,6,5,'#4a5262');},
+  // Kesh Oasis: a pool in a sandstone rim, lilies and reeds
+  flat(x,cx,cy){x.fillStyle='rgba(0,0,0,.3)';x.beginPath();x.ellipse(cx+3,cy+8,52,34,0,0,TP);x.fill();
+    x.fillStyle='#5a7a3a';x.beginPath();x.ellipse(cx,cy,50,33,0,0,TP);x.fill();
+    hRing(x,cx,cy,46,30,22,(X,Y,a)=>{if(Math.sin(a)<0)hStone(x,X,Y,14,8,'#c8a070');});
+    x.fillStyle=HS.vgrad(x,cy-24,cy+24,'#2f8aa8','#0f3a52');x.beginPath();x.ellipse(cx,cy,38,24,0,0,TP);x.fill();
+    x.fillStyle='rgba(20,60,80,.5)';x.beginPath();x.ellipse(cx+4,cy+4,24,14,0,0,TP);x.fill();
+    x.strokeStyle='rgba(220,250,255,.35)';x.lineWidth=1.2;for(const [ox,oy,r] of [[-14,-6,7],[12,4,5],[2,-10,3],[-4,8,4]]){x.beginPath();x.ellipse(cx+ox,cy+oy,r,r*0.45,0,0,TP);x.stroke();}
+    for(const [ox,oy] of [[-20,4],[16,-8],[22,8]]){x.fillStyle='#3a7a3a';x.beginPath();x.arc(cx+ox,cy+oy,5,0.5,TP);x.lineTo(cx+ox,cy+oy);x.fill();if(ox<0)HS.dot(x,cx+ox+1,cy+oy-1,2.2,'#f0a0c0');}
+    hRing(x,cx,cy,46,30,22,(X,Y,a)=>{if(Math.sin(a)>=0)hStone(x,X,Y,14,8,'#c09868');});
+    for(const a of [0.5,2.6,4.3])if(!propArt(x,Math.random()<0.5?'reeds1':'reeds2',cx+Math.cos(a)*46,cy+Math.sin(a)*30,0.8,Math.random()<0.5)){x.strokeStyle='#5a7a30';x.lineWidth=2;x.beginPath();for(let k=-2;k<=2;k++){x.moveTo(cx+Math.cos(a)*46+k*3,cy+Math.sin(a)*30);x.lineTo(cx+Math.cos(a)*46+k*4,cy+Math.sin(a)*30-HS.r(10,18));}x.stroke();}},
+  // Mirewatch: the glowing mushroom heart
+  thatch(x,cx,cy){x.fillStyle='rgba(6,14,10,.8)';x.beginPath();x.ellipse(cx,cy+24,46,14,0,0,TP);x.fill();
+    HS.glow(x,cx,cy-30,80,'100,255,170',0.28);
+    x.strokeStyle='#3a3020';x.lineWidth=3;for(let k=0;k<6;k++){const a=k/6*Math.PI+0.2;x.beginPath();x.moveTo(cx,cy+20);x.quadraticCurveTo(cx+Math.cos(a)*20,cy+22,cx+Math.cos(a)*40,cy+24+Math.sin(a)*6);x.stroke();}
+    x.fillStyle=HS.vgrad(x,cy-26,cy+24,'#e8e0c8','#a8a088');x.beginPath();x.moveTo(cx-11,cy+24);x.quadraticCurveTo(cx-7,cy,cx-9,cy-26);x.lineTo(cx+9,cy-26);x.quadraticCurveTo(cx+7,cy,cx+11,cy+24);x.closePath();x.fill();
+    x.fillStyle='rgba(0,0,0,.15)';x.fillRect(cx+2,cy-24,4,46);HS.rect(x,cx-13,cy-8,26,4,'#d0c8b0');
+    x.fillStyle='#1a6a58';x.beginPath();x.ellipse(cx,cy-26,46,12,0,0,Math.PI);x.fill();
+    x.strokeStyle='rgba(200,255,230,.35)';x.lineWidth=1;for(let k=-40;k<=40;k+=6){x.beginPath();x.moveTo(cx,cy-24);x.lineTo(cx+k,cy-26+Math.sqrt(Math.max(0,1-(k/46)**2))*10);x.stroke();}
+    x.fillStyle=HS.vgrad(x,cy-58,cy-24,'#4ad8b0','#1a8a70');x.beginPath();x.ellipse(cx,cy-28,46,30,0,Math.PI,0);x.closePath();x.fill();
+    x.fillStyle='rgba(255,255,255,.18)';x.beginPath();x.ellipse(cx-12,cy-46,16,7,-0.3,0,TP);x.fill();
+    for(const [o,y,r] of [[-26,-34,4],[-10,-46,5],[8,-50,4],[24,-38,5],[0,-34,3.5],[34,-30,3],[-36,-29,3]]){HS.glow(x,cx+o,cy+y,r*3,'200,255,230',0.5);HS.dot(x,cx+o,cy+y,r,'#e8fff4');}
+    for(const [ox,s] of [[-30,0.5],[28,0.6],[-18,0.35],[40,0.3]]){const X=cx+ox,Y=cy+22;HS.rect(x,X-2*s*2,Y-14*s*2,4*s*2,14*s*2,'#d8d0b8');x.fillStyle='#2aa080';x.beginPath();x.ellipse(X,Y-14*s*2,12*s*2,8*s*2,0,Math.PI,0);x.closePath();x.fill();HS.dot(x,X-3*s,Y-18*s*2,1.6,'#d8fff0');}
+    for(let k=0;k<7;k++)HS.dot(x,cx+HS.r(-60,60),cy+HS.r(-70,10),1.3,'rgba(216,255,122,.9)');},
+  // Frosthold: a great bonfire in a ring of snowy stones
+  snow(x,cx,cy){x.fillStyle='rgba(60,50,40,.55)';x.beginPath();x.ellipse(cx,cy+4,38,24,0,0,TP);x.fill();HS.glow(x,cx,cy-10,80,'255,150,60',0.3);
+    hRing(x,cx,cy+4,34,21,14,(X,Y,a)=>{if(Math.sin(a)<0){hStone(x,X,Y,14,10,'#70747c');x.fillStyle='#eef4fa';x.beginPath();x.ellipse(X,Y-3,6,3,0,0,TP);x.fill();}});
+    x.fillStyle='#1a1410';x.beginPath();x.ellipse(cx,cy+4,24,14,0,0,TP);x.fill();for(let k=0;k<10;k++)HS.dot(x,cx+HS.r(-16,16),cy+HS.r(-4,10),HS.r(1.5,3),k%2?'#ff8a2a':'#ffcf60');
+    if(!propArt(x,'brazier',cx,cy+10,1.25)){x.strokeStyle='#4a3020';x.lineWidth=6;x.lineCap='round';x.beginPath();for(const a of [0.3,1.4,2.5]){x.moveTo(cx+Math.cos(a)*18,cy+4+Math.sin(a)*8);x.lineTo(cx,cy-24);}x.stroke();x.lineCap='butt';
+      for(const [w,h,c] of [[20,46,'#ff6a1a'],[14,36,'#ffa030'],[8,24,'#ffe080']]){x.fillStyle=c;x.beginPath();x.moveTo(cx-w,cy+2);x.quadraticCurveTo(cx-w*0.8,cy-h*0.5,cx,cy-h);x.quadraticCurveTo(cx+w*0.8,cy-h*0.5,cx+w,cy+2);x.closePath();x.fill();}}
+    hRing(x,cx,cy+4,34,21,14,(X,Y,a)=>{if(Math.sin(a)>=0){hStone(x,X,Y,15,10,'#686c74');x.fillStyle='#eef4fa';x.beginPath();x.ellipse(X,Y-3,6.5,3,0,0,TP);x.fill();}});
+    for(const s of [-1,1]){HS.rect(x,cx+s*48-4,cy-6,8,22,'#4a3020');HS.rect(x,cx+s*48-6,cy-8,12,4,'#eef4fa');}},
+  // Cinderforge: the ember font, a basalt basin of molten metal with rune spikes
+  forge(x,cx,cy){x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.ellipse(cx+3,cy+14,48,18,0,0,TP);x.fill();HS.glow(x,cx,cy,80,'255,120,30',0.35);
+    const hex=(r,ry,col)=>{x.fillStyle=col;x.beginPath();for(let k=0;k<6;k++){const a=k/6*TP+Math.PI/6;x[k?"lineTo":"moveTo"](cx+Math.cos(a)*r,cy+2+Math.sin(a)*ry);}x.closePath();x.fill();};
+    hex(46,28,'#1a1614');x.fillStyle='#2a2422';x.fillRect(cx-40,cy+2,80,14);hex(42,25,'#3a3230');hex(34,20,'#ff5a10');
+    x.fillStyle=HS.vgrad(x,cy-16,cy+20,'#ffd060','#ff4a10');x.beginPath();x.ellipse(cx,cy+2,28,15,0,0,TP);x.fill();HS.dot(x,cx-4,cy-1,8,'rgba(255,250,200,.6)');
+    x.strokeStyle='rgba(120,30,10,.7)';x.lineWidth=1.5;for(let k=0;k<5;k++){x.beginPath();const a=HS.r(0,TP);x.moveTo(cx+Math.cos(a)*8,cy+2+Math.sin(a)*4);x.lineTo(cx+Math.cos(a)*22,cy+2+Math.sin(a)*12);x.stroke();}
+    for(let k=0;k<6;k++){const a=k/6*TP+Math.PI/6;HS.dot(x,cx+Math.cos(a)*40,cy+2+Math.sin(a)*23,1.8,'#8a807a');}
+    for(const [ox,oy] of [[-52,-6],[52,-6],[-34,20],[34,20]]){const X=cx+ox,Y=cy+oy;HS.poly(x,'#0c0605',[X-7,Y+8,X,Y-26,X+7,Y+8]);HS.poly(x,'#2a1a16',[X,Y-26,X+7,Y+8,X+2,Y+8]);HS.glow(x,X,Y-8,12,'255,110,30',0.5);
+      HS.line(x,'#ff7a2a',1.4,[X-1,Y-16,X+2,Y-8,X-2,Y,X+1,Y+4]);}},
+};
+const GATE={
+  gable(x,cx,cy){x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(cx,cy+14,14,5,0,0,TP);x.fill();
+    for(let y=cy+12;y>cy-26;y-=8){HS.rect(x,cx-10,y-8,20,8,HS.c('#5a5e66',HS.r(0.85,1.15)));HS.rect(x,cx-10,y-8,20,1.5,'#7a7e86');HS.rect(x,cx-10,y-1,20,1,'rgba(0,0,0,.4)');}
+    HS.rect(x,cx-13,cy-32,26,7,'#6a6e76');HS.rect(x,cx-13,cy-32,26,2,'#8a8e96');HS.poly(x,'#4a4e56',[cx-9,cy-32,cx,cy-40,cx+9,cy-32]);
+    x.fillStyle='rgba(70,100,55,.6)';x.beginPath();x.ellipse(cx-6,cy+4,4,10,0.2,0,TP);x.fill();
+    HS.line(x,'#1a1a1a',2,[cx+10,cy-22,cx+18,cy-22,cx+18,cy-16]);HS.glow(x,cx+18,cy-10,16,'255,200,110',0.5);HS.rect(x,cx+14,cy-16,8,10,'#2a2420');HS.rect(x,cx+15.5,cy-14.5,5,7,'#ffd27a');},
+  flat(x,cx,cy){x.fillStyle='rgba(0,0,0,.3)';x.beginPath();x.ellipse(cx,cy+14,14,5,0,0,TP);x.fill();
+    x.fillStyle=HS.vgrad(x,cy-26,cy+14,'#d6b07c','#9a7448');x.fillRect(cx-10,cy-26,20,40);HS.rect(x,cx-12,cy-28,24,4,'#b48c5c');
+    x.fillStyle='#e8dcc4';x.beginPath();x.arc(cx,cy-28,10,Math.PI,0);x.fill();HS.rect(x,cx-1,cy-44,2,6,'#c8a040');HS.dot(x,cx,cy-45,2,'#e8c050');
+    const cc=['#a3262f','#2f6b8a'][Math.random()*2|0];HS.poly(x,cc,[cx-7,cy-20,cx+7,cy-20,cx+7,cy+2,cx,cy-3,cx-7,cy+2]);HS.rect(x,cx-7,cy-20,14,2,'#e8c070');
+    HS.line(x,'#5a3a1e',1.5,[cx+10,cy-18,cx+17,cy-18,cx+17,cy-14]);HS.glow(x,cx+17,cy-9,14,'255,200,110',0.5);x.fillStyle='#c8a040';x.beginPath();x.arc(cx+17,cy-9,4,0,TP);x.fill();HS.dot(x,cx+17,cy-9,2.2,'#ffe2a0');},
+  thatch(x,cx,cy){HS.rect(x,cx-5,cy-30,10,44,'#4a3420');HS.rect(x,cx-5,cy-30,3,44,'#6a4a30');for(const y of [cy-14,cy-2])HS.line(x,'#a08a5a',2,[cx-6,y,cx+6,y+3]);
+    x.fillStyle='#d8d0b8';x.beginPath();x.arc(cx,cy-34,6.5,0,TP);x.fill();HS.rect(x,cx-3.5,cy-30,7,4,'#d8d0b8');HS.dot(x,cx-2.3,cy-35,1.6,'#000');HS.dot(x,cx+2.3,cy-35,1.6,'#000');
+    HS.line(x,'#2a2010',1.2,[cx+5,cy-24,cx+12,cy-24,cx+12,cy-18]);HS.glow(x,cx+12,cy-13,14,'180,255,140',0.45);HS.rect(x,cx+9,cy-18,7,9,'#2a2420');HS.rect(x,cx+10.5,cy-16.5,4,6,'#c8ff9a');},
+  snow(x,cx,cy){x.fillStyle='rgba(0,0,0,.3)';x.beginPath();x.ellipse(cx,cy+14,14,5,0,0,TP);x.fill();
+    x.fillStyle=HS.vgrad(x,cy-30,cy+14,'#7a5434','#4a3020');x.fillRect(cx-8,cy-30,16,44);for(let y=cy-24;y<cy+12;y+=9)HS.rect(x,cx-8,y,16,1.2,'rgba(0,0,0,.35)');
+    x.fillStyle='#eef4fa';x.beginPath();x.ellipse(cx,cy-31,10,5,0,0,TP);x.fill();x.fillStyle='#e6eef8';x.beginPath();x.ellipse(cx,cy+13,13,4,0,0,TP);x.fill();
+    x.strokeStyle='#e8dcc4';x.lineWidth=2;x.beginPath();for(const s of [-1,1]){x.moveTo(cx,cy-20);x.quadraticCurveTo(cx+s*9,cy-24,cx+s*11,cy-33);x.moveTo(cx+s*6,cy-24);x.lineTo(cx+s*9,cy-28);}x.stroke();
+    HS.glow(x,cx,cy-42,14,'255,200,110',0.5);HS.rect(x,cx-3,cy-46,6,8,'#ffd890');},
+  forge(x,cx,cy){x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.ellipse(cx,cy+14,14,5,0,0,TP);x.fill();
+    HS.poly(x,'#1a1614',[cx-10,cy+14,cx-7,cy-24,cx+7,cy-24,cx+10,cy+14]);HS.poly(x,'#2e2624',[cx,cy-24,cx+7,cy-24,cx+10,cy+14,cx+2,cy+14]);
+    for(const y of [cy-14,cy+2]){HS.rect(x,cx-10,y,20,3,'#3a3533');HS.dot(x,cx-6,y+1.5,1.2,'#8a807a');HS.dot(x,cx+6,y+1.5,1.2,'#8a807a');}HS.line(x,'#ff6a1a',1.4,[cx-2,cy-20,cx+1,cy-10,cx-1,cy-2]);
+    HS.glow(x,cx,cy-32,18,'255,120,30',0.6);x.fillStyle='#3a3533';x.beginPath();x.ellipse(cx,cy-27,12,5,0,0,TP);x.fill();x.fillStyle='#ff8a2a';x.beginPath();x.ellipse(cx,cy-29,8,3,0,0,TP);x.fill();HS.dot(x,cx,cy-32,3,'#ffd060');}};
+// The detailed centrepiece and gate posts of a town in house style `style` (false: none, draw the simple one)
+function drawCenter(x,style,cx,cy){const f=CENTER[style];if(!f)return false;f(x,cx,cy);return true;}
+function drawGatePost(x,style,cx,cy){const f=GATE[style];if(!f)return false;f(x,cx,cy);return true;}
