@@ -14,7 +14,7 @@ const angDiff=(a,b)=>{let d=(a-b)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;r
 
 // ---------- saves ----------
 // Game version: shown in the pause menu; bump it (and VERSION in sw.js) after every change.
-const GAME_VERSION='1.0.155';
+const GAME_VERSION='1.0.156';
 const SAVE_KEY='emberdeep_v1';
 let SAVES=[];
 try{SAVES=JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){SAVES=[];}

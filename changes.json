@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.155",
+  "latest": "1.0.156",
   "notes": [
+    {
+      "v": "1.0.156",
+      "t": [
+        "Dungeons get painted props too: stone statues and standing stones, jackal-lidded tombs, headstones, skeletons and bone piles, rocks, dead trees, hanging chains, old barrels and crates, and iron fire bowls in the big rooms",
+        "Settings > Props: Painted or Drawn switches these as well"
+      ]
+    },
     {
       "v": "1.0.155",
       "t": [

@@ -250,38 +250,41 @@ const THEMES={};
   // tall ones (graves, cages, dead trees, pillars) prefer floor right under a wall so they read as standing against it.
   const shade=(x,cx,cy,rx,ry,a)=>{x.fillStyle=`rgba(0,0,0,${a||0.4})`;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,TAU);x.fill();};
   const lin=(x,x0,y0,x1,y1,c0,c1)=>{const g=x.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,c0);g.addColorStop(1,c1);return g;};
+  // propart.js: the painted version of a prop when the props sheet is in (false: draw it as before)
+  const pick=a=>a[Math.random()*a.length|0];
+  const STONE_GEN={crypt:1,citadel:1,ember:1,a1ossuary:1};
   const PR={
     // a weathered headstone: rounded top, lit face, dark top edge, crack and grime at the foot
-    grave(x,cx,cy,c){shade(x,cx+3,cy+3,11,4);x.fillStyle='#14110e';x.beginPath();x.moveTo(cx-8,cy+2);x.lineTo(cx-8,cy-14);x.arc(cx,cy-14,8,Math.PI,0);x.lineTo(cx+8,cy+2);x.closePath();x.fill();
+    grave(x,cx,cy,c){if(propArt(x,pick(['grave1','grave2','grave3','grave4']),cx,cy+3,0.85,Math.random()<0.5))return;shade(x,cx+3,cy+3,11,4);x.fillStyle='#14110e';x.beginPath();x.moveTo(cx-8,cy+2);x.lineTo(cx-8,cy-14);x.arc(cx,cy-14,8,Math.PI,0);x.lineTo(cx+8,cy+2);x.closePath();x.fill();
       x.fillStyle=lin(x,cx-7,0,cx+7,0,c||'#5a5650','#34312c');x.beginPath();x.moveTo(cx-7,cy+2);x.lineTo(cx-7,cy-13);x.arc(cx,cy-13,7,Math.PI,0);x.lineTo(cx+7,cy+2);x.closePath();x.fill();
       x.strokeStyle='rgba(0,0,0,.5)';x.lineWidth=1;x.beginPath();x.moveTo(cx-3,cy-12);x.lineTo(cx+3,cy-12);x.moveTo(cx,cy-15);x.lineTo(cx,cy-6);x.stroke();
       if(Math.random()<0.5){x.beginPath();x.moveTo(cx+2,cy-19);x.lineTo(cx+4,cy-11);x.lineTo(cx+1,cy-6);x.stroke();}
       x.fillStyle='rgba(70,90,50,.35)';x.fillRect(cx-7,cy-2,14,4);dot(x,cx+rand(-9,9),cy+4,rand(1.5,3),'rgba(30,25,20,.6)');},
     // a broken column: lit drum, shaded flank, jagged broken top, fallen chunks around it
-    pillar(x,cx,cy,c){shade(x,cx+4,cy+4,15,6,0.45);const h=rand(14,26),R=11;x.fillStyle=lin(x,cx-R,0,cx+R,0,c||'#6a645a','#2a2622');x.fillRect(cx-R,cy-h,R*2,h);
+    pillar(x,cx,cy,c,gen){if(propArt(x,STONE_GEN[gen]?pick(['statue1','statue2','statue3','statue4']):pick(['menhir1','menhir2']),cx,cy+4,STONE_GEN[gen]?1:0.75,Math.random()<0.5))return;shade(x,cx+4,cy+4,15,6,0.45);const h=rand(14,26),R=11;x.fillStyle=lin(x,cx-R,0,cx+R,0,c||'#6a645a','#2a2622');x.fillRect(cx-R,cy-h,R*2,h);
       x.beginPath();x.ellipse(cx,cy,R,R*0.42,0,0,Math.PI);x.fill();x.strokeStyle='rgba(0,0,0,.3)';x.lineWidth=1;for(const k of [-5,0,5]){x.beginPath();x.moveTo(cx+k,cy-h+3);x.lineTo(cx+k,cy+R*0.3);x.stroke();}
       x.fillStyle=c?'#8a8478':'#7e776a';x.beginPath();for(let k=0;k<=10;k++){const a=Math.PI+k/10*Math.PI,j=k%2?rand(-4,0):rand(0,3);x.lineTo(cx+Math.cos(a)*R,cy-h+Math.sin(a)*R*0.42+j);}for(let k=0;k<=10;k++){const a=k/10*Math.PI;x.lineTo(cx+Math.cos(a)*R,cy-h+Math.sin(a)*R*0.42);}x.fill();
       for(let k=0;k<4;k++)PR.chunk(x,cx+rand(-20,20),cy+rand(2,10),rand(2.5,5),c);},
     chunk(x,cx,cy,r,c){shade(x,cx+1,cy+1,r*1.1,r*0.5,0.4);x.fillStyle=c||'#5e584e';x.beginPath();for(let k=0;k<6;k++){const a=k/6*TAU,rr=r*rand(0.7,1.1);x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr*0.8);}x.fill();x.fillStyle='rgba(255,240,220,.12)';x.fillRect(cx-r*0.5,cy-r*0.6,r*0.8,1.2);},
     debris(x,cx,cy,c){for(let k=0;k<rand(4,8);k++)PR.chunk(x,cx+rand(-14,14),cy+rand(-9,9),rand(1.8,4.5),c);},
     // a low run of ruined wall: blocks of different heights with lit tops and dark faces
-    ruin(x,cx,cy,c){shade(x,cx,cy+6,30,6,0.4);let bx=cx-28;while(bx<cx+26){const w=rand(9,14),h=rand(4,16);x.fillStyle=lin(x,0,cy-h,0,cy+4,c||'#4e4840','#24201c');x.fillRect(bx,cy-h,w-1,h+4);x.fillStyle=c?'#7a7466':'#6a645a';x.fillRect(bx,cy-h-3,w-1,3);
+    ruin(x,cx,cy,c){if(propArt(x,pick(['stone1','stone2','stone3','stone4']),cx,cy+6,0.85,Math.random()<0.5))return;shade(x,cx,cy+6,30,6,0.4);let bx=cx-28;while(bx<cx+26){const w=rand(9,14),h=rand(4,16);x.fillStyle=lin(x,0,cy-h,0,cy+4,c||'#4e4840','#24201c');x.fillRect(bx,cy-h,w-1,h+4);x.fillStyle=c?'#7a7466':'#6a645a';x.fillRect(bx,cy-h-3,w-1,3);
       x.fillStyle='rgba(0,0,0,.4)';x.fillRect(bx+w-2,cy-h,1,h+4);bx+=w;}PR.debris(x,cx+rand(-10,10),cy+12,c);},
     // a skull and scattered long bones
-    bones(x,cx,cy){for(let k=0;k<3;k++){const a=rand(0,Math.PI),L=rand(7,12),bx=cx+rand(-10,10),by=cy+rand(-6,6);x.strokeStyle='#a69c84';x.lineWidth=2;x.beginPath();x.moveTo(bx-Math.cos(a)*L/2,by-Math.sin(a)*L/2);x.lineTo(bx+Math.cos(a)*L/2,by+Math.sin(a)*L/2);x.stroke();
+    bones(x,cx,cy,c,gen,drawn){if(!drawn&&propArt(x,pick(['skel1','skulls','bones1','bones2','skel2']),cx,cy+4,1,Math.random()<0.5))return;for(let k=0;k<3;k++){const a=rand(0,Math.PI),L=rand(7,12),bx=cx+rand(-10,10),by=cy+rand(-6,6);x.strokeStyle='#a69c84';x.lineWidth=2;x.beginPath();x.moveTo(bx-Math.cos(a)*L/2,by-Math.sin(a)*L/2);x.lineTo(bx+Math.cos(a)*L/2,by+Math.sin(a)*L/2);x.stroke();
         dot(x,bx-Math.cos(a)*L/2,by-Math.sin(a)*L/2,1.7,'#b8ae94');dot(x,bx+Math.cos(a)*L/2,by+Math.sin(a)*L/2,1.7,'#b8ae94');}
       if(Math.random()<0.7){shade(x,cx+1,cy+3,5,2);dot(x,cx,cy,4.5,'#c4b89c');x.fillStyle='#c4b89c';x.fillRect(cx-2.5,cy+2,5,3);dot(x,cx-1.6,cy-0.5,1.2,'#1a140e');dot(x,cx+1.6,cy-0.5,1.2,'#1a140e');}},
     // the ribcage of something large, half sunk in the sand
-    ribs(x,cx,cy){const a=rand(-0.5,0.5);x.save();x.translate(cx,cy);x.rotate(a);x.strokeStyle='#b0a688';x.lineWidth=2.5;x.beginPath();x.moveTo(-24,0);x.lineTo(22,0);x.stroke();x.lineWidth=1.8;
+    ribs(x,cx,cy){if(propArt(x,pick(['ribcage','skel3','skel4']),cx,cy+4,1,Math.random()<0.5))return;const a=rand(-0.5,0.5);x.save();x.translate(cx,cy);x.rotate(a);x.strokeStyle='#b0a688';x.lineWidth=2.5;x.beginPath();x.moveTo(-24,0);x.lineTo(22,0);x.stroke();x.lineWidth=1.8;
       for(let k=0;k<6;k++){const px=-18+k*7;for(const s of [-1,1]){x.beginPath();x.moveTo(px,0);x.quadraticCurveTo(px+5,s*9,px+2,s*15);x.stroke();}}x.fillStyle='#bfb496';x.beginPath();x.ellipse(26,0,6,4.5,0,0,TAU);x.fill();x.restore();},
     // a dead tree seen from above: dark twisted branches forking out from the trunk, their shadow cast to the side
-    tree(x,cx,cy,c){const br=(x0,y0,a,L,w,d)=>{if(d>3||L<4)return;const x1=x0+Math.cos(a)*L,y1=y0+Math.sin(a)*L;x.lineWidth=w;x.beginPath();x.moveTo(x0,y0);x.quadraticCurveTo((x0+x1)/2+rand(-4,4),(y0+y1)/2+rand(-4,4),x1,y1);x.stroke();
+    tree(x,cx,cy,c){if(propArt(x,pick(['deadtree1','deadtree2','deadtree3','deadtree4']),cx,cy+6,0.45,Math.random()<0.5))return;const br=(x0,y0,a,L,w,d)=>{if(d>3||L<4)return;const x1=x0+Math.cos(a)*L,y1=y0+Math.sin(a)*L;x.lineWidth=w;x.beginPath();x.moveTo(x0,y0);x.quadraticCurveTo((x0+x1)/2+rand(-4,4),(y0+y1)/2+rand(-4,4),x1,y1);x.stroke();
         for(let k=0;k<2;k++)br(x1,y1,a+rand(-0.7,0.7),L*rand(0.55,0.75),w*0.6,d+1);};
       x.strokeStyle='rgba(0,0,0,.35)';x.lineCap='round';const seed=Math.random();for(let k=0;k<5;k++)br(cx+8,cy+8,k/5*TAU+seed*6,rand(12,20),3.5,0);
       x.strokeStyle=c||'#2a1e14';for(let k=0;k<5;k++)br(cx,cy,k/5*TAU+seed*6,rand(12,20),3.5,0);dot(x,cx,cy,5,c||'#2a1e14');dot(x,cx-1,cy-1,2,'rgba(255,230,200,.1)');x.lineCap='butt';},
     // an iron gibbet cage on the floor: base ring, bars, a domed top; sometimes bones inside, sometimes coals glowing
     cage(x,cx,cy,hot){shade(x,cx+3,cy+4,14,5,0.45);if(hot){glow(x,cx,cy-4,18,'rgba(255,110,30,.5)');addLight(cx,cy-6,90,0.5,'255,110,30',0.3,1);}
-      x.strokeStyle='#1a1614';x.lineWidth=2;x.beginPath();x.ellipse(cx,cy,11,4.5,0,0,TAU);x.stroke();if(!hot&&Math.random()<0.6)PR.bones(x,cx,cy-3);if(hot)for(let k=0;k<5;k++)dot(x,cx+rand(-6,6),cy+rand(-2,2),rand(1.5,2.5),'#ff8a2a');
+      x.strokeStyle='#1a1614';x.lineWidth=2;x.beginPath();x.ellipse(cx,cy,11,4.5,0,0,TAU);x.stroke();if(!hot&&Math.random()<0.6)PR.bones(x,cx,cy-3,0,0,1);if(hot)for(let k=0;k<5;k++)dot(x,cx+rand(-6,6),cy+rand(-2,2),rand(1.5,2.5),'#ff8a2a');
       x.strokeStyle='#3a3430';x.lineWidth=1.6;for(let k=0;k<7;k++){const a=Math.PI*(0.05+k/6*0.9),bx=cx+Math.cos(a)*11;x.beginPath();x.moveTo(bx,cy+Math.sin(a)*4.5);x.lineTo(bx,cy-22+Math.sin(a)*4.5);x.stroke();}
       x.beginPath();x.ellipse(cx,cy-22,11,4.5,0,0,TAU);x.stroke();x.beginPath();x.moveTo(cx-11,cy-22);x.quadraticCurveTo(cx,cy-34,cx+11,cy-22);x.stroke();x.fillStyle='rgba(255,230,200,.2)';x.fillRect(cx-9,cy-23,3,1);
       x.strokeStyle='#2a2420';x.lineWidth=1.4;x.setLineDash([2,1.5]);x.beginPath();x.moveTo(cx,cy-30);x.lineTo(cx,cy-46);x.stroke();x.setLineDash([]);},
@@ -297,16 +300,23 @@ const THEMES={};
       x.strokeStyle='rgba(150,180,170,.18)';x.lineWidth=1;x.beginPath();x.ellipse(cx-rx*0.2,cy-ry*0.25,rx*0.55,ry*0.35,0,Math.PI*1.1,Math.PI*1.8);x.stroke();},
     // ice: a jagged crust of frost crystals
     ice(x,cx,cy){for(let k=0;k<rand(3,6);k++){const bx=cx+rand(-12,12),by=cy+rand(-6,6),h=rand(5,13);x.fillStyle='rgba(200,230,250,.75)';x.beginPath();x.moveTo(bx-3,by);x.lineTo(bx,by-h);x.lineTo(bx+3,by);x.fill();x.fillStyle='rgba(255,255,255,.6)';x.fillRect(bx-0.5,by-h+2,1,h-3);}},
-    chains(x,cx,cy){x.strokeStyle='#4a4440';x.lineWidth=1.6;let px=cx-18,py=cy;for(let k=0;k<9;k++){const nx=px+4.5,ny=py+rand(-2,2);x.beginPath();x.ellipse((px+nx)/2,(py+ny)/2,3,1.8,Math.atan2(ny-py,nx-px),0,TAU);x.stroke();px=nx;py=ny;}}};
+    chains(x,cx,cy){if(propArt(x,'chains',cx+18,cy+8,0.5,Math.random()<0.5))return;x.strokeStyle='#4a4440';x.lineWidth=1.6;let px=cx-18,py=cy;for(let k=0;k<9;k++){const nx=px+4.5,ny=py+rand(-2,2);x.beginPath();x.ellipse((px+nx)/2,(py+ny)/2,3,1.8,Math.atan2(ny-py,nx-px),0,TAU);x.stroke();px=nx;py=ny;}},
+    // v1.0.156: a stone tomb against the wall (painted: a jackal on the lid); drawn: a plain lidded stone box
+    tomb(x,cx,cy,c){if(propArt(x,pick(['tomb1','tomb2','tomb3','tomb4']),cx,cy+6,0.8,Math.random()<0.5))return;shade(x,cx+3,cy+6,22,6,0.45);
+      x.fillStyle=lin(x,0,cy-14,0,cy+6,c||'#5a5650','#24201c');x.fillRect(cx-20,cy-12,40,18);x.fillStyle=c?'#8a8478':'#6e685e';x.fillRect(cx-22,cy-17,44,6);x.fillStyle='rgba(0,0,0,.35)';x.fillRect(cx-14,cy-6,28,1.5);x.fillRect(cx-14,cy-1,28,1.5);},
+    // v1.0.156: old stores left behind: barrels and crates, some broken open
+    stores(x,cx,cy){const P=[['barrel',-12,2],['crate',10,-2],[pick(['barrel_broken','crate_open','barrel']),2,10]];let done=false;
+      for(const [n,ox,oy] of P)if(propArt(x,n,cx+ox,cy+oy,0.9,Math.random()<0.5))done=true;if(done)return;
+      for(const [ox,oy] of [[-10,0],[9,4]]){shade(x,cx+ox,cy+oy+10,11,4);x.fillStyle='#5a3a1e';x.beginPath();x.ellipse(cx+ox,cy+oy,10,12,0,0,TAU);x.fill();x.fillStyle='#3a3e44';x.fillRect(cx+ox-10,cy+oy-5,20,2);x.fillRect(cx+ox-10,cy+oy+4,20,2);}}};
   // Props per act: [kind, weight, against-a-wall]. Colours lean on each act's stone.
   const PROP_SET={
-    crypt:[['grave',3,1],['pillar',2,0],['candles',2,0],['bones',3,0],['ruin',1.5,0],['cage',1,1],['debris',2,0],['chains',1,0]],
-    desert:[['ribs',2,0],['bones',2,0],['pillar',2,0],['ruin',2,0],['tree',2,0],['debris',3,0]],
+    crypt:[['grave',3,1],['tomb',1,1],['stores',1,0],['pillar',2,0],['candles',2,0],['bones',3,0],['ruin',1.5,0],['cage',1,1],['debris',2,0],['chains',1,0]],
+    desert:[['ribs',2,0],['tomb',1,1],['bones',2,0],['pillar',2,0],['ruin',2,0],['tree',2,0],['debris',3,0]],
     marsh:[['tree',4,0],['log',3,0],['puddle',4,0],['bones',1.5,0],['grave',1,1],['debris',1,0]],
-    citadel:[['pillar',3,0],['ice',3,0],['cage',1.5,1],['ruin',2,0],['debris',2,0],['bones',1,0]],
+    citadel:[['pillar',3,0],['stores',1,0],['ice',3,0],['cage',1.5,1],['ruin',2,0],['debris',2,0],['bones',1,0]],
     ember:[['cage',2,1],['pillar',2,0],['debris',3,0],['bones',2,0],['chains',2,0],['ruin',1,0]],
-    a1fields:[['grave',5,0],['tree',3,0],['bones',2,0],['candles',1,0],['debris',1,0]],a1gully:[['tree',3,0],['bones',3,0],['cage',2,1],['debris',3,0],['log',1,0]],
-    a1ossuary:[['bones',6,0],['candles',2,0],['debris',2,0],['grave',1,1],['chains',1,0]],a1moor:[['tree',4,0],['log',3,0],['debris',2,0],['grave',1,0],['ruin',1,0]]};
+    a1fields:[['grave',5,0],['tree',3,0],['bones',2,0],['candles',1,0],['debris',1,0]],a1gully:[['tree',3,0],['stores',1,0],['bones',3,0],['cage',2,1],['debris',3,0],['log',1,0]],
+    a1ossuary:[['bones',6,0],['tomb',1,1],['candles',2,0],['debris',2,0],['grave',1,1],['chains',1,0]],a1moor:[['tree',4,0],['log',3,0],['debris',2,0],['grave',1,0],['ruin',1,0]]};
   const PROP_COL={a1fields:'#5a5650',a1gully:'#6a5e50',a1ossuary:'#4a4440',a1moor:'#5a5448',crypt:'#5a5650',desert:'#8a7656',marsh:'#4a4a3a',citadel:'#7a8a9a',ember:'#3a2c28'};
   // ---- Act 1 zone themes (zones.js) ----
   const treeWall=(x,px,py,adj,h)=>{x.fillStyle=`hsl(${h},18%,4%)`;x.fillRect(px,py,TILE,TILE);if(!adj)return;
@@ -338,7 +348,7 @@ const THEMES={};
       for(let k=0;k<n;k++){let w=Math.random()*tot,P=S[0];for(const s of S){w-=s[1];if(w<0){P=s;break;}}
         let i,j,ok=false;for(let t=0;t<8&&!ok;t++){i=r.x+randi(0,r.w-1);j=r.y+randi(0,r.h-1);if(P[2]){for(let jj=j;jj>=r.y-1;jj--)if(at(i,jj-1)===1){j=jj;break;}}ok=at(i,j)===0&&!taken.has(j*MW+i)&&(!P[2]||at(i,j-1)===1);}
         if(!ok)continue;taken.add(j*MW+i);const cx=i*TILE+20+rand(-5,5),cy=j*TILE+(P[2]?26:20)+rand(-5,5);
-        standProp(x,cx,cy+2,[cx-60,cy-110,cx+60,cy+34],x=>{if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c);});}}};
+        standProp(x,cx,cy+2,[cx-60,cy-110,cx+60,cy+34],x=>{if(P[0]==='cage')PR.cage(x,cx,cy,gen==='ember');else if(P[0]==='tree')PR.tree(x,cx,cy,gen==='desert'?'#3a2a1a':'#20180e');else PR[P[0]](x,cx,cy,c,gen);});}}};
   // Floor detail across many tiles: roots in the marsh, wind ripples in the sand, long cracks in stone.
   THEMES._floorDetail=(x,gen,at)=>{gen=THEMES[gen]&&THEMES[gen].detail||gen;const N=gen==='marsh'?60:gen==='desert'?50:35;
     for(let k=0;k<N;k++){const i=randi(1,MW-2),j=randi(1,MH-2);if(at(i,j)!==0)continue;let px=i*TILE+rand(0,TILE),py=j*TILE+rand(0,TILE),a=rand(0,TAU);
@@ -373,7 +383,8 @@ function placeTorches(x,gen,at,adjFloor){const TH=THEMES[gen]||{},rgb=TH.torch||
   for(const r of G.rooms||[]){if(r.w<8||r.h<7||Math.random()<0.45)continue;
     for(const [ci,cj] of [[r.x+1,r.y+1],[r.x+r.w-2,r.y+r.h-2],[r.x+r.w-2,r.y+1],[r.x+1,r.y+r.h-2]].sort(()=>Math.random()-0.5).slice(0,Math.random()<0.5?1:2)){
       if(at(ci,cj)!==0)continue;const bx=ci*TILE+20,by=cj*TILE+24;
-      standProp(x,bx,by+10-0.1,[bx-20,by-20,bx+20,by+20],x=>{ // its flame (light.js drawTorch) comes right after it
+      standProp(x,bx,by+10-0.1,[bx-30,by-30,bx+30,by+24],x=>{ // its flame (light.js drawTorch) comes right after it
+      if(propArt(x,'firebowl',bx,by+11,0.8))return; /* propart.js: an iron fire bowl */
       x.fillStyle='rgba(0,0,0,.45)';x.beginPath();x.ellipse(bx,by+10,14,5,0,0,TAU);x.fill();
       x.strokeStyle='#17120e';x.lineWidth=2.2;x.beginPath();for(const a of [-0.9,0,0.9]){x.moveTo(bx+Math.sin(a)*5,by-2);x.lineTo(bx+Math.sin(a)*12,by+10);}x.stroke();
       x.fillStyle='#231c16';x.beginPath();x.ellipse(bx,by-3,11,5,0,0,TAU);x.fill();x.fillStyle='#3a2e24';x.beginPath();x.ellipse(bx,by-5,11,4,0,0,TAU);x.fill();
