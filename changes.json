@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.156",
+  "latest": "1.0.157",
   "notes": [
+    {
+      "v": "1.0.157",
+      "t": [
+        "Town floors are painted in the same style as the hero and props: cobbles and wet grass in Gravewatch, sandstone paving and sand in Kesh Oasis, swamp grass around Mirewatch, snowy cobbles and snow in Frosthold, dark stone slabs and basalt in Cinderforge",
+        "Settings > Floors: Painted or Drawn"
+      ]
+    },
     {
       "v": "1.0.156",
       "t": [

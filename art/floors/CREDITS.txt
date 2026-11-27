@@ -1,0 +1,11 @@
+Emberdeep: painted floors (art/floors/)
+
+Town floors (grass, cobbles, snow, cave earth, stone slabs)
+taken from Flare's ground tilesets, a free and open-source action RPG:
+  https://github.com/flareteam/flare-game  (mods/fantasycore/images/tilesets: tileset_grassland, tileset_snowplains, tileset_cave, tileset_dungeon)
+Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CREDITS.txt).
+
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC-BY-SA 3.0), see LICENSE.txt in this folder.
+
+Changes made for Emberdeep (tools/hero-art/build-floors.js): each ground tile turned from a diamond into a square,
+recoloured, packed into one sheet and saved as WebP. These changed pictures are shared under the same license (CC-BY-SA 3.0).

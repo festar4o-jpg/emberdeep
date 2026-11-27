@@ -20,7 +20,7 @@ function frame(now){
 watchBattery();loadHints();$('hintBox').onclick=()=>nextHint(); // hints.js
 startUpdates(); // updates.js: the update check
  // perf.js: Battery saver turns on by itself on low battery
-migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();
+migrateSaves();loadStash();loadCur();loadSigils();loadEngs();loadBook();loadSettings();setupBackupUi();if(floorOn())floorLoad(); /* floorart.js: the town floors early, so the first town is painted on them */
 resize();showTitle();requestAnimationFrame(frame);
 $('verTxt').textContent='Emberdeep v'+GAME_VERSION;
 // Debug autotest (a bot that plays and reports; see debug/autotest.js): only with ?autotest=1 in the URL. The file is not in
