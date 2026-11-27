@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.160",
+  "latest": "1.0.161",
   "notes": [
+    {
+      "v": "1.0.161",
+      "t": [
+        "More dungeon props in the painted style: stalagmites in the Ossuary, the Warren and the Act 3 caves, glowing purple cave mushrooms, painted crates, and statues in the later acts' stone halls",
+        "Iron cages, candle clusters, fallen logs, puddles and ice crystals are redrawn with much more detail"
+      ]
+    },
     {
       "v": "1.0.160",
       "t": [

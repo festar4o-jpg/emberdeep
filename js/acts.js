@@ -44,7 +44,7 @@ const decoOf=(list)=>(x,px,py)=>{let r=Math.random();for(const [p,fn] of list){i
 {const {PR,shade,lin,dot}=AH;
   PR.urn=(x,cx,cy,c)=>{shade(x,cx+2,cy+3,9,4);x.fillStyle=lin(x,cx-7,0,cx+7,0,c||'#9a7448','#4a3420');x.beginPath();x.ellipse(cx,cy-6,7,9,0,0,TAU);x.fill();x.fillRect(cx-4,cy-17,8,4);
     x.strokeStyle='rgba(0,0,0,.4)';x.lineWidth=1;x.beginPath();x.moveTo(cx-6,cy-8);x.lineTo(cx+6,cy-8);x.stroke();if(Math.random()<0.4){x.fillStyle='#2a1a10';x.beginPath();x.moveTo(cx+2,cy-14);x.lineTo(cx+7,cy-6);x.lineTo(cx+3,cy-2);x.fill();}};
-  PR.crate=(x,cx,cy)=>{shade(x,cx+3,cy+3,12,5);x.fillStyle='#5a4228';x.fillRect(cx-10,cy-16,20,18);x.strokeStyle='#2a1c10';x.lineWidth=1.5;x.strokeRect(cx-10,cy-16,20,18);x.beginPath();x.moveTo(cx-10,cy-16);x.lineTo(cx+10,cy+2);x.stroke();};
+  PR.crate=(x,cx,cy)=>{if(propArt(x,Math.random()<0.3?'crate_open':'crate',cx,cy+4,0.95,Math.random()<0.5))return; /* propart.js */shade(x,cx+3,cy+3,12,5);x.fillStyle='#5a4228';x.fillRect(cx-10,cy-16,20,18);x.strokeStyle='#2a1c10';x.lineWidth=1.5;x.strokeRect(cx-10,cy-16,20,18);x.beginPath();x.moveTo(cx-10,cy-16);x.lineTo(cx+10,cy+2);x.stroke();};
   PR.wagon=(x,cx,cy)=>{const a=rand(-0.5,0.5);x.save();x.translate(cx,cy);x.rotate(a);shade(x,3,6,30,9);x.fillStyle='#4a3420';x.fillRect(-26,-12,52,20);x.strokeStyle='#22160c';x.lineWidth=2;x.strokeRect(-26,-12,52,20);
     for(let k=-20;k<26;k+=8){x.beginPath();x.moveTo(k,-12);x.lineTo(k,8);x.stroke();}for(const s of [-1,1]){x.strokeStyle='#2a1c10';x.lineWidth=3;x.beginPath();x.arc(s*16,10,8,0,s>0?Math.PI*1.3:TAU);x.stroke();}x.restore();};
   PR.eggs=(x,cx,cy)=>{for(let k=0;k<randi(3,6);k++){const ex=cx+rand(-11,11),ey=cy+rand(-7,7);shade(x,ex+1,ey+2,5,2.5);x.fillStyle=lin(x,ex-4,0,ex+4,0,'#d8c890','#7a6a40');x.beginPath();x.ellipse(ex,ey-3,4,5.5,0,0,TAU);x.fill();}
@@ -222,7 +222,7 @@ Object.assign(ZB_PAINT,{
   zoneProps('a2tomb',[['urn',3,0],['pillar',3,0],['candles',2,0],['obelisk',1.5,1],['bones',2,0],['chains',1,0]],'#9a8458');
   THEMES.a2warren=zoneTheme({floor:['earth',{h:32,s:24,l:14,fleck:'rgba(220,200,140,.1)'}],wall:['rock',{h:30,s:22,l:15}],detail:'marsh',flat:1,grade:[0.36,'#d8c8a0'],void:'#080503',
     deco:decoOf([[0.03,(x,px,py)=>{dot(x,px+20,py+22,rand(6,11),'rgba(160,190,70,.14)');}],[0.015,skull]])});
-  zoneProps('a2warren',[['eggs',4,0],['bones',3,0],['debris',2,0],['ribs',1,0]],'#6a5a3a');
+  zoneProps('a2warren',[['eggs',4,0],['stalag',1.5,0],['bones',3,0],['debris',2,0],['ribs',1,0]],'#6a5a3a');
   THEMES.a2road=zoneTheme({floor:['sand',{h:33,s:20,l:21,ripple:0.15}],road:['earth',{h:28,s:18,l:16}],wall:['sandstone',{h:28,s:12,l:22}],detail:'desert',flat:1,grade:[0.3,'#ecd2a4'],void:'#120a05',
     deco:decoOf([[0.02,bush],[0.01,skull]])});
   zoneProps('a2road',[['wagon',2,0],['crate',2,0],['bones',2,0],['ribs',1.5,0],['debris',2,0],['tree',1,0]],'#8a7656');}
@@ -337,13 +337,13 @@ Object.assign(ZB_PAINT,{
   const leaves=(x,px,py)=>{for(let k=0;k<4;k++){x.fillStyle=`hsla(${rand(20,50)},40%,${rand(14,22)}%,.7)`;x.beginPath();x.ellipse(px+rand(4,36),py+rand(4,36),3,1.6,rand(0,3),0,TAU);x.fill();}};
   THEMES.a3fen=zoneTheme({floor:['earth',{h:88,s:20,l:13,fleck:'rgba(120,170,70,.12)'}],wall:['tree',{h:100}],detail:'marsh',flat:1,grade:[0.42,'#b4c4b0'],void:'#020806',
     voidT:water(180,7),poison:THEMES.marsh.poison,deco:decoOf([[0.05,reeds],[0.01,shroom]])});
-  zoneProps('a3fen',[['tree',3,0],['log',3,0],['puddle',3,0],['bones',1,0]],'#4a4a3a');
+  zoneProps('a3fen',[['tree',3,0],['cshroom',1,0],['log',3,0],['puddle',3,0],['bones',1,0]],'#4a4a3a');
   THEMES.a3wood=zoneTheme({floor:['earth',{h:30,s:20,l:11,fleck:'rgba(90,70,40,.2)'}],wall:['tree',{h:85}],detail:'marsh',flat:1,grade:[0.44,'#b8c0a0'],void:'#030502',
     poison:THEMES.marsh.poison,deco:decoOf([[0.06,leaves],[0.012,shroom],[0.02,reeds]])});
   zoneProps('a3wood',[['tree',5,0],['log',4,0],['bones',1,0],['grave',0.5,1],['debris',1,0]],'#3a3a2a');
   THEMES.a3caves=zoneTheme({floor:['slab',{h:150,s:8,l:11,lv:2,crack:'rgba(120,200,140,.18)'}],wall:['rock',{h:150,s:10,l:13}],detail:'marsh',grade:[0.42,'#a8c0b8'],void:'#020403',torch:'150,230,170',
     poison:THEMES.marsh.poison,deco:decoOf([[0.03,shroom],[0.02,(x,px,py)=>dot(x,px+rand(6,34),py+rand(6,34),rand(4,8),'rgba(120,200,180,.12)')]])});
-  zoneProps('a3caves',[['puddle',4,0],['bones',2,0],['debris',2,0],['chains',1,0]],'#3a4a42');
+  zoneProps('a3caves',[['puddle',4,0],['stalag',2,0],['cshroom',2,0],['bones',2,0],['debris',2,0],['chains',1,0]],'#3a4a42');
   THEMES.a3village=zoneTheme({floor:['earth',{h:40,s:22,l:13}],wall:['brick',{h:30,s:22,l:20,trim:'hsl(30,30%,28%)'}],detail:'marsh',grade:[0.42,'#b4bcb0'],void:'#020806',torch:'190,255,140',
     voidT:water(190,8),poison:THEMES.marsh.poison,deco:decoOf([[0.03,reeds],[0.02,leaves]])});
   zoneProps('a3village',[['crate',2,0],['log',3,0],['puddle',2,0],['urn',1.5,0],['bones',1.5,0],['cage',1,1]],'#4a3a2a');
