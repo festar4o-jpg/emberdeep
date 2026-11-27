@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.163",
+  "latest": "1.0.164",
   "notes": [
+    {
+      "v": "1.0.164",
+      "t": [
+        "Level up: a gold column of light rises from your hero and a big LEVEL banner shows in the middle of the screen",
+        "Unique and set drops burst into a column of light in their colour with a soft screen flash; an Ancient also slows the world for a moment",
+        "Critical hits pop in with a bigger number"
+      ]
+    },
     {
       "v": "1.0.163",
       "t": [

@@ -6,9 +6,10 @@ function frame(now){
   if(capSkip(now-last)){requestAnimationFrame(frame);return;} // perf.js: frame rate cap
   const gap=now-last,dt=Math.min(0.05,gap/1000);last=now;const t0=performance.now();
   const idle=G.paused||portraitBlocked(); // a menu is open, the game is paused or the phone is upright
+  const slow=G.slowT>0;if(slow)G.slowT-=dt; // an Ancient drop slows the world for half a second (fx.js dropFlash)
   if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
   else if(INTRO.on&&G.char&&G.p&&!idle)introTick(dt); // intro.js: the opening drift, the world holding still
-  else if(G.char&&G.p&&!idle)update(dt);
+  else if(G.char&&G.p&&!idle)update(slow?dt*0.3:dt);
   // perf.js: while idle nothing moves, so the scene behind the menu is only redrawn IDLE_DRAW_MS apart (battery)
   if(!idle||now-PERF.idleAt>=IDLE_DRAW_MS){PERF.idleAt=now;PERF.draws++;render();
     if(G.char&&G.p){updateHud();G.mmT-=idle?IDLE_DRAW_MS/1000:dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}}

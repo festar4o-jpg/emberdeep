@@ -90,7 +90,7 @@ function render(){
     else if(f.type==='bolt')drawBolt(f,t);}
   drawParticles(); // fx.js
   if(G.inTown)drawTownAmb();else drawAir();
-  for(const t of G.texts){upr(t.x,t.y);ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold 18px':'bold 13px')+' sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);ctx.restore();}ctx.globalAlpha=1;
+  for(const t of G.texts){upr(t.x,t.y);ctx.globalAlpha=1-t.t/0.9;ctx.font=(t.big?'bold '+Math.round(21*(1+0.7*Math.max(0,1-t.t/0.12)))+'px':'bold 13px')+' sans-serif'; /* big numbers (crits) pop in large, then settle */ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.txt,t.x,t.y);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y);ctx.restore();}ctx.globalAlpha=1;
   // darkness
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const Lt=G.inTown?townOf(G.depth).light:ACTS[actIdx(G.depth)].light;

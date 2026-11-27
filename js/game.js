@@ -142,8 +142,8 @@ function explodeAt(x,y,rad,mult){fxExplosion(x,y,rad);spellImpact(x,y,'#ff9a3a',
 function gainXp(v){
   const c=G.char;v*=1+(G.stats&&G.stats.xp||0)/100; /* charms: Experience */if(c.lvl>=MAX_LVL)return gainParagon(Math.round(shrineXp(v)));c.xp+=Math.round(shrineXp(v));
   while(c.lvl<MAX_LVL&&c.xp>=xpNeed(c.lvl)){c.xp-=xpNeed(c.lvl);c.lvl++;c.skillPts++;buzz('levelup');playSfx('levelup');refreshStats();G.p.hp=G.stats.life;G.p.res=G.stats.res;
-    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub&&hasPaths(c)?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point, +1 passive point'); /* subclasses.js */
-    G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
+    const newSk=SKILL_REQ.indexOf(c.lvl);if(c.lvl===SUB_LVL)hintPath();toast('Level '+c.lvl+'!',c.lvl===SUB_LVL&&!c.sub&&hasPaths(c)?'Choose your path: tap ✨, then Path':newSk>0?'New skill available — tap ✨':'+1 skill point, +1 passive point',true); /* subclasses.js */
+    G.fx.push({type:'ring',x:G.p.x,y:G.p.y,r0:10,r1:120,t:0,max:0.6,col:'#ffd54a'});G.fx.push({type:'pillar',x:G.p.x,y:G.p.y,t:0,max:1.1,col:'#ffd54a',w:60,h:340});screenFlash('#ffd54a',0.25);burst(G.p.x,G.p.y,30,'#ffd54a',200);buildSkillBar();saveChar();}
 }
 // After level 50 every bit of XP fills Paragon levels instead (leftover XP at 50 carries over).
 function gainParagon(v){const c=G.char;c.para=c.para||0;c.pxp=(c.pxp||0)+v+(c.xp||0);c.xp=0;let up=false;
@@ -155,9 +155,11 @@ function refreshStats(){G.stats=calcStats(G.char);if(typeof treeDot==='function'
 
 // ---------- fx helpers ----------
 function burst(x,y,n,col,sp){const pm=PERF.partMul;if(pm<1)n=Math.ceil(n*pm);for(let k=0;k<n;k++){if(G.parts.length>350*pm)break; /* perf.js: Particles setting */const a=rand(0,TAU),v=rand(sp*0.3,sp);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(0.3,0.7),max:0.7,col,s:rand(2,4)});}}
+// A soft full-screen flash in one colour that fades out (level-up, unique drops).
+function screenFlash(col,a){const f=$('flash');f.style.transition='none';f.style.background=col;f.style.opacity=a;void f.offsetWidth;f.style.transition='';f.style.opacity=0;}
 function floatText(x,y,txt,col,big){if(G.texts.length>60)G.texts.shift();G.texts.push({x,y,txt:String(txt),col,big,t:0});}
 let toastTimer=0;
-function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'</small>':'');t.style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity=0,2200);}
+function toast(a,b,big){const t=$('toast');t.classList.toggle('big',!!big);t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'</small>':'');t.style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity=0,2200);}
 
 // ---------- start / depth ----------
 function newChar(name,cls){

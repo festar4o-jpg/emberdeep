@@ -396,3 +396,6 @@ h2::before,h2::after{content:'';display:inline-block;width:28px;height:1px;margi
 @keyframes coachIn{from{opacity:0;transform:translate(-50%,8px);}to{opacity:1;transform:translate(-50%,0);}}
 .coach{animation:coachGlow 1s ease-in-out infinite;}
 @keyframes coachGlow{0%,100%{box-shadow:0 0 0 2px #f2b04a88,0 0 10px #ff9a2a66;}50%{box-shadow:0 0 0 4px #ffd27a,0 0 22px #ff9a2a;}}
+#toast.big{font-size:38px;letter-spacing:2px;}
+#toast.big small{font-size:15px;letter-spacing:0;}
+#flash{position:fixed;inset:0;z-index:19;pointer-events:none;opacity:0;transition:opacity .5s ease-out;}

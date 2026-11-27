@@ -152,7 +152,7 @@ function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=itCol
   if(it.anc){burst(l.x,l.y,40,ANC_COL,330);G.fx.push({type:'ring',x:l.x,y:l.y,r0:6,r1:100,t:0,max:0.7,col:ANC_COL});G.shake=Math.max(G.shake,4);} // items.js: Ancient
   if(it.rarity===3||it.rarity===5){burst(l.x,l.y,34,col,260);burst(l.x,l.y,14,'#ffffff',180);
     G.fx.push({type:'ring',x:l.x,y:l.y,r0:10,r1:150,t:0,max:0.6,col});G.fx.push({type:'ring',x:l.x,y:l.y,r0:4,r1:90,t:0,max:0.45,col:'#ffffff'});
-    G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}
+    G.fx.push({type:'pillar',x:l.x,y:l.y,t:0,max:1.2,col,w:44,h:320});screenFlash(col,0.18);if(it.anc)G.slowT=0.5; /* main.js: slow motion */G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}
 // PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
 // Labels that would overlap one already drawn this frame stack upward instead (LABELS is reset by render()).
 const LABELS=[];let LBL_OFF=0;
