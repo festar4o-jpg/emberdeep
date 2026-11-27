@@ -1,6 +1,6 @@
 Emberdeep: painted floors (art/floors/)
 
-Town floors (grass, cobbles, snow, cave earth, stone slabs)
+Town and dungeon floors (grass, cobbles, snow, cave earth, stone slabs, iron plates) and walls (brick and rock, from the lit faces of Flare's walls, straightened)
 taken from Flare's ground tilesets, a free and open-source action RPG:
   https://github.com/flareteam/flare-game  (mods/fantasycore/images/tilesets: tileset_grassland, tileset_snowplains, tileset_cave, tileset_dungeon)
 Art by Clint Bellanger, Justin Jacobs and the Flare team (full list: Flare's CREDITS.txt).

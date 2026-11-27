@@ -342,7 +342,7 @@ function renderSettings(){
   $('setProps').innerHTML=[['painted','Painted'],['drawn','Drawn']].map(([k,n])=>`<div class="tab${(SETTINGS.props||'painted')===k?' on':''}" data-pr="${k}">${n}</div>`).join(''); // propart.js
   $('setProps').querySelectorAll('[data-pr]').forEach(el=>el.onclick=()=>{setSetting('props',el.dataset.pr);for(const s of G.stand||[])if(s.fn)s.cv=null;}); /* repaint the standing props */
   $('setFloors').innerHTML=[['painted','Painted'],['drawn','Drawn']].map(([k,n])=>`<div class="tab${(SETTINGS.floors||'painted')===k?' on':''}" data-fl="${k}">${n}</div>`).join(''); // floorart.js
-  $('setFloors').querySelectorAll('[data-fl]').forEach(el=>el.onclick=()=>{const was=SETTINGS.floors;setSetting('floors',el.dataset.fl);if(was!==el.dataset.fl&&G.inTown&&G.mapCv)renderMap(G.artSeed);}); /* the town painted again */
+  $('setFloors').querySelectorAll('[data-fl]').forEach(el=>el.onclick=()=>{const was=SETTINGS.floors;setSetting('floors',el.dataset.fl);if(was!==el.dataset.fl&&G.mapCv)renderMap(G.artSeed);}); /* the map painted again */
   $('setHouses').innerHTML=[['detailed','Detailed'],['simple','Simple']].map(([k,n])=>`<div class="tab${(SETTINGS.houses||'detailed')===k?' on':''}" data-ho="${k}">${n}</div>`).join(''); // houses.js
   $('setHouses').querySelectorAll('[data-ho]').forEach(el=>el.onclick=()=>{setSetting('houses',el.dataset.ho);for(const s of G.stand||[])if(s.fn)s.cv=null;}); /* repaint the standing pieces */
   $('setCap').innerHTML=[[30,'30 (saves battery)'],[60,'60'],[0,'Max']].map(([k,n])=>`<div class="tab${SETTINGS.fpsCap===k?' on':''}" data-c="${k}">${n}</div>`).join(''); // perf.js

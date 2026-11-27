@@ -33,7 +33,7 @@ const ZWALL={
 // Zone theme from a floor painter, a wall painter and options: road floor, void/poison/lava/bridge tiles of an act
 // theme, deco, colour grade, base for floor detail (detail), no wall depth (flat), torches (torch: rgb or null).
 function zoneTheme(o){const F=ZFLOOR[o.floor[0]],W=ZWALL[o.wall[0]];
-  return {void:o.void||'#080503',detail:o.detail,flat:o.flat,grade:o.grade,torch:o.torch,
+  return {mat:o /* dunart.js paints these materials */,void:o.void||'#080503',detail:o.detail,flat:o.flat,grade:o.grade,torch:o.torch,
     floor(x,px,py,i,j){if(o.road&&G.road&&G.road[j*MW+i])return ZFLOOR[o.road[0]](x,px,py,o.road[1]);F(x,px,py,o.floor[1]);},
     wall(x,px,py,below,adj){W(x,px,py,below,adj,o.wall[1]);},
     deco:o.deco||null,voidT:o.voidT||null,poison:o.poison||null,lava:o.lava||null,bridge:o.bridge||THEMES.citadel.bridge};}

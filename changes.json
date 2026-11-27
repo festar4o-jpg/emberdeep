@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.158",
+  "latest": "1.0.159",
   "notes": [
+    {
+      "v": "1.0.159",
+      "t": [
+        "Dungeon floors and walls are painted in the same style as the towns: earth, grass, cobbles, sand, snow, stone slabs and iron plates underfoot, brick and rock walls, each zone in its own colours",
+        "Tree, ice and crystal walls stay as they were; Settings > Floors switches all of it back to the drawn look"
+      ]
+    },
     {
       "v": "1.0.158",
       "t": [
