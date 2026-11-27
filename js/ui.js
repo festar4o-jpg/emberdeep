@@ -369,7 +369,7 @@ function renderClassPick(){$('classPick').innerHTML=Object.entries(CLASSES).map(
   $('classPick').querySelectorAll('.cls').forEach(el=>el.onclick=()=>{pickCls=el.dataset.c;renderClassPick();});}
 tap('newBtn',()=>{if(SAVES.length>=6)return;$('titleOv').classList.add('hidden');$('createOv').classList.remove('hidden');$('nameIn').value='';renderClassPick();});
 tap('createBack',()=>{$('createOv').classList.add('hidden');showTitle();});
-tap('createGo',()=>{const name=$('nameIn').value.trim()||CLASSES[pickCls].name;$('nameIn').blur();const c=newChar(name.slice(0,14),pickCls);SAVES.push(c);storeSaves();startGame(c);});
+tap('createGo',()=>{const name=$('nameIn').value.trim()||CLASSES[pickCls].name;$('nameIn').blur();const c=newChar(name.slice(0,14),pickCls);SAVES.push(c);storeSaves();startGame(c);introStart();}); /* intro.js: the opening, once */
 // ---------- compact item compare (v1.0.64) ----------
 // A bag item next to what it would replace: both side by side on one screen, one row per stat (matching stats on the
 // same row), tiers small, the difference in green or red, and a summary of what equipping it does to your character

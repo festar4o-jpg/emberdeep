@@ -73,7 +73,8 @@ function killEnemy(e){
     if(G.depth===25&&(c.diffDone||0)<=(c.diff||0)){const d=c.diff||0;c.diffDone=d+1;c.won=true;toast(e.name+' falls!',c.diffDone>=3?'Maps are open: the Map Device is at every Waystone':'');if(c.diffDone>=3&&!c.sigGift){c.sigGift=1;for(let i=0;i<3;i++)sigAdd(genSigil(1,0));}setTimeout(()=>{if(G.char===c&&G.p&&!G.p.dead)showVictory(d);},1800);} // maps.js: the next difficulty opens
     else if(G.depth%25===0)toast(e.name+' falls!','The deep grows stronger still');
     else toast('Boss defeated!',`${ACTS[actIdx(G.depth+1)].name} awaits beyond the portal`);bossTrophy(e);dropUCharm(e);saveChar();} // after the boss toast, so a trophy's toast shows
-  else if(e.type==='zboss')zoneBossDown(e); /* zones.js */
+  else if(e.type==='zboss'){zoneBossDown(e);earlyUnique(e);} /* zones.js; coach.js: a new hero's first unique */
+  else if(earlyLoot(e)){} /* coach.js: a new hero's first magic and rare items */
   else if(e.su)superDown(e);
   else if(e.elite){if(Math.random()<Math.min(1,(ELITE_DROP+(e.affs.length>=3?0.03:0))*lootHere().drop*riftDropMul()))dropItem(e.x+rand(-20,20),e.y+rand(-20,20),rollDrop(c,PD()+1,1,0,{act:dropAct(PD())}));}
   else if(Math.random()<normalDrop(T)*lootHere().drop*riftDropMul())dropItem( /* rifts.js: half in a Rift */e.x,e.y,rollDrop(c,PD(),0,0,{act:dropAct(PD())}));
@@ -160,7 +161,7 @@ function toast(a,b){const t=$('toast');t.innerHTML=esc(a)+(b?'<small>'+esc(b)+'<
 
 // ---------- start / depth ----------
 function newChar(name,cls){
-  const c={id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],amods:[null,null,null,null,null],alt:[0,0,0,0,0],emb:{own:{},slots:[null,null]},sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
+  const c={coach:1 /* coach.js: first-fight prompts and early loot */,id:'c'+Date.now(),name,cls,lvl:1,xp:0,gold:0,depth:1,maxDepth:1,skills:[1,0,0,0,0],mods:[null,null,null,null,null],amods:[null,null,null,null,null],alt:[0,0,0,0,0],emb:{own:{},slots:[null,null]},sub:null,pas:{n:[],ch:{}},pasBoss:0,skillPts:0,equip:Object.fromEntries(EQ_SLOTS.map(s=>[s,null])),bag:[],ver:SAVE_VER,actSeen:0,diff:0,diffDone:0,dsave:{}};
   const w=genItem(1,cls,0,'weapon',0,cls==='warden'?'sword':cls==='ranger'?'shortbow':'wand');w.rarity=0;w.affs=[];delete w.uq;w.name=w.base;c.equip.mainhand=w;
   if(cls==='ranger'){const q=genItem(1,cls,0,'quiver');q.rarity=0;q.affs=[];delete q.uq;q.name=q.base;c.equip.offhand=q;} // v1.0.124: a plain quiver
   if(cls==='arcanist'){const o=genItem(1,cls,0,'focus');o.rarity=0;o.affs=[];delete o.uq;o.kind='orb';o.base=o.name='Orb';o.imp=[{k:'spell',v:10}];c.equip.offhand=o;}
@@ -212,7 +213,7 @@ function startTown(next){
 // ---------- update ----------
 const joy={active:false,id:null,ox:0,oy:0,dx:0,dy:0};
 function update(dt){
-  const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;riftTick(dt); // rifts.js: the Rift clock
+  const p=G.p,s=G.stats,C=CLASSES[G.char.cls];G.time+=dt;riftTick(dt);coachTick(dt); // rifts.js: the Rift clock; coach.js: first-fight prompts
   bannerTick(p,dt);skzTick(p,dt); // skillalts.js: Battle Banner, Ice Barrier, Storm Orb, Black Hole
   if(p.stormT>0)p.stormT-=dt; // embers.js: Storm
   petTick(dt); // ranger.js: the wolf

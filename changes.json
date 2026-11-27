@@ -1,6 +1,19 @@
 {
-  "latest": "1.0.161",
+  "latest": "1.0.163",
   "notes": [
+    {
+      "v": "1.0.163",
+      "t": [
+        "New players get light prompts in their first fight, one at a time and only when needed: move, attack, dodge, drink a potion, pick up loot, wear it, learn a new skill (the button glows; never pauses; Hints off turns them off)",
+        "A new hero finds loot sooner: magic armour on the 3rd kill, a rare soon after, and a unique from the first boss of the Mourning Fields"
+      ]
+    },
+    {
+      "v": "1.0.162",
+      "t": [
+        "A new hero now opens with a short scene: the camera drifts across the Mourning Fields at night while the story of Gravewatch and the buried ember fades in, then the title (tap to skip)"
+      ]
+    },
     {
       "v": "1.0.161",
       "t": [

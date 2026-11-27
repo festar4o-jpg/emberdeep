@@ -6,7 +6,7 @@ const HINT_KEY='emberdeep_hints',HINT_SHOW=6;
 const HINT={seen:{},q:[],cur:null,t:0,slowT:0,slowF:0};
 function loadHints(){try{const o=JSON.parse(localStorage.getItem(HINT_KEY));if(o&&typeof o==='object')HINT.seen=o;}catch(e){}}
 function storeHints(){try{localStorage.setItem(HINT_KEY,JSON.stringify(HINT.seen));}catch(e){}}
-function hint(key,title,text){if(SETTINGS.hints===false||HINT.seen[key])return false;HINT.seen[key]=1;storeHints();HINT.q.push({key,title,text});if(!HINT.cur)nextHint();return true;}
+function hint(key,title,text){if(SETTINGS.hints===false||HINT.seen[key])return false;HINT.seen[key]=1;storeHints();HINT.q.push({key,title,text});if(!HINT.cur&&!INTRO.on)nextHint();return true;} /* intro.js: held until the opening ends */
 function nextHint(){const el=$('hintBox');HINT.cur=HINT.q.shift()||null;HINT.t=HINT_SHOW;if(!el)return;
   if(HINT.cur){el.innerHTML=`<b>💡 ${esc(HINT.cur.title)}</b>${esc(HINT.cur.text)}<small>tap to close${HINT.q.length?` · ${HINT.q.length} more`:''}</small>`;el.classList.remove('hidden');}else el.classList.add('hidden');}
 function resetHints(){HINT.seen={};storeHints();HINT.q=[];HINT.cur=null;nextHint();}
