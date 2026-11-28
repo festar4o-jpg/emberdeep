@@ -256,6 +256,7 @@ function renderShop(){
   $('shopGold').textContent=c.gold;$('shopBag').textContent=`Bag ${c.bag.length}/30`;
   $('potInfo').textContent=`You carry ${p.potions}/${potMax()}`;
   const pb=$('buyPot');pb.textContent=p.potions>=potMax()?'Full':`Buy (${pp}🪙)`;pb.classList.toggle('dis',c.gold<pp||p.potions>=potMax());
+  renderGamble();
   const grid=$('shopGrid');
   if(!G.shop.length){grid.innerHTML='<p class="sub" style="grid-column:1/-1">Sold out — come back next time.</p>';return;}
   grid.innerHTML=G.shop.map(w=>`<div class="cell" style="border-color:${itCol(w.it)}">${itemIcon(w.it)}${isBetter(w.it)?'<span class="better">▲</span>':''}<span class="price${c.gold<w.price?' no':''}">${w.price}</span></div>`).join('');
@@ -270,6 +271,22 @@ function buyItem(it,price){
   closeItem();renderShop();saveChar();toast('Purchased',it.name);
 }
 tap('shopClose',closeShop);
+// ---------- gambling (v1.0.170): gold for a hidden item of the type you pick, revealed at once ----------
+// Odds (GAMBLE_ODDS): magic 62%, rare 30%, set 4%, unique 4% (a type with no set or unique for you gives a rare);
+// a set or unique is Ancient 1 time in 25 once Hell is open. Never Emberforged: the grail only drops. The price grows
+// with the area's power (PD), so it stays the endgame's gold sink. Item level: PD, like the area's drops.
+const GAMBLE_ODDS=[[1,0.62],[2,0.30],[5,0.04],[3,0.04]],GAMBLE_ANC=0.04;
+const gamblePrice=()=>Math.round((PD()*3+5)*12);
+function gamble(t){const c=G.char,pr=gamblePrice();if(!c||!G.inTown||c.gold<pr)return null;if(c.bag.length>=30){toast('Bag is full','Salvage items in 🎒');return null;}
+  let r=Math.random(),rar=1;for(const [k,w] of GAMBLE_ODDS){if(r<w){rar=k;break;}r-=w;}
+  DROP_R=rar;const it=genItem(PD(),c.cls,1,t); // items.js: DROP_R sets the rarity roll
+  if((it.rarity===3||it.rarity===5)&&(c.diffDone||0)>=2&&Math.random()<GAMBLE_ANC)makeAncient(it);
+  c.gold-=pr;c.bag.push(it);noteSetPiece(it);if(it.rarity>=2)dropSfx({item:it});else playSfx('pickup');saveChar();renderShop();openItem(it,false);return it;}
+function renderGamble(){const c=G.char,pr=gamblePrice(),no=c.gold<pr||c.bag.length>=30;
+  $('gambleSub').textContent=`${pr}🪙 each · a hidden item of the type you pick: mostly magic or rare, sometimes a set item or a unique`;
+  const ts=typesFor(c.cls).filter(t=>t!=='charm');
+  $('gambleRow').innerHTML=ts.map(t=>`<div class="btn sm${no?' dis':''}" data-g="${t}">${esc(TYPES[t].name)}</div>`).join('');
+  $('gambleRow').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>gamble(b.dataset.g));}
 
 // ---------- skills UI ----------
 function toggleSkills(){if(!G.char)return;const o=$('skOv');o.classList.toggle('hidden');if(!o.classList.contains('hidden'))renderSkills();setPause();}

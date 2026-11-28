@@ -55,6 +55,9 @@ const SFX={
   crit:(a,t)=>{noise(a,t,0.08,0.22,'bandpass',vr(1300),500,1);tone(a,vr(240),t,0.12,0.09,'square',90);tone(a,60,t,0.18,0.12,'sine',40);},
   kill:(a,t)=>{noise(a,t,0.22,0.14,'lowpass',vr(500),120,1,0.01);tone(a,vr(90),t,0.2,0.07,'sine',45);},
   shatter:(a,t)=>{for(let k=0;k<4;k++)noise(a,t+k*0.035,0.05,0.12,'bandpass',vr(2200,0.3),1200,5);},
+  // Emberforged: a low choir-like chord swelling over a deep boom (with the unique gong and the explosion on top: dropSfx)
+  grail:(a,t)=>{for(const [f,v] of [[110,0.05],[130.8,0.045],[164.8,0.04],[220,0.035],[261.6,0.025]])for(const d of [-6,6]){tone(a,f*Math.pow(2,d/1200),t+0.15,3.2,v,'sawtooth');}
+    tone(a,55,t,2.6,0.25,'sine',28);noise(a,t,1.6,0.12,'lowpass',500,80,1,0.01);noise(a,t+0.2,2.6,0.04,'bandpass',800,1400,2,1.2);},
   bossdie:(a,t)=>{noise(a,t,2.2,0.3,'lowpass',900,50,1,0.02);tone(a,70,t,2.2,0.22,'sine',30);tone(a,140,t,1.4,0.08,'sawtooth',40);},
   // you: blocked, hurt, a heartbeat at low life, dodge, blink, death
   block:(a,t)=>{tone(a,vr(1400),t,0.3,0.06,'triangle');tone(a,vr(2100),t,0.25,0.04,'triangle');noise(a,t,0.06,0.15,'highpass',3000);},
@@ -98,7 +101,7 @@ const SFX={
 const GAP={swing:0.05,heavy:0.08,stab:0.05,flesh:0.045,bone:0.045,armor:0.06,ice:0.05,chitin:0.045,sap:0.05,magma:0.06,crit:0.06,kill:0.05,shatter:0.08,hurt:0.12,
   heart:0.5,gold:0.09,pickup:0.05,click:0.04,warn:0.3,levelup:0.5,unique:0.5,set:0.5};
 // Sounds that may cut in even when the voice limit is reached.
-const SFX_MUST=new Set(['unique','set','rare','rune','warn','phase','levelup','death','bossdie','portal']);
+const SFX_MUST=new Set(['grail','unique','set','rare','rune','warn','phase','levelup','death','bossdie','portal']);
 // Recorded sounds (CC0, art/sfx/: one file holding every clip, packed by tools/sfx/build.sh from tools/sfx/clips.txt).
 // A key with clips (flesh1, flesh2...) plays one at random, a little re-pitched; keys without clips, and every key until
 // the file has loaded (or when it can't), use the synth above (MIX keys: both). THUMP keys get a low synth thump underneath, for weight.
@@ -116,7 +119,7 @@ function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.7;if(SETTINGS.sound===fal
   const now=a.currentTime;if(now-(sfxAt[k]??-9)<(GAP[k]??0.06))return false;if(voices>=MAX_VOICES&&!SFX_MUST.has(k))return false;
   sfxAt[k]=now;if(SAMP===null)loadSamples(a);try{const t=now+(delay||0)+0.005;if(!playSample(a,k,t)||MIX.has(k))SFX[k](a,t);}catch(e){return false;}return true;}
 // What a drop sounds like: nothing for common/magic items and gold.
-function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
+function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc===2){playSfx('boom');playSfx('grail');playSfx('unique',0.3);return;} /* items.js: Emberforged */if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
 // Each skill's sound (SKILLS order in skills.js); the basic attack (slot 0) of a Warden is the weapon's swing.
 const SKILL_SFX={warden:[null,'leap','whirl','warcry','slam'],arcanist:['bolt','fireball','nova','chain','meteor'],ranger:['twang','twang','swing','howl','twang']}; // the Ranger's own sounds come in a later step
 const SWING_SFX={swing:'swing',heavy:'heavy',stab:'stab',thrust:'stab',flick:null};

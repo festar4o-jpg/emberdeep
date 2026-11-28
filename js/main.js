@@ -6,10 +6,10 @@ function frame(now){
   if(capSkip(now-last)){requestAnimationFrame(frame);return;} // perf.js: frame rate cap
   const gap=now-last,dt=Math.min(0.05,gap/1000);last=now;const t0=performance.now();
   const idle=G.paused||portraitBlocked(); // a menu is open, the game is paused or the phone is upright
-  const slow=G.slowT>0;if(slow)G.slowT-=dt; // an Ancient drop slows the world for half a second (fx.js dropFlash)
+  const slow=G.slowT>0;if(slow){G.slowT-=dt;if(G.slowT<=0)G.slowMul=0;} // an Ancient drop slows the world for half a second, Emberforged much more (fx.js dropFlash)
   if(G.hitStop>0)G.hitStop-=dt; // hit-stop: heavy blows freeze the action for a few frames (fx.js)
   else if(INTRO.on&&G.char&&G.p&&!idle)introTick(dt); // intro.js: the opening drift, the world holding still
-  else if(G.char&&G.p&&!idle)update(slow?dt*0.3:dt);
+  else if(G.char&&G.p&&!idle)update(slow?dt*(G.slowMul||0.3):dt);
   // perf.js: while idle nothing moves, so the scene behind the menu is only redrawn IDLE_DRAW_MS apart (battery)
   if(!idle||now-PERF.idleAt>=IDLE_DRAW_MS){PERF.idleAt=now;PERF.draws++;render();
     if(G.char&&G.p){updateHud();G.mmT-=idle?IDLE_DRAW_MS/1000:dt;if(G.mmT<=0){G.mmT=0.2;drawMinimap();}}}
@@ -28,6 +28,8 @@ $('verTxt').textContent='Emberdeep v'+GAME_VERSION;
 // Debug autotest (a bot that plays and reports; see debug/autotest.js): only with ?autotest=1 in the URL. The file is not in
 // sw.js FILES, so the Android app and the public site don't have it and can never run it.
 if(typeof location!=='undefined'&&/[?&]autotest=1(&|$)/.test(location.search||'')){const s=document.createElement('script');s.src='debug/autotest.js';document.head.appendChild(s);}
+// Debug: ?grail=1 drops an Emberforged item next to the hero (debug/grail.js; not shipped either, like the autotest).
+if(typeof location!=='undefined'&&/[?&]grail=1(&|$)/.test(location.search||'')){const s=document.createElement('script');s.src='debug/grail.js';document.head.appendChild(s);}
 // v1.0.121: the tap-to-start screen waits for a tap everywhere, the Android app included (the user wants it there)
 // Service worker for "Add to Home Screen" and offline play (only on https or localhost).
 if(typeof navigator!=='undefined'&&'serviceWorker' in navigator&&typeof location!=='undefined'&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))

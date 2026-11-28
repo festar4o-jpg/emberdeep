@@ -1,6 +1,33 @@
 {
-  "latest": "1.0.166",
+  "latest": "1.0.170",
   "notes": [
+    {
+      "v": "1.0.170",
+      "t": [
+        "🎲 Gamble at the Merchant: pick an item type and pay gold for a hidden item. Mostly magic or rare, sometimes a set item or a unique, and once Hell is open even an Ancient"
+      ]
+    },
+    {
+      "v": "1.0.169",
+      "t": [
+        "The endgame now has the best stats: Tier 1 stats only roll on items from Sigil Tier 8+ maps and rifts 10+, Tier 2 from Hell and up. Items you already have keep their tiers",
+        "Three new uniques that only drop in Sigil Tier 13+ maps: Crown of the Ember Throne (Warden), Starfall Mantle (Arcanist) and Skyreaver (Ranger)"
+      ]
+    },
+    {
+      "v": "1.0.168",
+      "t": [
+        "New Grail tab in the 📖 Book: every unique and set item in the game, lit up once any of your heroes found it, with your % complete",
+        "Ancient (🔸) and Emberforged (🔥) finds are marked, and every Emberforged find is listed with the day you found it"
+      ]
+    },
+    {
+      "v": "1.0.167",
+      "t": [
+        "Emberforged: the rarest drop in the game. A unique or set item with every stat at its best roll and 50% stronger, found only in Hell, maps and rifts",
+        "When one drops, time nearly stops, the music falls silent and a burning column of fire rises from it"
+      ]
+    },
     {
       "v": "1.0.166",
       "t": [

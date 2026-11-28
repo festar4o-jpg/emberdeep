@@ -79,16 +79,17 @@ const pouchCount=(c,s)=>pouchOf(c)[stoneKey(s)]||0;
 const pouchTotal=c=>Object.values(pouchOf(c)).reduce((a,b)=>a+b,0);
 
 // ---------- the book (shared by all characters): runes ever found, recipes forged, set pieces found ----------
-const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{},uqs:{},anc:{}}; // anc (v1.0.119): Ancient copies found, 'u:<unique>' / 's:<set piece>'
+const BOOK_KEY='emberdeep_book';let BOOK={runes:{},made:{},sets:{},uqs:{},anc:{},emb:{}}; // anc (v1.0.119): Ancient copies found, 'u:<unique>' / 's:<set piece>'; emb (v1.0.167): Emberforged ones, the same keys → the day first found
 const isObj=o=>o&&typeof o==='object',BOOK_NOW=()=>BOOK; // (tests: BOOK is a let)
 // uqs (v1.0.59): uniques found, for the set/unique guarantee (items.js newNamed). Seeded from every hero and the stash.
-function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(isObj(b))BOOK={runes:b.runes||{},made:b.made||{},sets:isObj(b.sets)?b.sets:{},uqs:isObj(b.uqs)?b.uqs:{},anc:isObj(b.anc)?b.anc:{}};}catch(e){}
+function loadBook(){try{const b=JSON.parse(localStorage.getItem(BOOK_KEY));if(isObj(b))BOOK={runes:b.runes||{},made:b.made||{},sets:isObj(b.sets)?b.sets:{},uqs:isObj(b.uqs)?b.uqs:{},anc:isObj(b.anc)?b.anc:{},emb:isObj(b.emb)?b.emb:{}};}catch(e){}
   const all=[];if(STASH)all.push(...STASH.tabs.flat());for(const h of SAVES||[])if(isObj(h)){all.push(...Object.values(h.equip||{}),...(h.bag||[]));}noteSetPieces(all);}
 // Records set pieces and uniques in the book the first time any character gets one (returns the new set pieces).
 const namedFound=it=>!!(it&&(it.uq?BOOK.uqs[it.uq]:it.si?BOOK.sets[it.si]:false));
 const ancKey=it=>it.uq?'u:'+it.uq:it.si?'s:'+it.si:null;
 function noteSetPieces(items){let n=0,u=0;for(const it of items){if(!it)continue;if(setOf(it)&&!BOOK.sets[it.si]){BOOK.sets[it.si]=1;n++;}if(it.uq&&!BOOK.uqs[it.uq]){BOOK.uqs[it.uq]=1;u++;}
-    const ak=it.anc&&ancKey(it);if(ak&&!BOOK.anc[ak]){BOOK.anc[ak]=1;u++;if(typeof toast==='function')toast('First Ancient!',`${it.name} · marked in 📖 Book`);}}if(n||u)storeBook();return n;}
+    const ak=it.anc&&ancKey(it);if(ak&&it.anc===2&&!BOOK.emb[ak]){BOOK.emb[ak]=new Date().toISOString().slice(0,10);BOOK.anc[ak]=1;u++;} /* Emberforged: its own moment (fx.js embMoment) */
+    else if(ak&&!BOOK.anc[ak]){BOOK.anc[ak]=1;u++;if(typeof toast==='function')toast('First Ancient!',`${it.name} · marked in 📖 Book`);}}if(n||u)storeBook();return n;}
 function noteSetPiece(it){if(noteSetPieces([it]))toast('New set piece!',`${it.name} · ${SETS[setOf(it)].name}`);}
 function storeBook(){storeSafe(BOOK_KEY,JSON.stringify(BOOK));backupSoon();} // core.js
 const recipeKnown=k=>!!BOOK.made[k]||RUNEBINDS[k].runes.every(r=>BOOK.runes[r]);
@@ -183,11 +184,12 @@ function pickPouch(s){const c=G.char;
   pouchSel=s;pouchMat=null;renderPouch();}
 function openBook(){$('bookOv').classList.remove('hidden');renderBook();setPause();}
 function closeBook(){$('bookOv').classList.add('hidden');setPause();}
-let bookTab='rb';
+let bookTab='grail';
 function setBookTab(t){bookTab=t;renderBook();}
 function renderBook(){
-  $('bookTabs').innerHTML=[['rb','Runebinds'],['sets','Sets'],['boss','Bosses'],['rift','Rifts'],['emb','Embers']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
+  $('bookTabs').innerHTML=[['grail','Grail'],['rb','Runebinds'],['sets','Sets'],['boss','Bosses'],['rift','Rifts'],['emb','Embers']].map(([k,n])=>`<div class="tab${k===bookTab?' on':''}" data-t="${k}">${n}</div>`).join('');
   $('bookTabs').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>setBookTab(el.dataset.t));
+  if(bookTab==='grail')return renderGrailBook();
   if(bookTab==='sets')return renderSetBook();
   if(bookTab==='boss')return renderBossBook();
   if(bookTab==='rift')return renderRiftBook(); // rifts.js
@@ -201,6 +203,25 @@ function renderBook(){
       <div class="fdim">${RB_TYPE[R.type]} · ${R.runes.length} sockets</div><div class="rrow">${runes}</div>
       ${kn?`<div>${esc(bon)}</div>${(R.pw||[]).map(p=>`<div class="ipow">✦ ${esc(UPOW[p].t)}</div>`).join('')}`:''}</div></div>`;}).join('');
 }
+// Grail (v1.0.168): every unique and set piece in the game, by the act it drops from, lit up once any of your heroes
+// found it (🔸 also Ancient, 🔥 also Emberforged), dark until then, so you can see what's left to hunt; the Emberforged
+// finds are listed on top with the day each was found (BOOK.emb).
+function grailChip(k,name,col,key){const got=k,a=BOOK.anc[key],e=BOOK.emb[key];
+  return got?`<span class="rchip on" style="color:${e?EMB_COL:a?ANC_COL:col}">${e?'🔥 ':a?'🔸 ':'✓ '}${esc(name)}</span>`:`<span class="rchip q">${esc(name)}</span>`;}
+function renderGrailBook(){const g=grailBook();$('bookSub').textContent=g.sub;$('bookList').innerHTML=g.html;}
+function grailBook(){const uk=Object.keys(UNIQUES),sk=Object.keys(SET_ITEMS),fu=uk.filter(k=>BOOK.uqs[k]).length,fs=sk.filter(k=>BOOK.sets[k]).length;
+  const nA=Object.keys(BOOK.anc).length,embs=Object.entries(BOOK.emb).sort((x,y)=>x[1]<y[1]?1:-1),all=uk.length+sk.length,pct=Math.floor(100*(fu+fs)/all);
+  const sub=`${pct}% complete, all your heroes together · ${fu}/${uk.length} uniques · ${fs}/${sk.length} set pieces · 🔸 ${nA} Ancient · 🔥 ${embs.length} Emberforged. Dark names are still out there: Emberforged ones only drop in Hell, maps and rifts.`;
+  const nameOf=key=>{const [t,k]=key.split(':');return t==='u'?(UNIQUES[k]||{}).name:(SET_ITEMS[k]||{}).name;};
+  const top=embs.length?`<div class="slot rb"><div class="info"><b style="color:${EMB_COL}">🔥 Emberforged finds</b>${embs.map(([k,d])=>`<div>${esc(nameOf(k)||'?')} <span class="fdim">${esc(d)}</span></div>`).join('')}</div></div>`:'';
+  const src=U=>U.boss==='map'?'maps':U.boss!=null&&U.boss!==''?'boss':'';
+  const acts=[1,2,3,4,5].map(a=>{const ks=uk.filter(k=>(UNIQUES[k].act||1)===a);if(!ks.length)return '';const f=ks.filter(k=>BOOK.uqs[k]).length;
+    return `<div class="slot rb"><div class="info"><b style="color:${RCOL[3]}">Act ${a} uniques</b> <span class="fdim">${f}/${ks.length}</span>
+      <div class="rrow">${ks.map(k=>{const U=UNIQUES[k],s=src(U);return grailChip(BOOK.uqs[k],U.name+(s?' ('+s+')':''),RCOL[3],'u:'+k);}).join('')}</div></div></div>`;}).join('');
+  const sets=Object.keys(SETS).map(s=>{const S=SETS[s],f=S.items.filter(si=>BOOK.sets[si]).length;
+    return `<div class="slot rb set"><div class="info"><b style="color:${RCOL[5]}">${esc(S.name)}</b> <span class="fdim">${f}/${S.items.length}</span>
+      <div class="rrow">${S.items.map(si=>grailChip(BOOK.sets[si],SET_ITEMS[si].name,RCOL[5],'s:'+si)).join('')}</div></div></div>`;}).join('');
+  return {sub,html:top+acts+sets};}
 // Sets: every set is listed; found pieces are named, missing ones are '?'. Bonuses show once a piece is found.
 function renderSetBook(){const keys=Object.keys(SETS),all=Object.keys(SET_ITEMS),found=all.filter(si=>BOOK.sets[si]).length;
   $('bookSub').textContent=`${found}/${all.length} set pieces found by your characters · Wear more pieces of a set to unlock its green bonuses.`;
@@ -222,5 +243,5 @@ function renderBossBook(){const c=G.char;
       <div class="fdim">Set pieces from: ${sets.map(esc).join(', ')||'none'}</div></div></div>`;}).join('');}
 tap('pouchBtn',()=>openPouch(null));
 tap('pouchClose',closePouch);
-tap('bookBtn',openBook);
+tap('bookBtn',openBook);tap('bagBookBtn',openBook); // v1.0.168: the Book straight from the bag too (it was only inside the Pouch)
 tap('bookClose',closeBook);

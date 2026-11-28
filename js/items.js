@@ -168,13 +168,22 @@ const RCOL=['#c8c8c8','#8888ff','#ffff77','#c8743a','#5fd0c0','#3fe05a'],CURRENC
 // powers and set bonuses are the same. Only from Hell, maps and Ember Rifts (ancCh). One multiplier (ancM) on top of
 // the item's own: upgMul / affMul / flat stats, so crafting, upgrades and old saves keep working unchanged.
 const ANC_MUL=1.25,ANC_COL='#ff9a2a';
-const ancM=it=>it&&it.anc?ANC_MUL:1;
-const itCol=it=>it&&it.anc?ANC_COL:RCOL[it?it.rarity:0];
-const ancSkill=(it,v)=>it&&it.anc?Math.ceil(v*ANC_MUL):v;
+// Emberforged (v1.0.167, the holy grail): above Ancient, it.anc = 2 (so everything that treats Ancients specially, like
+// double salvage and the book, treats it the same), name "Emberforged …": every stat at the best its item level can roll
+// and EMB_MUL stronger. Same places as Ancient (Hell, maps, rifts): EMB_CH of the unique and set drops there.
+// shortcut: EMB_CH aims at 2-3 a week for ~10 h of endgame (Hell ≈ 10 named drops an hour, measured v1.0.167); retune from real finds.
+const EMB_MUL=1.5,EMB_COL='#ff3d1f',EMB_CH=0.025;
+const ancM=it=>it&&it.anc?(it.anc===2?EMB_MUL:ANC_MUL):1;
+const itCol=it=>it&&it.anc?(it.anc===2?EMB_COL:ANC_COL):RCOL[it?it.rarity:0];
+const ancSkill=(it,v)=>it&&it.anc?Math.ceil(v*ancM(it)):v;
 // The chance a unique or set drop is Ancient here: Rifts 10% + 0.5% a level (at most 20%), maps 10%, Hell 5%, else none.
 function ancCh(){const c=G.char;if(!c)return 0;if(typeof inRift==='function'&&inRift())return Math.min(0.2,0.1+0.005*(c.mapRun.rift||0));
   if(typeof inMap==='function'&&inMap())return 0.1;return diffHere()>=2?0.05:0;}
 function makeAncient(it){if(!it||it.anc||(it.rarity!==3&&it.rarity!==5))return it;it.anc=1;it.name='Ancient '+it.name;return it;}
+function makeEmber(it){if(!it||it.anc===2||(it.rarity!==3&&it.rarity!==5))return it;const l=affLvl(it.ilvl,it.tier);
+  for(const a of it.affs){if(a.k==='skill'){if(it.rarity===3)a.v=Math.max(a.v,2);continue;}const A=AFF[a.k];if(!A)continue; /* the top of the roll */
+    const hi=rollRange(a.k,l)[1]*affRm(it,a.k);a.v=Math.max(a.v,A.dec?+hi.toFixed(1):Math.max(1,Math.round(hi)));}
+  it.name='Emberforged '+it.name.replace(/^Ancient /,'');it.anc=2;return it;}
 const RNAME=['Common','Magic','Rare','Unique','Runebind','Set']; // Runebinds (4) never drop: they're forged from runes. Set items are 5.
 const SKILL_REQ=[1,2,4,7,10];
 const POT_MAX=10;
@@ -343,7 +352,7 @@ let DROP_R=null; // the rarity rollDrop decided, used once by the next genItem
 // (default: from item level); opt.top = always that act's tier (bosses). Rare and better items always come in the
 // current act's tier, so a rare from the current act is often an upgrade; whites and blues can come in older tiers.
 // Every drop roll: a unique or set item may come out Ancient (ancCh).
-function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){const it=rollDrop0(c,ilvl,boost,minRarity,opt);if(it&&(it.rarity===3||it.rarity===5)&&G.char===c&&Math.random()<ancCh())makeAncient(it);return it;}
+function rollDrop(c,ilvl,boost=0,minRarity=0,opt={}){const it=rollDrop0(c,ilvl,boost,minRarity,opt);if(it&&(it.rarity===3||it.rarity===5)&&G.char===c){const ch=ancCh();if(ch>0&&Math.random()<EMB_CH)makeEmber(it);else if(Math.random()<ch)makeAncient(it);}return it;}
 function rollDrop0(c,ilvl,boost=0,minRarity=0,opt={}){
   const ds=c.dropSince||(c.dropSince={});for(const k of DROP_KEYS)if(typeof ds[k]!=='number')ds[k]=0;
   const tier0=opt.act||tierOfLvl(ilvl);
@@ -446,14 +455,15 @@ const affLvl=(ilvl,tier)=>!tier?ilvl:clamp(ilvl,TIER_LO[tier-1],tier===5?999:TIE
 // roll is; the size of the numbers still comes from the affix level (affLvl above), so a T1 Hell helm beats a T1 Normal
 // one. Each tier is a band around the stat's middle value at that level (TIER_BAND, times the middle). Weights (TIER_W):
 // T5-T7 common, T1-T2 rare, set so an average drop is as strong as before tiers. Better tiers need item level
-// (TIER_MIN_IL: T1 20+, T2 15+ ...). Harder content raises the floor (tierFloor): item level 26+ (Nightmare, Endless after
+// (TIER_MIN_IL: since v1.0.169 T1 needs item level 90+ (maps tier 8+, rifts 10+) and T2 60+ (Hell, maps, rifts), so the endgame
+// is where the best stats come from; T3 7+ ...). Harder content raises the floor (tierFloor): item level 26+ (Nightmare, Endless after
 // Normal) T1-T6, 51+ (Hell, Endless after Nightmare) T1-T5, 76+ (Endless after Hell) T1-T3. Item level and the monster's
 // boost (champions, bosses) shift the odds toward better tiers. Uniques, set items, Runebinds and implicits: no tiers.
 // Stats are prefixes or suffixes (AFF[k].ps); rares hold up to MAX_PRE + MAX_SUF of them, magic items 1 + 1.
 const TIER_N=9,MAX_PRE=2,MAX_SUF=2;
 const TIER_BAND0=[null,[1.95,2.25],[1.65,1.95],[1.4,1.65],[1.2,1.4],[1.04,1.2],[0.92,1.04],[0.82,0.92],[0.73,0.82],[0.62,0.73]];
 let TIER_BAND=TIER_BAND0; // scaled below (after tierWeights) so an average Normal drop (item level 15) is as strong as before tiers
-const TIER_W=[0,0.8,2,5.5,11,17,20,18,13,9],TIER_MIN_IL=[0,18,12,7,3,1,1,1,1,1];
+const TIER_W=[0,0.8,2,5.5,11,17,20,18,13,9],TIER_MIN_IL=[0,90,60,7,3,1,1,1,1,1]; // v1.0.169: T1 was 18, T2 12
 const tierFloor=il=>il>75?3:il>50?5:il>25?6:TIER_N;
 const NO_TIER=new Set(['pot','maxres','allsk']);
 const tiered=k=>!!AFF[k]&&!AFF[k].meta&&!NO_TIER.has(k);
@@ -466,7 +476,7 @@ const MAP_TILT_MAX=1.5,tiltOf=rar=>clamp((rar||0)/70,0,MAP_TILT_MAX);
 // The open map's tilt (sigils.js runQR: its modifiers, node, Atlas tree and Engraving rarity).
 function mapTilt(){const c=G.char;return c&&c.mapRun&&typeof inMap==='function'&&inMap()?tiltOf(runQR(c,c.mapRun).r):0;}
 // "T1 x% · T2 y% · T3 z%" for map drops (item level 76+) at a given Item Rarity from the map.
-function tierOddsText(rar){const w=tierWeights(80,0,{mt:tiltOf(rar)}),tot=w.reduce((a,x)=>a+x,0);return [1,2,3].map(t=>`T${t} ${Math.round(100*w[t]/tot)}%`).join(' · ');}
+function tierOddsText(rar,il=80){const w=tierWeights(il,0,{mt:tiltOf(rar)}),tot=w.reduce((a,x)=>a+x,0);return [1,2,3].map(t=>`T${t} ${Math.round(100*w[t]/tot)}%`).join(' · ');}
 {const w=tierWeights(15),tot=w.reduce((a,b)=>a+b,0);let m=0;for(let t=1;t<=TIER_N;t++)m+=w[t]/tot*(TIER_BAND0[t][0]+TIER_BAND0[t][1])/2;TIER_BAND=TIER_BAND0.map(B=>B&&B.map(x=>x/m));}
 function rollAffTier(il,boost,T){const w=tierWeights(il,boost,T);let r=Math.random()*w.reduce((a,x)=>a+x,0);for(let t=1;t<=TIER_N;t++){r-=w[t];if(r<0)return t;}return tierFloor(il);}
 const affMid=(k,l)=>{const [a,b]=rollRange(k,l);return (a+b)/2;};

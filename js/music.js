@@ -36,7 +36,9 @@ function musGraph(a){if(MZ&&MZ.a===a)return MZ;
   // a soft echo for bells and drips (its repeats darken and also go into the reverb)
   const dly=a.createDelay(2),fb=a.createGain(),dlp=a.createBiquadFilter();dly.delayTime.value=0.62;fb.gain.value=0.38;dlp.type='lowpass';dlp.frequency.value=1800;
   dly.connect(dlp);dlp.connect(fb);fb.connect(dly);dlp.connect(out);dlp.connect(rev);
-  MZ={a,out,rev,dly,layer:null,boss:null,key:null,next:{chord:0,lead:0,tex:0},vol:-1,bossOff:0};return MZ;}
+  MZ={a,out,rev,dly,layer:null,boss:null,key:null,next:{chord:0,lead:0,tex:0},vol:-1,bossOff:0,duckTo:0};return MZ;}
+// A big moment (fx.js embMoment): the music drops away for sec seconds, then swells back.
+function musDuck(sec){const a=AC;if(!a)return;const Z=musGraph(a);Z.duckTo=a.currentTime+sec;}
 const fadeIn=(g,t,to,sec)=>{g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(to,t+sec);};
 function fadeOut(g,t,sec){g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(0.0001,g.gain.value||0.0001),t);g.gain.exponentialRampToValueAtTime(0.0001,t+sec);}
 // ---------- an area's layer: drone, filter, texture bed ----------
@@ -112,7 +114,7 @@ function trkStop(Z,sec=3){const T=Z.trkOn;if(!T)return;fadeOut(T.g,Z.a.currentTi
 const MUS_BEAT=0.42;
 function musicTick(dt){const a=AC;if(!a||a.state!=='running'||!NOISE)return;const Z=musGraph(a),t=a.currentTime;
   const vol=SETTINGS.sound===false?0:SETTINGS.musVol??0.7;
-  if(vol!==Z.vol){Z.vol=vol;Z.out.gain.setTargetAtTime(vol*0.6,t,0.3);}
+  const tgt=vol*0.6*(t<Z.duckTo?0.1:1);if(tgt!==Z.vol){Z.vol=tgt;Z.out.gain.setTargetAtTime(tgt,t,t<Z.duckTo?0.08:0.6);} // musDuck: nearly silent, then back
   if(vol<=0){if(Z.layer){stopLayer(Z.layer,0.5);Z.layer=null;Z.key=null;}if(Z.boss){stopLayer(Z.boss,0.5);Z.boss=null;}trkStop(Z,0.5);return;} // muted: stop everything (battery)
   const key=musKey();
   // boss fight: on while a boss is fighting you, off 2 s after it ends (no flicker)

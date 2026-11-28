@@ -108,6 +108,10 @@ const UNIQUES={
   rimecrown:{name:"The Rime Sentinel's Crown",type:'helm',cls:'arcanist',act:5,boss:'frost',pw:['rimeSkin','skyfall']},
   endlessnight:{name:'Ring of the Endless Night',type:'ring',cls:null,act:5,boss:'map',mt:6,pw:['veilCrit','ignite']},
   matrongirdle:{name:"The Matron's Rotting Girdle",type:'belt',cls:null,act:5,boss:'rot',pw:['rotBurst','potionReset']},
+  // v1.0.169: the top of the Atlas: only from Sigil Tier 13+ maps, one per class, each joining its class's two strongest powers
+  emberthrone:{name:'Crown of the Ember Throne',type:'helm',cls:'warden',act:5,boss:'map',mt:13,strong:1,pw:['whirlCrit','bloodrage']},
+  starfall:{name:'Starfall Mantle',type:'body',kind:'robe',cls:'arcanist',act:5,boss:'map',mt:13,strong:1,pw:['meteorShower','frostward']},
+  skyreaver:{name:'Skyreaver',type:'weapon',wt:'greatbow',cls:'ranger',act:5,boss:'map',mt:13,strong:1,pw:['heartseek','thunderShot']},
   cartographer:{name:"The Cartographer's Eye",type:'amulet',cls:null,act:5,boss:'map',mt:11,strong:1,pw:['ouroboros','ashChain']},
   // v1.0.71: thirteen more, one new power each
   butcher:{name:"The Butcher's Hook",type:'weapon',wt:'axe',cls:'warden',act:2,boss:1,pw:['cleaveBleed']},

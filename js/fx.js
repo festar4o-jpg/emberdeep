@@ -149,10 +149,18 @@ function drawBeam(l,col,big){const rgb=rgbOf(col),named=l.item&&(l.item.rarity==
 // a shockwave, a shake and a call-out over the item (the sound is in sfx.js dropSfx).
 function dropFlash(l){const it=l.item;if(!it||it.rarity<2)return;const col=itCol(it);l.born=G.time;buzz(it.rarity===3?'unique':it.rarity===5?'set':'rare');
   if(it.rarity===2){burst(l.x,l.y,10,col,120);return;}
+  if(it.anc===2){embMoment(l);return;} // items.js: Emberforged
   if(it.anc){burst(l.x,l.y,40,ANC_COL,330);G.fx.push({type:'ring',x:l.x,y:l.y,r0:6,r1:100,t:0,max:0.7,col:ANC_COL});G.shake=Math.max(G.shake,4);} // items.js: Ancient
   if(it.rarity===3||it.rarity===5){burst(l.x,l.y,34,col,260);burst(l.x,l.y,14,'#ffffff',180);
     G.fx.push({type:'ring',x:l.x,y:l.y,r0:10,r1:150,t:0,max:0.6,col});G.fx.push({type:'ring',x:l.x,y:l.y,r0:4,r1:90,t:0,max:0.45,col:'#ffffff'});
     G.fx.push({type:'pillar',x:l.x,y:l.y,t:0,max:1.2,col,w:44,h:320});screenFlash(col,0.18);if(it.anc)G.slowT=0.5; /* main.js: slow motion */G.shake=Math.max(G.shake||0,6);floatText(l.x,l.y-50,it.rarity===3?'UNIQUE!':'SET ITEM!',col,true);}}
+// Emberforged (the holy grail): the world nearly stops for 2 s and the music drops away (music.js musDuck); a burning
+// column twice a unique's, a white core, three shockwaves, a heavy shake and a big banner naming the item.
+function embMoment(l){const it=l.item,C=EMB_COL;G.slowT=2.2;G.slowMul=0.12; /* main.js */musDuck(3.5);
+  burst(l.x,l.y,70,C,420);burst(l.x,l.y,40,'#ffd27a',300);burst(l.x,l.y,20,'#ffffff',220);
+  for(const [r1,mx,c] of [[220,0.9,C],[150,0.7,'#ffd27a'],[90,0.5,'#ffffff']])G.fx.push({type:'ring',x:l.x,y:l.y,r0:8,r1,t:0,max:mx,col:c});
+  G.fx.push({type:'pillar',x:l.x,y:l.y,t:0,max:3.2,col:C,w:110,h:620});G.fx.push({type:'pillar',x:l.x,y:l.y,t:0,max:2.4,col:'#ffffff',w:34,h:560});
+  screenFlash(C,0.5);G.shake=Math.max(G.shake||0,16);floatText(l.x,l.y-60,'EMBERFORGED!',C,true);toast('EMBERFORGED!',it.name,true);}
 // PoE-style ground label: text in a dark box edged in the item's colour (normal items: a plain grey edge).
 // Labels that would overlap one already drawn this frame stack upward instead (LABELS is reset by render()).
 const LABELS=[];let LBL_OFF=0;
