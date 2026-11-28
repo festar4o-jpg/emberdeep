@@ -1,0 +1,11 @@
+Music in this folder (packed by tools/music/build.sh from tools/music/tracks.txt), from OpenGameArt.org.
+Levelled and re-encoded for Emberdeep; otherwise unchanged.
+- title.ogg: "Nox Arcana - RPG Title Screen" by HitCtrl, CC-BY 3.0, https://opengameart.org/content/nox-arcana-rpg-title-screen
+- act0.ogg (Sunken Crypts): "The Desecrated Temple" by Insydnis, CC-BY 3.0, https://opengameart.org/content/the-descecrated-temple
+- act1.ogg (Ashen Wastes): "Caryil, The Desert of Dreams" by Insydnis, CC-BY 3.0, https://opengameart.org/content/the-desert-of-dreams
+- act2.ogg (Rotwood Marsh): "The Mourning Forest" by HitCtrl, CC-BY 3.0, https://opengameart.org/content/fantasy-music-the-mourning-forest
+- act3.ogg (Frozen Citadel): "The Wraiths of Winter" by HitCtrl, CC-BY 3.0, https://opengameart.org/content/fantasy-music-the-wraiths-of-winter
+- act4.ogg (The Ember Core): "The March Upon the Red Mountain" by HitCtrl, CC-BY 3.0, https://opengameart.org/content/fantasy-the-march-upon-the-red-mountain
+- town.ogg (every town): "Elegy Dm" by Yubatake, CC-BY 4.0, https://opengameart.org/content/elegy-dm
+- boss.ogg (boss fights): "Colossal Boss Battle Theme" (loop) by Matthew Pablo, CC-BY 3.0, https://opengameart.org/content/colossal-boss-battle-theme (www.matthewpablo.com)
+CC-BY: https://creativecommons.org/licenses/by/3.0/ and https://creativecommons.org/licenses/by/4.0/

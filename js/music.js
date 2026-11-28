@@ -1,5 +1,6 @@
 'use strict';
-// Music: dark ambient, generated live with WebAudio (no music files). Each act has a mood (MOODS): a key and scale,
+// Music: recorded tracks (art/music/, see TRK below) when they have downloaded; until then, dark ambient generated live with WebAudio.
+// The synth: Each act has a mood (MOODS): a key and scale,
 // a breathing drone, slow pad chords, sparse distant bells (lute-like plucks in town), and a texture: wind, drips,
 // embers crackling, ice. Towns play their act's key in a warmer mode with a hearth crackle. A boss fight adds a
 // war-drum pulse and trembling strings, which fade once the fight is over. Changing area crossfades over ~4 s.
@@ -87,22 +88,45 @@ function bossBeat(Z,B,t){const a=Z.a,hit=(at,f,v)=>{const o=a.createOscillator()
     const s=a.createBufferSource(),lp=a.createBiquadFilter(),ng=a.createGain();s.buffer=NOISE;lp.type='lowpass';lp.frequency.value=700;ng.gain.setValueAtTime(0.0001,at);
     ng.gain.exponentialRampToValueAtTime(v*0.35,at+0.004);ng.gain.exponentialRampToValueAtTime(0.0001,at+0.15);s.connect(lp);lp.connect(ng);ng.connect(B.g);s.start(at,fxRnd()*0.5);s.stop(at+0.2);};
   const k=B.n%8;if(k===0||k===3||k===4||k===6)hit(t,k===0?120:150,k===0?0.3:0.2);if(k===7)hit(t+0.2,170,0.12);B.n++;}
+// ---------- recorded tracks (art/music/, packed by tools/music/build.sh; credits art/music/CREDITS.txt) ----------
+// Each act has its track, every town shares one, a boss fight switches to the boss track (from its start). A track is
+// downloaded whole the first time it is wanted (a plain fetch, so the service worker keeps it for offline play); until it
+// is ready, or when it can't load, the synth above plays. Changing track crossfades over ~3 s.
+let TRK=null; // {idx: music.json ({slot: hash}) | null while loading | false, got: {slot: {au, g} | 'loading' | 'failed'}}
+const TRK_VOL=1.79; // with out at musVol*0.6: right at the default 70% (user ear tests v1.0.166), the last 30% for extra loudness
+const trkSlot=(key,fight)=>fight?'boss':key==='title'?'title':key.startsWith('town')?'town':'act'+key.slice(-1);
+function trkGet(Z,slot){const a=Z.a;if(typeof fetch!=='function'||typeof Audio!=='function'||typeof URL==='undefined'||!a.createMediaElementSource)return null;
+  if(!TRK){TRK={idx:null,got:{}};fetch('art/music/music.json').then(r=>r.json()).then(j=>{TRK.idx=j;}).catch(()=>{TRK.idx=false;setTimeout(()=>{TRK=null;},30000);});}
+  const idx=TRK.idx,g=TRK.got[slot];if(!idx||!idx[slot])return null;if(g)return typeof g==='object'?g:null;
+  TRK.got[slot]='loading';const T=TRK;
+  fetch('art/music/'+slot+'.ogg?v='+idx[slot]).then(r=>{if(!r.ok)throw new Error('music '+slot);return r.blob();}).then(b=>{
+    const au=new Audio(URL.createObjectURL(b)),g=a.createGain();au.loop=true;g.gain.value=0.0001;a.createMediaElementSource(au).connect(g);g.connect(Z.out);T.got[slot]={au,g};})
+    .catch(()=>{T.got[slot]='failed';setTimeout(()=>{if(T.got[slot]==='failed')delete T.got[slot];},30000);}); // try again later
+  return null;}
+function trkPlay(Z,slot,T){if(Z.trk===slot)return;trkStop(Z);Z.trk=slot;Z.trkOn=T;const t=Z.a.currentTime;
+  if(slot==='boss')try{T.au.currentTime=0;}catch(e){} // the others carry on where they were
+  const p=T.au.play();if(p&&p.catch)p.catch(()=>{});T.g.gain.cancelScheduledValues(t);fadeIn(T.g,t,TRK_VOL,3);}
+function trkStop(Z,sec=3){const T=Z.trkOn;if(!T)return;fadeOut(T.g,Z.a.currentTime,sec);Z.trk=null;Z.trkOn=null;
+  setTimeout(()=>{if(Z.trkOn!==T)T.au.pause();},sec*1000+200);} // unless it came back in the meantime
 // ---------- the main-loop hook ----------
 const MUS_BEAT=0.42;
 function musicTick(dt){const a=AC;if(!a||a.state!=='running'||!NOISE)return;const Z=musGraph(a),t=a.currentTime;
-  const vol=SETTINGS.sound===false?0:SETTINGS.musVol??0.5;
+  const vol=SETTINGS.sound===false?0:SETTINGS.musVol??0.7;
   if(vol!==Z.vol){Z.vol=vol;Z.out.gain.setTargetAtTime(vol*0.6,t,0.3);}
-  if(vol<=0){if(Z.layer){stopLayer(Z.layer,0.5);Z.layer=null;Z.key=null;}if(Z.boss){stopLayer(Z.boss,0.5);Z.boss=null;}return;} // muted: stop everything (battery)
+  if(vol<=0){if(Z.layer){stopLayer(Z.layer,0.5);Z.layer=null;Z.key=null;}if(Z.boss){stopLayer(Z.boss,0.5);Z.boss=null;}trkStop(Z,0.5);return;} // muted: stop everything (battery)
   const key=musKey();
+  // boss fight: on while a boss is fighting you, off 2 s after it ends (no flicker)
+  if(G.char&&G.p&&!G.inTown&&typeof bossFightOn==='function'&&bossFightOn())Z.bossOff=t+2;
+  const fight=t<Z.bossOff,slot=trkSlot(key,fight),T=trkGet(Z,slot);
+  if(T){trkPlay(Z,slot,T);if(Z.layer){stopLayer(Z.layer);Z.layer=null;Z.key=null;}if(Z.boss){stopLayer(Z.boss,3);Z.boss=null;}return;} // a recorded track: no synth
+  trkStop(Z);
   if(key!==Z.key){if(Z.layer)stopLayer(Z.layer);Z.layer=startLayer(Z,key);Z.key=key;Z.next={chord:t+1.5,lead:t+fr(3,6),tex:t+0.5};}
   const L=Z.layer,m=L.m;
   if(t>=Z.next.chord){padChord(L,t+0.05);Z.next.chord=t+fr(m.chord[0],m.chord[1]);}
   if(t>=Z.next.lead){leadNote(Z,L,t+0.05);Z.next.lead=t+fr(m.leadT[0],m.leadT[1])*(Z.boss?2:1);}
   if(t>=Z.next.tex){Z.next.tex=t+texEvent(Z,L,t+0.02);}
-  // boss fight: on while a boss is fighting you, off 2 s after it ends (no flicker)
-  const fight=!!(G.char&&G.p&&!G.inTown&&typeof bossFightOn==='function'&&bossFightOn());
-  if(fight){Z.bossOff=t+2;if(!Z.boss)Z.boss=startBoss(Z,m);}
-  else if(Z.boss&&t>Z.bossOff){stopLayer(Z.boss,3);Z.boss=null;}
+  if(fight&&!Z.boss)Z.boss=startBoss(Z,m);
+  else if(!fight&&Z.boss){stopLayer(Z.boss,3);Z.boss=null;}
   if(Z.boss){if(Z.boss.beat<t-0.5)Z.boss.beat=t+0.05;while(Z.boss.beat<t+0.25){bossBeat(Z,Z.boss,Z.boss.beat);Z.boss.beat+=MUS_BEAT;}}}
 // The app in the background: pause all sound (the battery, and nobody wants a drone from their pocket).
-if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('visibilitychange',()=>{if(!AC)return;try{if(document.hidden)AC.suspend();else AC.resume();}catch(e){}});
+if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('visibilitychange',()=>{if(!AC)return;const au=MZ&&MZ.trkOn&&MZ.trkOn.au;try{if(document.hidden){AC.suspend();if(au)au.pause();}else{AC.resume();if(au)au.play().catch(()=>{});}}catch(e){}});

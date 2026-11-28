@@ -1,6 +1,13 @@
 {
-  "latest": "1.0.165",
+  "latest": "1.0.166",
   "notes": [
+    {
+      "v": "1.0.166",
+      "t": [
+        "Real music: a dark orchestral track with choir for each act, the towns and the title screen, and a huge choir-and-drums theme for boss fights",
+        "Music credits are in the menu, under How to play"
+      ]
+    },
     {
       "v": "1.0.165",
       "t": [

@@ -319,9 +319,9 @@ document.addEventListener('fullscreenchange',fsLabel);document.addEventListener(
 addEventListener('orientationchange',()=>{releaseInputs();setTimeout(resize,200);});
 // ---------- settings (shared by all characters) ----------
 const SETTINGS_KEY='emberdeep_settings',JOY_SIZES={s:44,m:55,l:68};
-let SETTINGS={joy:'m',lefty:false,sound:true,vib:true,sfxVol:0.8,musVol:0.5,fps:false,fpsCap:60,saver:false,hints:true,cam:'angled',hero:'painted',mons:'painted',props:'painted',floors:'painted',houses:'detailed',sharp:'high',parts:'many',light:'full',glow:'all'};
+let SETTINGS={joy:'m',lefty:false,sound:true,vib:true,sfxVol:0.7,musVol:0.7,fps:false,fpsCap:60,saver:false,hints:true,cam:'angled',hero:'painted',mons:'painted',props:'painted',floors:'painted',houses:'detailed',sharp:'high',parts:'many',light:'full',glow:'all'};
 const vol01=(v,d)=>typeof v==='number'&&v>=0&&v<=1?v:d;
-function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false,vib:o.vib!==false,sfxVol:vol01(o.sfxVol,0.8),musVol:vol01(o.musVol,0.5),fps:o.fps===true,fpsCap:FPS_CAPS.includes(o.fpsCap)?o.fpsCap:60,saver:o.saver===true,hints:o.hints!==false,cam:o.cam==='top'?'top':'angled',hero:o.hero==='drawn'?'drawn':'painted',mons:o.mons==='drawn'?'drawn':'painted',props:o.props==='drawn'?'drawn':'painted',floors:o.floors==='drawn'?'drawn':'painted',houses:o.houses==='simple'?'simple':'detailed',...Object.fromEntries(Object.keys(GFX_DEF).map(k=>[k,GFX[k][o[k]]!=null?o[k]:GFX_DEF[k]]))};}catch(e){}applySettings();}
+function loadSettings(){try{const o=JSON.parse(localStorage.getItem(SETTINGS_KEY));if(o&&typeof o==='object')SETTINGS={joy:JOY_SIZES[o.joy]?o.joy:'m',lefty:o.lefty===true,sound:o.sound!==false,vib:o.vib!==false,sfxVol:vol01(o.sfxVol,0.7),musVol:vol01(o.musVol,0.7),fps:o.fps===true,fpsCap:FPS_CAPS.includes(o.fpsCap)?o.fpsCap:60,saver:o.saver===true,hints:o.hints!==false,cam:o.cam==='top'?'top':'angled',hero:o.hero==='drawn'?'drawn':'painted',mons:o.mons==='drawn'?'drawn':'painted',props:o.props==='drawn'?'drawn':'painted',floors:o.floors==='drawn'?'drawn':'painted',houses:o.houses==='simple'?'simple':'detailed',...Object.fromEntries(Object.keys(GFX_DEF).map(k=>[k,GFX[k][o[k]]!=null?o[k]:GFX_DEF[k]]))};}catch(e){}applySettings();}
 const SETTINGS_NOW=()=>SETTINGS; // (tests: SETTINGS is a let)
 function storeSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}backupSoon();}
 function setSetting(k,v){SETTINGS[k]=v;storeSettings();releaseInputs();applySettings();renderSettings();}
@@ -355,7 +355,7 @@ function renderSettings(){
   $('setSaver').onclick=()=>{if(saverOn()){PERF.autoSaver=false;PERF.autoDismissed=true;setSetting('saver',false);}else setSetting('saver',true);}; // perf.js
   $('setFps').classList.toggle('on',SETTINGS.fps===true);$('setFps').onclick=()=>setSetting('fps',!SETTINGS.fps); // perf.js
   $('setVib').classList.toggle('on',SETTINGS.vib!==false);$('setVib').onclick=()=>{setSetting('vib',SETTINGS.vib===false);if(SETTINGS.vib)buzz('heavy');};
-  for(const [id,k] of [['setSfxVol','sfxVol'],['setMusVol','musVol']]){const el=$(id);el.value=Math.round((SETTINGS[k]??0.5)*100);
+  for(const [id,k] of [['setSfxVol','sfxVol'],['setMusVol','musVol']]){const el=$(id);el.value=Math.round((SETTINGS[k]??0.7)*100);
     el.oninput=()=>{SETTINGS[k]=+el.value/100;if(k==='sfxVol')playSfx('gold');}; // live while dragging
     el.onchange=()=>{SETTINGS[k]=+el.value/100;storeSettings();};}}
 function showTitle(){

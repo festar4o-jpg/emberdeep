@@ -112,7 +112,7 @@ function playSample(a,k,t){const c=SAMP&&SAMP.by[k];if(!c)return false;const [s,
   src.buffer=SAMP.buf;src.playbackRate.value=vr(1,0.05);src.connect(BUS);voiceEnd(src);src.start(t,s,d);
   if(THUMP[k])tone(a,vr(62),t,0.25,THUMP[k],'sine',34);return true;}
 const sfxAt={};
-function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===false||!(vol>0)||!SFX[k])return false;const a=audio();if(!a||a.state!=='running')return false;BUS.gain.value=0.9*vol*1.25;
+function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.7;if(SETTINGS.sound===false||!(vol>0)||!SFX[k])return false;const a=audio();if(!a||a.state!=='running')return false;BUS.gain.value=0.6*vol; /* v1.0.166 (user ear tests): right at the default 70%, the last 30% for extra loudness */
   const now=a.currentTime;if(now-(sfxAt[k]??-9)<(GAP[k]??0.06))return false;if(voices>=MAX_VOICES&&!SFX_MUST.has(k))return false;
   sfxAt[k]=now;if(SAMP===null)loadSamples(a);try{const t=now+(delay||0)+0.005;if(!playSample(a,k,t)||MIX.has(k))SFX[k](a,t);}catch(e){return false;}return true;}
 // What a drop sounds like: nothing for common/magic items and gold.
