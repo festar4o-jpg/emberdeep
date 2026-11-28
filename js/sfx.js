@@ -1,5 +1,5 @@
 'use strict';
-// Sound, synthesised with WebAudio (no sound files, so the app stays small): combat (swings, hits by material, crits,
+// Sound with WebAudio: recorded clips where we have them (art/sfx, below playSfx), synthesised for the rest: combat (swings, hits by material, crits,
 // kills, blocks, getting hurt, a heartbeat at low life), every skill, potions, level-ups, death, portals, waypoints,
 // chests, shrines, gold and item pickups, menu taps, drop chimes and boss cues.
 // Browsers only allow audio after a tap, so the audio context is created on the first touch or key press.
@@ -96,13 +96,25 @@ const SFX={
 };
 // Minimum seconds between two plays of the same sound (anything not listed: 0.06).
 const GAP={swing:0.05,heavy:0.08,stab:0.05,flesh:0.045,bone:0.045,armor:0.06,ice:0.05,chitin:0.045,sap:0.05,magma:0.06,crit:0.06,kill:0.05,shatter:0.08,hurt:0.12,
-  heart:0.5,gold:0.05,pickup:0.05,click:0.04,warn:0.3,levelup:0.5,unique:0.5,set:0.5};
+  heart:0.5,gold:0.09,pickup:0.05,click:0.04,warn:0.3,levelup:0.5,unique:0.5,set:0.5};
 // Sounds that may cut in even when the voice limit is reached.
 const SFX_MUST=new Set(['unique','set','rare','rune','warn','phase','levelup','death','bossdie','portal']);
+// Recorded sounds (CC0, art/sfx/: one file holding every clip, packed by tools/sfx/build.sh from tools/sfx/clips.txt).
+// A key with clips (flesh1, flesh2...) plays one at random, a little re-pitched; keys without clips, and every key until
+// the file has loaded (or when it can't), use the synth above (MIX keys: both). THUMP keys get a low synth thump underneath, for weight.
+let SAMP=null;
+const THUMP={flesh:0.05,crit:0.16,kill:0.07,slam:0.2,boom:0.18,bossdie:0.25,heavy:0.04,set:0.14,unique:0.2};
+const MIX=new Set(['set','unique']); // the recording and the synth play together
+function loadSamples(a){SAMP=false;if(typeof fetch!=='function')return;fetch('art/sfx/sfx.json').then(r=>r.json()).then(j=>fetch('art/sfx/sfx.ogg?v='+j.v).then(r=>r.arrayBuffer())
+  .then(b=>a.decodeAudioData(b)).then(buf=>{const by={};for(const [n,c] of Object.entries(j.clips))(by[n.replace(/\d+$/,'')]??=[]).push(c);SAMP={buf,by};}))
+  .catch(()=>setTimeout(()=>{SAMP=null;},30000));} // try again later (offline before the first download)
+function playSample(a,k,t){const c=SAMP&&SAMP.by[k];if(!c)return false;const [s,d]=c[Math.floor(fxRnd()*c.length)],src=a.createBufferSource();
+  src.buffer=SAMP.buf;src.playbackRate.value=vr(1,0.05);src.connect(BUS);voiceEnd(src);src.start(t,s,d);
+  if(THUMP[k])tone(a,vr(62),t,0.25,THUMP[k],'sine',34);return true;}
 const sfxAt={};
 function playSfx(k,delay){const vol=SETTINGS.sfxVol??0.8;if(SETTINGS.sound===false||!(vol>0)||!SFX[k])return false;const a=audio();if(!a||a.state!=='running')return false;BUS.gain.value=0.9*vol*1.25;
   const now=a.currentTime;if(now-(sfxAt[k]??-9)<(GAP[k]??0.06))return false;if(voices>=MAX_VOICES&&!SFX_MUST.has(k))return false;
-  sfxAt[k]=now;try{SFX[k](a,now+(delay||0)+0.005);}catch(e){return false;}return true;}
+  sfxAt[k]=now;if(SAMP===null)loadSamples(a);try{const t=now+(delay||0)+0.005;if(!playSample(a,k,t)||MIX.has(k))SFX[k](a,t);}catch(e){return false;}return true;}
 // What a drop sounds like: nothing for common/magic items and gold.
 function dropSfx(l){if(l.gem){if(l.gem.r)playSfx('rune');return;}const r=l.item&&l.item.rarity;if(l.item&&l.item.anc){playSfx('unique');playSfx('levelup');return;} /* items.js: Ancient */if(r===3)playSfx('unique');else if(r===5)playSfx('set');else if(r===2)playSfx('rare');}
 // Each skill's sound (SKILLS order in skills.js); the basic attack (slot 0) of a Warden is the weapon's swing.

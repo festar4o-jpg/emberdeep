@@ -1,6 +1,14 @@
 {
-  "latest": "1.0.164",
+  "latest": "1.0.165",
   "notes": [
+    {
+      "v": "1.0.165",
+      "t": [
+        "Real recorded sound effects: heavy weapon swings, meaty hits on flesh, clanks on armour, crunchy slams and explosions, fire, ice and lightning spells, coins and chests",
+        "Critical hits and slams land with a deep thump",
+        "Each loot rarity has its own sound: a clink for runes, a bell for rares, a deep gong for set and unique items"
+      ]
+    },
     {
       "v": "1.0.164",
       "t": [
